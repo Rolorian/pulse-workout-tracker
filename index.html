@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#06090e">
+<link rel="manifest" href="manifest.json">
+<title>Pulse — Workout Tracker</title>
+<style>
+:root{--bg:#06090e;--panel:#0f151f;--panel2:#161f2d;--line:#222f3f;--text:#f8fafc;--muted:#94a3b8;--green:#33e192;--neon:#22c55e;--glow:rgba(51,225,146,0.25);--red:#fb7185}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}body{min-height:100vh}button,input,select{font:inherit}
+.app{max-width:620px;margin:auto;padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 96px)}
+.top{display:flex;justify-content:space-between;align-items:center;padding:12px 2px 18px}.brand{font-size:32px;font-weight:900;letter-spacing:-1.2px;background:linear-gradient(135deg,#fff,var(--muted));-webkit-background-clip:text;-webkit-text-fill-color:transparent}.sub{color:var(--muted);font-size:12px;margin-top:2px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}.gear{width:44px;height:44px;border:1px solid var(--line);background:var(--panel);border-radius:14px;color:white;font-size:20px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.hero{background:linear-gradient(135deg,#0d271c,#0b1522);border:1px solid rgba(51,225,146,0.3);border-radius:26px;padding:24px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.5)}.hero .eyebrow{text-transform:uppercase;color:var(--green);font-size:11px;font-weight:900;letter-spacing:1.5px}.hero h1{font-size:30px;margin:6px 0 4px;letter-spacing:-.8px;font-weight:800}.hero p{margin:0;color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 12px;box-shadow:0 4px 12px rgba(0,0,0,.2)}.stat strong{display:block;font-size:24px;font-weight:900;color:var(--text)}.stat span{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:20px;margin-bottom:16px;box-shadow:0 6px 20px rgba(0,0,0,.3)}.cardhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.card h2{font-size:18px;margin:0;font-weight:800;letter-spacing:-.4px}.muted{color:var(--muted);font-size:12px;font-weight:600}
+.workout{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}.workout:last-child{border-bottom:0}.ico{width:46px;height:46px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font-size:22px}.wmain{flex:1}.wname{font-weight:800;font-size:15px}.wtime{font-size:11px;color:var(--muted);margin-top:2px;font-weight:600}.wvalue{font-weight:900;color:var(--green);font-size:16px;white-space:nowrap}.del{background:none;border:0;color:var(--muted);font-size:22px;padding:8px}
+.empty{text-align:center;color:var(--muted);padding:28px 12px;font-weight:600;font-size:14px}.add{width:100%;border:0;border-radius:16px;background:var(--green);color:#06090e;font-weight:900;padding:16px;margin-top:10px}
+.bottom{position:fixed;bottom:0;left:0;right:0;padding:12px max(16px,calc((100vw - 620px)/2 + 16px)) calc(env(safe-area-inset-bottom) + 12px);background:linear-gradient(transparent,rgba(6,9,14,.98) 30%);pointer-events:none}.bottom button{pointer-events:auto;width:100%;padding:16px;border:0;border-radius:20px;background:var(--green);font-weight:900;color:#06090e;font-size:17px;box-shadow:0 10px 35px var(--glow);letter-spacing:-.3px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:5;align-items:flex-end}.modal.open{display:flex}.sheet{width:100%;max-width:620px;margin:auto auto 0;background:#0d131d;border:1px solid var(--line);border-radius:28px 28px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom) + 24px);max-height:88vh;overflow:auto;box-shadow:0 -10px 40px rgba(0,0,0,.8)}.sheet h2{margin:0 0 16px;font-size:22px;font-weight:800}.close{float:right;background:var(--panel2);border:1px solid var(--line);color:white;width:38px;height:38px;border-radius:12px;font-weight:bold}.exgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ex{background:var(--panel2);border:1px solid var(--line);color:white;border-radius:16px;padding:15px;text-align:left;font-weight:700}.ex.selected{border-color:var(--green);background:#132d20;box-shadow:0 0 15px rgba(51,225,146,.15)}.ex b{display:block;margin-top:4px;font-size:15px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}label{font-size:11px;color:var(--muted);display:block;margin:0 0 6px;font-weight:800;letter-spacing:.8px}input,select{width:100%;background:#06090e;border:1px solid var(--line);color:white;border-radius:14px;padding:14px;outline:none;font-weight:700}.save{width:100%;background:var(--green);color:#06090e;border:0;border-radius:16px;padding:16px;font-weight:900;margin-top:16px;font-size:16px;box-shadow:0 6px 20px var(--glow)}
+.historyRow{padding:14px 0;border-bottom:1px solid var(--line)}.historyRow:last-child{border:0}.hdate{font-weight:900;font-size:15px;color:var(--text)}.hitems{color:var(--muted);font-size:13px;line-height:1.8;margin-top:4px}.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);padding:6px 10px;border-radius:10px;margin:3px 4px 0 0;font-weight:700;color:var(--text)}
+.section{display:none}.section.active{display:block}
+.tabs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);padding:6px;border-radius:18px;margin-bottom:16px;box-shadow:0 4px 12px rgba(0,0,0,.2)}.tab{flex:1;border:0;background:none;color:var(--muted);padding:10px;border-radius:12px;font-weight:800;font-size:14px}.tab.active{background:var(--panel2);color:white;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px}.heatbox{aspect-ratio:1;background:var(--panel2);border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;font-size:11px;color:var(--muted);font-weight:700}.heatbox.active{background:var(--green);border-color:var(--green);color:#06090e;font-weight:900;box-shadow:0 0 12px var(--glow)}
+.note{font-size:12px;color:var(--muted);line-height:1.6;font-weight:600}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top"><div><div class="brand">PULSE</div><div class="sub">Elite Workout Log</div></div><button class="gear" onclick="showSettings()">⚙︎</button></header>
+
+<div class="tabs"><button class="tab active" onclick="switchTab('today',this)">Today</button><button class="tab" onclick="switchTab('insights',this)">Insights</button><button class="tab" onclick="switchTab('stats',this)">History</button></div>
+
+<section id="today" class="section active">
+<div class="hero"><div class="eyebrow" id="heroEyebrow">TODAY'S MISSION</div><h1 id="dateTitle"></h1><p id="motivation">Every session counts.</p></div>
+<div class="grid">
+<div class="stat"><strong id="sessionCount">0</strong><span>Sessions</span></div>
+<div class="stat"><strong id="repTotal">0</strong><span>Reps</span></div>
+<div class="stat"><strong id="timeTotal">0</strong><span>Mins</span></div>
+</div>
+<div class="card"><div class="cardhead"><h2>Logged Sessions</h2><span class="muted" id="todayDistance"></span></div><div id="todayList"></div></div>
+</section>
+
+<section id="insights" class="section">
+<div class="card"><h2>Consistency Matrix (28 Days)</h2><div class="heatmap" id="heatmapGrid"></div></div>
+<div class="card"><h2>Personal Records (PRs)</h2><div id="prList"></div></div>
+<div class="card"><h2>Exercise Breakdown</h2><div id="exerciseBreakdown"></div></div>
+</section>
+
+<section id="stats" class="section"><div class="card"><div class="cardhead"><h2>Full History Archive</h2><span class="muted">All entries</span></div><div id="historyList"></div></div></section>
+</div>
+
+<div class="bottom"><button onclick="openAdd()">⚡ Log Workout</button></div>
+
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="sheet"><button class="close" onclick="closeModal()">✕</button><h2>New Log Entry</h2><div class="exgrid" id="exerciseGrid"></div>
+<div id="customNameContainer" style="display:none;margin-top:14px;"><label>CUSTOM WORKOUT NAME</label><input id="customNameInput" type="text" placeholder="e.g., Pull-ups, Yoga, Heavy Bag"></div>
+<div class="fields"><div><label>AMOUNT</label><input id="amount" type="number" inputmode="decimal" min="0" step="0.1" placeholder="50"></div><div><label>UNIT</label><select id="unit"><option value="reps">reps</option><option value="minutes">minutes</option><option value="seconds">seconds</option><option value="km">km</option></select></div></div><div class="fields"><div><label>DATE</label><input id="entryDate" type="date"></div><div><label>TIME</label><input id="entryTime" type="time"></div></div><button class="save" onclick="saveWorkout()">Save Workout</button></div></div>
+
+<div class="modal" id="settingsModal" onclick="if(event.target===this)closeSettings()"><div class="sheet"><button class="close" onclick="closeSettings()">✕</button><h2>Settings & Backup</h2><p class="note">Export a secure JSON backup of your database or import a prior backup file instantly.</p><button class="save secondary" onclick="exportData()">Export Data Backup</button><button class="save secondary" style="margin-top:10px" onclick="document.getElementById('importFile').click()">Import Data Backup</button><input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)"><button class="save" style="background:var(--red);color:white;margin-top:16px" onclick="clearData()">Delete All Workout Data</button></div></div>
+
+<script>
+const KEY="pulse-workouts-v2";
+const EX=[["🏃","Jogging","km"],["💪","Press-ups","reps"],["🧘","Plank","minutes"],["🔥","Sit-ups","reps"],["🦵","Squats","reps"],["🚴","Cycling","km"],["⭐","Custom","reps"]];
+let workouts=JSON.parse(localStorage.getItem(KEY)||"[]"), selected="Jogging";
+const todayKey=()=>{let d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const fmtDate=k=>new Date(k+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});
+const icon=n=>(EX.find(x=>x[1]===n)||["⭐"])[0];
+function persist(){localStorage.setItem(KEY,JSON.stringify(workouts));render()}
+function switchTab(id,btn){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));btn.classList.add("active");render()}
+function openAdd(){document.getElementById("modal").classList.add("open");document.getElementById("entryDate").value=todayKey();document.getElementById("entryTime").value=new Date().toTimeString().slice(0,5);renderExercises();setTimeout(()=>document.getElementById("amount").focus(),100)}
+function closeModal(){document.getElementById("modal").classList.remove("open")}
+function renderExercises(){
+  document.getElementById("exerciseGrid").innerHTML=EX.map(x=>`<button class="ex ${selected===x[1]?"selected":""}" onclick="selectEx('${x[1]}','${x[2]}')">${x[0]}<b>${x[1]}</b></button>`).join("");
+  let customBox=document.getElementById("customNameContainer");
+  if(selected==="Custom"){customBox.style.display="block";}else{customBox.style.display="none";document.getElementById("customNameInput").value="";}
+}
+function selectEx(n,u){selected=n;document.getElementById("unit").value=u;renderExercises()}
+function saveWorkout(){
+  let name = selected;
+  if(selected==="Custom"){
+    let customVal = document.getElementById("customNameInput").value.trim();
+    if(!customVal) return;
+    name = customVal;
+  }
+  let a=Number(document.getElementById("amount").value);if(!a||a<0)return;
+  workouts.push({id:Date.now(),exercise:name,amount:a,unit:document.getElementById("unit").value,date:document.getElementById("entryDate").value,time:document.getElementById("entryTime").value});
+  closeModal();document.getElementById("amount").value="";document.getElementById("customNameInput").value="";persist();
+}
+function removeWorkout(id){workouts=workouts.filter(x=>x.id!==id);persist()}
+function render(){
+let t=todayKey(), td=workouts.filter(x=>x.date===t);
+document.getElementById("dateTitle").textContent=fmtDate(t);
+document.getElementById("sessionCount").textContent=td.length;
+document.getElementById("repTotal").textContent=td.filter(x=>x.unit==="reps").reduce((s,x)=>s+x.amount,0);
+document.getElementById("timeTotal").textContent=Math.round(td.filter(x=>x.unit==="minutes").reduce((s,x)=>s+x.amount,0));
+let km=td.filter(x=>x.unit==="km").reduce((s,x)=>s+x.amount,0);document.getElementById("todayDistance").textContent=km?km+" km":"";
+document.getElementById("motivation").textContent=td.length?"Crushing it — keep pushing forward.":"Ready when you are, let's get after it.";
+document.getElementById("todayList").innerHTML=td.length?td.sort((a,b)=>a.time.localeCompare(b.time)).map(x=>`<div class="workout"><div class="ico">${icon(x.exercise)}</div><div class="wmain"><div class="wname">${x.exercise}</div><div class="wtime">${x.time||""}</div></div><div class="wvalue">${x.amount} ${x.unit}</div><button class="del" onclick="removeWorkout(${x.id})">×</button></div>`).join(""):'<div class="empty">No entries yet today.<br>Tap “⚡ Log Workout” below to record session.</div>';
+
+let dates=[...new Set(workouts.map(x=>x.date))].sort().reverse();
+document.getElementById("historyList").innerHTML=dates.length?dates.map(d=>`<div class="historyRow"><div class="hdate">${fmtDate(d)}</div><div class="hitems">${workouts.filter(x=>x.date===d).map(x=>`<span class="pill">${icon(x.exercise)} ${x.amount} ${x.unit} ${x.exercise}</span>`).join("")}</div></div>`).join(""):'<div class="empty">Your history archive is empty.</div>';
+
+let heatHtml="";let dObj=new Date();
+for(let i=27; i>=0; i--){
+  let target=new Date(dObj); target.setDate(dObj.getDate()-i);
+  let k=target.toISOString().slice(0,10);
+  let hasLogged=workouts.some(x=>x.date===k);
+  heatHtml+=`<div class="heatbox ${hasLogged?"active":""}">${target.getDate()}</div>`;
+}
+document.getElementById("heatmapGrid").innerHTML=heatHtml;
+
+let uniqueExs=[...new Set(workouts.map(x=>x.exercise))];
+document.getElementById("prList").innerHTML=uniqueExs.length?uniqueExs.map(exName=>{
+  let match=workouts.filter(x=>x.exercise===exName);
+  let maxRec=Math.max(...match.map(x=>x.amount));
+  let unit=match[0].unit;
+  return `<div class="historyRow">🔥 <b>${exName}</b>: Peak of <b>${maxRec} ${unit}</b> in a single session</div>`;
+}).join(""):`<div class="empty">Log workouts to establish PRs.</div>`;
+
+document.getElementById("exerciseBreakdown").innerHTML=uniqueExs.length?uniqueExs.map(exName=>{
+  let match=workouts.filter(x=>x.exercise===exName);
+  let totalAmt=match.reduce((sum,x)=>sum+x.amount,0);
+  let unit=match[0].unit;
+  return `<div class="historyRow">${icon(exName)} <b>${exName}</b> — Total: <b>${unit==="km"||unit==="minutes"?totalAmt.toFixed(1):totalAmt} ${unit}</b> (${match.length} logs)</div>`;
+}).join(""):`<div class="empty">No analytics available yet.</div>`;
+}
+
+function showSettings(){document.getElementById("settingsModal").classList.add("open")}function closeSettings(){document.getElementById("settingsModal").classList.remove("open")}
+function exportData(){let blob=new Blob([JSON.stringify(workouts,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="pulse-workouts-backup.json";a.click();URL.revokeObjectURL(a.href)}
+function importData(event){
+  let file=event.target.files[0];
+  if(!file)return;
+  let reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      let imported=JSON.parse(e.target.result);
+      if(Array.isArray(imported)){
+        workouts=imported;
+        persist();
+        closeSettings();
+        alert("Data imported successfully!");
+      }else{
+        alert("Invalid backup file format.");
+      }
+    }catch(err){
+      alert("Error reading backup file.");
+    }
+  };
+  reader.readAsText(file);
+}
+function clearData(){if(confirm("Delete all workout data? This cannot be undone.")){workouts=[];persist();closeSettings()}}
+render();
+</script>
+</body></html>
