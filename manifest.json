@@ -1,0 +1,9 @@
+{
+  "name": "Pulse Workout Tracker",
+  "short_name": "Pulse",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#090d12",
+  "theme_color": "#090d12",
+  "description": "Private offline workout tracker"
+}
