@@ -12,12 +12,13 @@
 .app{max-width:620px;margin:auto;padding:calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 92px)}
 .top{display:flex;justify-content:space-between;align-items:center;padding:14px 2px 16px}.brand{font-size:28px;font-weight:800;letter-spacing:-0.5px;color:var(--text)}.sub{color:var(--muted);font-size:12px;margin-top:2px}.gear{width:40px;height:40px;border:1px solid var(--line);background:var(--panel);border-radius:12px;color:white;font-size:18px;cursor:pointer;transition:all .15s}.gear:active{transform:scale(.92)}
 .hero{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px 20px;margin-bottom:12px}.hero .eyebrow{text-transform:uppercase;color:var(--green);font-size:10px;font-weight:700;letter-spacing:1px}.hero h1{font-size:24px;margin:4px 0 2px;letter-spacing:-0.5px;font-weight:700}.hero p{margin:0;color:var(--muted);font-size:14px}.hero .weather{font-size:12px;color:var(--muted);margin-top:6px;padding:6px 10px;background:var(--panel2);border-radius:10px;display:inline-block}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 10px;transition:all .15s}.stat:active{transform:scale(.95)}.stat strong{display:block;font-size:18px;font-weight:800}.stat span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 10px;transition:all .15s;cursor:default}.stat:active{transform:scale(.95)}.stat strong{display:block;font-size:18px;font-weight:800}.stat span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}.cardhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.card h2{font-size:15px;margin:0;font-weight:700}.muted{color:var(--muted);font-size:11px;font-weight:500}
 .workout{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.workout:last-child{border-bottom:0}.ico{width:38px;height:38px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font-size:18px;flex-shrink:0}.wmain{flex:1;min-width:0}.wname{font-weight:700;font-size:14px}.wtime{font-size:10px;color:var(--muted);margin-top:1px}.wvalue{font-weight:800;color:var(--green);font-size:14px;white-space:nowrap;flex-shrink:0}.del{background:none;border:0;color:var(--muted);font-size:18px;padding:6px;cursor:pointer;transition:all .15s}.del:active{transform:scale(.8);color:var(--red)}
 .empty{text-align:center;color:var(--muted);padding:18px 8px;font-size:13px}
-.bottom{position:fixed;bottom:0;left:0;right:0;padding:10px max(16px,calc((100vw - 620px)/2 + 16px)) calc(env(safe-area-inset-bottom) + 10px);background:linear-gradient(transparent,rgba(9,13,18,.96) 25%);pointer-events:none}.bottom button{pointer-events:auto;width:100%;padding:14px;border:0;border-radius:16px;background:var(--green);font-weight:800;color:#07130d;font-size:15px}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:5;align-items:flex-end}.modal.open{display:flex}.sheet{width:100%;max-width:620px;margin:auto auto 0;background:var(--panel);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:85vh;overflow:auto}.sheet h2{margin:0 0 14px;font-size:19px;font-weight:700}.close{float:right;background:var(--panel2);border:1px solid var(--line);color:white;width:34px;height:34px;border-radius:10px;font-size:16px;cursor:pointer}.exgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ex{background:var(--panel2);border:1px solid var(--line);color:white;border-radius:14px;padding:12px;text-align:left;font-weight:600;cursor:pointer;transition:all .15s}.ex:active{transform:scale(.95)}.ex.selected{border-color:var(--green);background:#183025}.ex b{display:block;margin-top:3px;font-size:13px;font-weight:400}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}label{font-size:10px;color:var(--muted);display:block;margin:0 0 4px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}input,select{width:100%;background:var(--bg);border:1px solid var(--line);color:white;border-radius:12px;padding:12px;outline:none;font-size:14px;transition:border .15s}input:focus,select:focus{border-color:var(--green)}
+.bottom{position:fixed;bottom:0;left:0;right:0;padding:10px max(16px,calc((100vw - 620px)/2 + 16px)) calc(env(safe-area-inset-bottom) + 10px);background:linear-gradient(transparent,rgba(9,13,18,.96) 25%);pointer-events:none}.bottom button{pointer-events:auto;width:100%;padding:14px;border:0;border-radius:16px;background:var(--green);font-weight:800;color:#07130d;font-size:15px;cursor:pointer;transition:all .15s}.bottom button:active{transform:scale(.96)}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:5;align-items:flex-end}.modal.open{display:flex}.sheet{width:100%;max-width:620px;margin:auto auto 0;background:var(--panel);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:85vh;overflow:auto}.sheet h2{margin:0 0 14px;font-size:19px;font-weight:700}.close{float:right;background:var(--panel2);border:1px solid var(--line);color:white;width:34px;height:34px;border-radius:10px;font-size:16px;cursor:pointer}.exgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ex{background:var(--panel2);border:1px solid var(--line);color:white;border-radius:14px;padding:12px;text-align:left;font-weight:600;cursor:pointer;transition:all .15s}.ex:active{transform:scale(.95)}.ex.selected{border-color:var(--green);background:#183025}.ex b{display:block;margin-top:3px;font-size:13px;font-weight:400}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}label{font-size:10px;color:var(--muted);display:block;margin:0 0 4px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}input,select{width:100%;background:var(--bg);border:1px solid var(--line);color:white;border-radius:12px;padding:12px;outline:none;font-size:14px;transition:border .15s}input:focus,select:focus{border-color:var(--green)}
 .save{width:100%;background:var(--green);color:#07130d;border:0;border-radius:14px;padding:14px;font-weight:800;margin-top:12px;font-size:15px;cursor:pointer;transition:all .15s}.save:active{transform:scale(.97)}.save.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
 .historyRow{padding:12px 0;border-bottom:1px solid var(--line)}.historyRow:last-child{border:0}.hdate{font-weight:700;font-size:14px}.hitems{color:var(--muted);font-size:12px;line-height:1.6;margin-top:2px}.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);padding:4px 8px;border-radius:8px;margin:2px 3px 0 0;font-size:11px}
 .section{display:none}.section.active{display:block;animation:fadeIn .2s ease}
@@ -35,6 +36,25 @@
 .chart-point .line{width:2px;background:var(--green);border-radius:2px;transition:height .5s cubic-bezier(.34,1.56,.64,1);min-height:4px}
 .chart-point .label{font-size:8px;color:var(--muted);font-weight:600;text-transform:uppercase}
 .chart-point .value{font-size:9px;color:var(--text);font-weight:700}
+
+/* Donut Chart */
+.donut-container{display:flex;justify-content:center;align-items:center;padding:8px 0;gap:20px;flex-wrap:wrap}
+.donut{width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--green) 0deg, var(--blue) 90deg, var(--orange) 180deg, var(--red) 270deg, var(--purple) 360deg);position:relative}
+.donut-hole{position:absolute;top:25%;left:25%;width:50%;height:50%;border-radius:50%;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text)}
+.donut-legend{display:flex;flex-direction:column;gap:4px;font-size:11px}
+.donut-legend .item{display:flex;align-items:center;gap:6px}
+.donut-legend .color{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+
+/* Timer */
+.timer-section{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.timer-section .timer-display{font-size:32px;font-weight:800;text-align:center;color:var(--green);font-variant-numeric:tabular-nums;letter-spacing:-1px;font-family:"SF Pro Display",sans-serif}
+.timer-section .timer-controls{display:flex;gap:10px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.timer-section .timer-controls button{padding:8px 20px;border:0;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s}
+.timer-section .timer-controls button:active{transform:scale(.92)}
+.timer-section .timer-controls .start-btn{background:var(--green);color:#07130d}
+.timer-section .timer-controls .pause-btn{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.timer-section .timer-controls .reset-btn{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.timer-section .timer-status{text-align:center;color:var(--muted);font-size:11px;margin-top:4px}
 
 /* Rest Timer */
 .rest-timer{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
@@ -105,10 +125,34 @@
 .cape-item.locked{opacity:.3}
 .cape-item.unlocked{border-color:var(--gold);background:rgba(251,191,36,.08)}
 
-/* Tab indicators */
-.tab-indicators{display:flex;gap:4px;justify-content:center;padding:4px 0}
-.tab-dot{width:6px;height:6px;border-radius:50%;background:var(--line);transition:all .3s}
-.tab-dot.active{background:var(--green);width:18px;border-radius:3px}
+/* Quick Log Buttons */
+.quick-log-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.quick-log-row button{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text);font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;flex:1;min-width:80px}
+.quick-log-row button:active{transform:scale(.95)}
+.quick-log-row button .sub{font-weight:400;color:var(--muted);font-size:10px;display:block}
+
+/* Weekly Wrap */
+.wrap-card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:8px}
+.wrap-card .stat-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid var(--line)}
+.wrap-card .stat-row:last-child{border-bottom:0}
+.wrap-card .label{color:var(--muted)}
+.wrap-card .value{font-weight:700;color:var(--green)}
+
+/* Best Session Highlight */
+.best-session{background:linear-gradient(135deg,#1a2a1f,#0d1520);border:1px solid var(--gold);border-radius:14px;padding:14px;margin-bottom:12px;text-align:center}
+.best-session .title{font-size:18px;font-weight:800;color:var(--gold)}
+.best-session .stats{display:flex;justify-content:center;gap:16px;margin-top:6px;flex-wrap:wrap}
+.best-session .stats .item{font-size:12px;color:var(--muted)}
+.best-session .stats .item strong{color:var(--text);font-weight:700}
+
+/* Smart Tags */
+.tag-container{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.tag{display:inline-block;padding:4px 12px;border-radius:12px;font-size:10px;font-weight:700}
+.tag.peak{background:var(--green);color:#07130d}
+.tag.recovery{background:var(--blue);color:#07130d}
+.tag.rest{background:var(--orange);color:#07130d}
+.tag.sore{background:var(--red);color:#fff}
+.tag.neutral{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -137,6 +181,10 @@
 <div class="weather" id="weatherWidget">🌤️ Loading weather...</div>
 </div>
 
+<!-- Best Session Highlight -->
+<div id="bestSessionContainer"></div>
+
+<!-- Stats Grid -->
 <div class="grid">
 <div class="stat"><strong id="sessionCount">0</strong><span>Sessions</span></div>
 <div class="stat"><strong id="repTotal">0</strong><span>Reps</span></div>
@@ -148,6 +196,17 @@
 <div class="card">
 <div class="cardhead"><h2>📈 Today's Activity</h2></div>
 <div id="todayChart"></div>
+</div>
+
+<!-- Workout Timer -->
+<div class="timer-section">
+<div class="timer-display" id="workoutTimerDisplay">00:00:00</div>
+<div class="timer-controls">
+<button class="start-btn" onclick="startWorkoutTimer()">▶ Start</button>
+<button class="pause-btn" onclick="pauseWorkoutTimer()">⏸ Pause</button>
+<button class="reset-btn" onclick="resetWorkoutTimer()">↺ Reset</button>
+</div>
+<div class="timer-status" id="workoutTimerStatus">⏸️ Not started</div>
 </div>
 
 <!-- Rest Timer -->
@@ -198,6 +257,36 @@
 <div class="card">
 <div class="cardhead"><h2>🏅 Achievements</h2><span class="muted" id="achievementCount">0/50</span></div>
 <div id="achievementList"></div>
+</div>
+
+<!-- Body Part Volume Chart -->
+<div class="card">
+<div class="cardhead"><h2>📊 Body Part Volume</h2></div>
+<div id="bodyPartChart"></div>
+</div>
+
+<!-- Exercise Frequency -->
+<div class="card">
+<div class="cardhead"><h2>📊 Exercise Frequency</h2></div>
+<div id="frequencyTracker"></div>
+</div>
+
+<!-- This Day Last Year -->
+<div class="card">
+<div class="cardhead"><h2>📅 This Day Last Year</h2></div>
+<div id="thisDayLastYear"></div>
+</div>
+
+<!-- Weekly Wrap -->
+<div class="card">
+<div class="cardhead"><h2>🏆 Weekly Wrap</h2></div>
+<div id="weeklyWrap"></div>
+</div>
+
+<!-- Smart Tags -->
+<div class="card">
+<div class="cardhead"><h2>📝 Smart Tags</h2></div>
+<div id="smartTags"></div>
 </div>
 
 <!-- Weekly Chart -->
@@ -253,6 +342,13 @@
 <div class="sheet">
 <button class="close" onclick="closeModal()">✕</button>
 <h2>Log a Workout</h2>
+
+<!-- Quick Log Buttons -->
+<div class="quick-log-row">
+<button onclick="quickReLog()">📋 Re-log Last</button>
+<button onclick="quickReLogWithIncrement()">⬆️ +1 More</button>
+</div>
+
 <div class="exgrid" id="exerciseGrid"></div>
 <div id="customNameContainer" style="display:none;margin-top:10px;"><label>Custom Workout Name</label><input id="customNameInput" type="text" placeholder="e.g., Pull-ups, Yoga, Swimming"></div>
 <div class="fields">
@@ -262,21 +358,19 @@
 <div class="fields">
 <div><label>Date</label><input id="entryDate" type="date"></div>
 <div><label>Time</label><input id="entryTime" type="time"></div>
+</div>
 <!-- Category Selector (only shows for Custom) -->
 <div id="categorySelector" style="display:none;margin-top:12px;">
-  <label>Assign to level category</label>
-  <select id="categoryAssign" style="width:100%;background:var(--bg);border:1px solid var(--line);color:white;border-radius:12px;padding:12px;outline:none;font-size:14px;">
-    <option value="legs">🦵 Legs</option>
-    <option value="chest">💪 Chest</option>
-    <option value="core">🔥 Core</option>
-    <option value="cardio">🏃 Cardio</option>
-    <option value="arms">💪 Arms</option>
-    <option value="back">🏋️ Back</option>
-    <option value="custom">⭐ Custom (default)</option>
-  </select>
-</div>
-<div><label>How do you feel?</label>
-<div class="feeling-grid" id="feelingGrid">
+<label>Assign to level category</label>
+<select id="categoryAssign" style="width:100%;background:var(--bg);border:1px solid var(--line);color:white;border-radius:12px;padding:12px;outline:none;font-size:14px;">
+<option value="legs">🦵 Legs</option>
+<option value="chest">💪 Chest</option>
+<option value="core">🔥 Core</option>
+<option value="cardio">🏃 Cardio</option>
+<option value="arms">💪 Arms</option>
+<option value="back">🏋️ Back</option>
+<option value="custom">⭐ Custom (default)</option>
+</select>
 </div>
 <div><label>How do you feel?</label>
 <div class="feeling-grid" id="feelingGrid">
@@ -317,6 +411,89 @@ let selectedFeeling = "😊";
 let selectedWarmupBody = "Full Body";
 
 // ============================================
+// WORKOUT TIMER (Background-aware)
+// ============================================
+let workoutTimerRunning = false;
+let workoutTimerPaused = false;
+let workoutTimerStartTime = null;
+let workoutTimerElapsed = 0;
+let workoutTimerInterval = null;
+let workoutTimerBackgroundStart = null;
+
+function startWorkoutTimer() {
+  if (workoutTimerRunning && !workoutTimerPaused) return;
+  
+  if (workoutTimerPaused) {
+    // Resume from pause
+    workoutTimerPaused = false;
+    workoutTimerStartTime = Date.now() - workoutTimerElapsed;
+  } else {
+    // Start fresh
+    workoutTimerRunning = true;
+    workoutTimerStartTime = Date.now();
+    workoutTimerElapsed = 0;
+  }
+  
+  document.getElementById('workoutTimerStatus').textContent = '▶️ Running...';
+  document.getElementById('workoutTimerStatus').style.color = 'var(--green)';
+  
+  if (workoutTimerInterval) clearInterval(workoutTimerInterval);
+  workoutTimerInterval = setInterval(updateWorkoutTimerDisplay, 1000);
+  updateWorkoutTimerDisplay();
+}
+
+function pauseWorkoutTimer() {
+  if (!workoutTimerRunning || workoutTimerPaused) return;
+  workoutTimerPaused = true;
+  workoutTimerElapsed = Date.now() - workoutTimerStartTime;
+  clearInterval(workoutTimerInterval);
+  workoutTimerInterval = null;
+  document.getElementById('workoutTimerStatus').textContent = '⏸️ Paused';
+  document.getElementById('workoutTimerStatus').style.color = 'var(--orange)';
+}
+
+function resetWorkoutTimer() {
+  clearInterval(workoutTimerInterval);
+  workoutTimerInterval = null;
+  workoutTimerRunning = false;
+  workoutTimerPaused = false;
+  workoutTimerElapsed = 0;
+  workoutTimerStartTime = null;
+  document.getElementById('workoutTimerDisplay').textContent = '00:00:00';
+  document.getElementById('workoutTimerStatus').textContent = '⏸️ Not started';
+  document.getElementById('workoutTimerStatus').style.color = 'var(--muted)';
+}
+
+function updateWorkoutTimerDisplay() {
+  if (workoutTimerRunning && !workoutTimerPaused) {
+    workoutTimerElapsed = Date.now() - workoutTimerStartTime;
+  }
+  const totalSeconds = Math.floor(workoutTimerElapsed / 1000);
+  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
+  document.getElementById('workoutTimerDisplay').textContent = `${hours}:${minutes}:${seconds}`;
+}
+
+// Handle visibility change for background timer
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // App went to background
+    if (workoutTimerRunning && !workoutTimerPaused) {
+      workoutTimerBackgroundStart = Date.now();
+    }
+  } else {
+    // App came back to foreground
+    if (workoutTimerRunning && !workoutTimerPaused && workoutTimerBackgroundStart) {
+      const bgTime = Date.now() - workoutTimerBackgroundStart;
+      workoutTimerStartTime += bgTime;
+      workoutTimerBackgroundStart = null;
+      updateWorkoutTimerDisplay();
+    }
+  }
+});
+
+// ============================================
 // LEVEL SYSTEM (RuneScape Style)
 // ============================================
 const CATEGORIES = [
@@ -348,7 +525,6 @@ function getLevelName(lvl) {
 }
 
 function getXPForLevel(lvl) {
-  // RuneScape-style XP curve: level^2 * 10
   return Math.floor(Math.pow(lvl, 2) * 10);
 }
 
@@ -358,7 +534,10 @@ function getLevelFromXP(xp) {
   return lvl;
 }
 
-function getCategoryForExercise(exercise) {
+function getCategoryForExercise(exercise, customCategory) {
+  // If custom exercise has a manually assigned category, use it
+  if (customCategory) return customCategory;
+  
   const lower = exercise.toLowerCase();
   if (lower.includes('squat') || lower.includes('lunge') || lower.includes('leg') || lower.includes('calf')) return 'legs';
   if (lower.includes('press') || lower.includes('bench') || lower.includes('push') || lower.includes('chest') || lower.includes('dip')) return 'chest';
@@ -373,9 +552,9 @@ function getCategoryXP() {
   const catXP = {};
   CATEGORIES.forEach(c => catXP[c.id] = 0);
   workouts.forEach(w => {
-    const cat = getCategoryForExercise(w.exercise);
+    // Use saved category if it exists, otherwise auto-detect
+    const cat = w.category || getCategoryForExercise(w.exercise);
     if (catXP[cat] !== undefined) {
-      // XP = amount * unit multiplier
       let multiplier = 1;
       if (w.unit === 'km') multiplier = 5;
       else if (w.unit === 'minutes') multiplier = 3;
@@ -397,44 +576,36 @@ function getTotalLevel() {
 }
 
 // ============================================
-// ACHIEVEMENTS (Cookie Clicker Style)
+// ACHIEVEMENTS
 // ============================================
 const ACHIEVEMENTS = [
-  // Running
   { id: 'run_1', name: 'First Steps', desc: '1km total', icon: '🏃', category: 'running', tier: 'bronze', check: () => getTotalForExercise('Jogging') >= 1 },
   { id: 'run_2', name: 'Jogger', desc: '10km total', icon: '🏃', category: 'running', tier: 'silver', check: () => getTotalForExercise('Jogging') >= 10 },
   { id: 'run_3', name: 'Runner', desc: '50km total', icon: '🏃', category: 'running', tier: 'gold', check: () => getTotalForExercise('Jogging') >= 50 },
   { id: 'run_4', name: 'Marathoner', desc: '100km total', icon: '🏃', category: 'running', tier: 'diamond', check: () => getTotalForExercise('Jogging') >= 100 },
   { id: 'run_5', name: 'Ultramarathoner', desc: '500km total', icon: '🏃', category: 'running', tier: 'star', check: () => getTotalForExercise('Jogging') >= 500 },
-  // Strength
   { id: 'str_1', name: 'Beginner', desc: '100 reps total', icon: '💪', category: 'strength', tier: 'bronze', check: () => getTotalReps() >= 100 },
   { id: 'str_2', name: 'Intermediate', desc: '500 reps total', icon: '💪', category: 'strength', tier: 'silver', check: () => getTotalReps() >= 500 },
   { id: 'str_3', name: 'Advanced', desc: '1000 reps total', icon: '💪', category: 'strength', tier: 'gold', check: () => getTotalReps() >= 1000 },
   { id: 'str_4', name: 'Expert', desc: '5000 reps total', icon: '💪', category: 'strength', tier: 'diamond', check: () => getTotalReps() >= 5000 },
   { id: 'str_5', name: 'Legend', desc: '10000 reps total', icon: '💪', category: 'strength', tier: 'star', check: () => getTotalReps() >= 10000 },
-  // Streak
   { id: 'streak_1', name: 'Streak Starter', desc: '3-day streak', icon: '🔥', category: 'streak', tier: 'bronze', check: () => getStreak() >= 3 },
   { id: 'streak_2', name: 'Consistent', desc: '7-day streak', icon: '🔥', category: 'streak', tier: 'silver', check: () => getStreak() >= 7 },
   { id: 'streak_3', name: 'Dedicated', desc: '30-day streak', icon: '🔥', category: 'streak', tier: 'gold', check: () => getStreak() >= 30 },
   { id: 'streak_4', name: 'Unstoppable', desc: '90-day streak', icon: '🔥', category: 'streak', tier: 'diamond', check: () => getStreak() >= 90 },
   { id: 'streak_5', name: 'Immortal', desc: '365-day streak', icon: '🔥', category: 'streak', tier: 'star', check: () => getStreak() >= 365 },
-  // Variety
   { id: 'var_1', name: 'Explorer', desc: '5 exercises', icon: '🎯', category: 'variety', tier: 'bronze', check: () => getUniqueExercises() >= 5 },
   { id: 'var_2', name: 'Adventurer', desc: '10 exercises', icon: '🎯', category: 'variety', tier: 'silver', check: () => getUniqueExercises() >= 10 },
   { id: 'var_3', name: 'Pioneer', desc: '25 exercises', icon: '🎯', category: 'variety', tier: 'gold', check: () => getUniqueExercises() >= 25 },
   { id: 'var_4', name: 'Legendary', desc: '50 exercises', icon: '🎯', category: 'variety', tier: 'diamond', check: () => getUniqueExercises() >= 50 },
-  // Time
   { id: 'time_1', name: 'Early Bird', desc: '5 AM workout', icon: '🐦', category: 'time', tier: 'bronze', check: () => workouts.some(w => new Date(w.date+'T'+w.time).getHours() < 5) },
   { id: 'time_2', name: 'Night Stalker', desc: '10 PM workout', icon: '🦉', category: 'time', tier: 'silver', check: () => workouts.some(w => new Date(w.date+'T'+w.time).getHours() >= 22) },
-  // PRs
   { id: 'pr_1', name: 'PR Hunter', desc: '1 PR', icon: '📈', category: 'prs', tier: 'bronze', check: () => workouts.filter(w => w.isPR).length >= 1 },
   { id: 'pr_2', name: 'PR Collector', desc: '5 PRs', icon: '📈', category: 'prs', tier: 'silver', check: () => workouts.filter(w => w.isPR).length >= 5 },
   { id: 'pr_3', name: 'PR Machine', desc: '10 PRs', icon: '📈', category: 'prs', tier: 'gold', check: () => workouts.filter(w => w.isPR).length >= 10 },
-  // Volume
   { id: 'vol_1', name: 'Volume Starter', desc: '100 total volume', icon: '📊', category: 'volume', tier: 'bronze', check: () => getTotalVolume() >= 100 },
   { id: 'vol_2', name: 'Volume Builder', desc: '1000 total volume', icon: '📊', category: 'volume', tier: 'silver', check: () => getTotalVolume() >= 1000 },
   { id: 'vol_3', name: 'Volume Master', desc: '5000 total volume', icon: '📊', category: 'volume', tier: 'gold', check: () => getTotalVolume() >= 5000 },
-  // Special
   { id: 'hundred', name: 'Centurion', desc: '100 workouts', icon: '💯', category: 'special', tier: 'gold', check: () => workouts.length >= 100 },
 ];
 
@@ -465,6 +636,36 @@ function getStreak() {
     } else break;
   }
   return streak;
+}
+
+function getBestSession() {
+  if (workouts.length === 0) return null;
+  
+  const sessions = {};
+  workouts.forEach(w => {
+    if (!sessions[w.date]) sessions[w.date] = [];
+    sessions[w.date].push(w);
+  });
+  
+  let best = null;
+  let bestScore = 0;
+  
+  Object.keys(sessions).forEach(date => {
+    const dayWorkouts = sessions[date];
+    const totalReps = dayWorkouts.filter(x => x.unit === 'reps').reduce((s, x) => s + x.amount, 0);
+    const totalMins = dayWorkouts.filter(x => x.unit === 'minutes').reduce((s, x) => s + x.amount, 0);
+    const totalKm = dayWorkouts.filter(x => x.unit === 'km').reduce((s, x) => s + x.amount, 0);
+    const prs = dayWorkouts.filter(x => x.isPR).length;
+    const volume = totalReps + (totalMins * 3) + (totalKm * 5);
+    const score = volume + (prs * 20);
+    
+    if (score > bestScore) {
+      bestScore = score;
+      best = { date, totalReps, totalMins, totalKm, prs, volume, count: dayWorkouts.length };
+    }
+  });
+  
+  return best;
 }
 
 // ============================================
@@ -554,15 +755,82 @@ function selectFeeling(feeling) {
 }
 
 // ============================================
+// QUICK LOG
+// ============================================
+function quickReLog() {
+  if (workouts.length === 0) {
+    alert('No workouts logged yet!');
+    return;
+  }
+  const last = workouts[workouts.length - 1];
+  // Find the exercise in EX list
+  const found = EX.find(x => x[1] === last.exercise);
+  if (found) {
+    selected = last.exercise;
+    document.getElementById("unit").value = last.unit;
+  } else {
+    // Custom exercise
+    selected = "Custom";
+    document.getElementById("customNameInput").value = last.exercise;
+    document.getElementById("unit").value = last.unit;
+    // Show custom inputs
+    document.getElementById("customNameContainer").style.display = "block";
+    document.getElementById("categorySelector").style.display = "block";
+  }
+  document.getElementById("amount").value = last.amount;
+  renderExercises();
+  // If custom, make sure we show the custom name
+  if (selected === "Custom") {
+    document.getElementById("customNameInput").value = last.exercise;
+  }
+  haptic('light');
+}
+
+function quickReLogWithIncrement() {
+  if (workouts.length === 0) {
+    alert('No workouts logged yet!');
+    return;
+  }
+  const last = workouts[workouts.length - 1];
+  const found = EX.find(x => x[1] === last.exercise);
+  if (found) {
+    selected = last.exercise;
+    document.getElementById("unit").value = last.unit;
+  } else {
+    selected = "Custom";
+    document.getElementById("customNameInput").value = last.exercise;
+    document.getElementById("unit").value = last.unit;
+    document.getElementById("customNameContainer").style.display = "block";
+    document.getElementById("categorySelector").style.display = "block";
+  }
+  document.getElementById("amount").value = last.amount + 1;
+  renderExercises();
+  if (selected === "Custom") {
+    document.getElementById("customNameInput").value = last.exercise;
+  }
+  haptic('light');
+}
+
+function haptic(style) {
+  if (navigator.vibrate) {
+    navigator.vibrate(10);
+  }
+}
+
+// ============================================
 // SAVE WORKOUT
 // ============================================
 function saveWorkout() {
   let name = selected;
+  let assignedCategory = null;
+  
   if (selected === "Custom") {
     let customVal = document.getElementById("customNameInput").value.trim();
     if (!customVal) return;
     name = customVal;
+    assignedCategory = document.getElementById("categoryAssign").value;
   }
+  
   let a = Number(document.getElementById("amount").value);
   if (!a || a < 0) return;
   let unit = document.getElementById("unit").value;
@@ -587,7 +855,8 @@ function saveWorkout() {
     time: time,
     isPR: isPR,
     feeling: feeling,
-    notes: notes
+    notes: notes,
+    category: assignedCategory
   });
 
   if (isPR) {
@@ -753,96 +1022,65 @@ function selectWarmupBody(body) {
 
 function generateWarmup() {
   const body = selectedWarmupBody;
-  const warmups = [];
 
-  const fullBody = [
-    '🦵 Leg swings (10 each)',
-    '🦵 Bodyweight squats (15)',
-    '💪 Arm circles (10 each way)',
-    '💪 Band pull-aparts (15)',
-    '💪 Push-ups (10)',
-    '🔥 Cat-cow stretch (10)',
-    '🔥 Dead bug (10 each)',
-    '🔥 Bird dog (10 each)',
-    '🏃 High knees (30s)',
-    '🏃 Butt kicks (30s)',
-    '🏃 Jumping jacks (20)'
-  ];
+  const warmups = {
+    'Full Body': [
+      '🦵 Leg swings (10 each)',
+      '🦵 Bodyweight squats (15)',
+      '💪 Arm circles (10 each way)',
+      '💪 Band pull-aparts (15)',
+      '💪 Push-ups (10)',
+      '🔥 Cat-cow stretch (10)',
+      '🔥 Dead bug (10 each)',
+      '🔥 Bird dog (10 each)',
+      '🏃 High knees (30s)',
+      '🏃 Butt kicks (30s)'
+    ],
+    'Legs': [
+      '🦵 Leg swings (10 each)',
+      '🦵 Bodyweight squats (15)',
+      '🦵 Lunges (10 each)',
+      '🦵 Hip flexor stretch (30s each)',
+      '🦵 Ankle rotations (10 each)'
+    ],
+    'Chest': [
+      '💪 Arm circles (10 each way)',
+      '💪 Band pull-aparts (15)',
+      '💪 Push-ups (10)',
+      '💪 Scap push-ups (10)',
+      '💪 Chest stretch (30s each)'
+    ],
+    'Core': [
+      '🔥 Cat-cow stretch (10)',
+      '🔥 Dead bug (10 each)',
+      '🔥 Bird dog (10 each)',
+      '🔥 Plank hold (30s)',
+      '🔥 Glute bridge (15)'
+    ],
+    'Cardio': [
+      '🏃 High knees (30s)',
+      '🏃 Butt kicks (30s)',
+      '🏃 Jumping jacks (20)',
+      '🏃 Arm swings (30s)',
+      '🏃 Light jog (1 min)'
+    ],
+    'Arms': [
+      '💪 Arm circles (10 each way)',
+      '💪 Band rows (15)',
+      '💪 Tricep stretch (30s each)',
+      '💪 Wrist rolls (10 each way)',
+      '💪 Bicep stretch (30s each)'
+    ],
+    'Back': [
+      '🏋️ Cat-cow stretch (10)',
+      '🏋️ Band pull-aparts (15)',
+      '🏋️ Scap push-ups (10)',
+      '🏋️ Superman holds (10s x3)',
+      '🏋️ Lat stretch (30s each)'
+    ]
+  };
 
-  const legWarmup = [
-    '🦵 Leg swings (10 each)',
-    '🦵 Bodyweight squats (15)',
-    '🦵 Lunges (10 each)',
-    '🦵 Hip flexor stretch (30s each)',
-    '🦵 Ankle rotations (10 each)'
-  ];
-
-  const chestWarmup = [
-    '💪 Arm circles (10 each way)',
-    '💪 Band pull-aparts (15)',
-    '💪 Push-ups (10)',
-    '💪 Scap push-ups (10)',
-    '💪 Chest stretch (30s each)'
-  ];
-
-  const coreWarmup = [
-    '🔥 Cat-cow stretch (10)',
-    '🔥 Dead bug (10 each)',
-    '🔥 Bird dog (10 each)',
-    '🔥 Plank hold (30s)',
-    '🔥 Glute bridge (15)'
-  ];
-
-  const cardioWarmup = [
-    '🏃 High knees (30s)',
-    '🏃 Butt kicks (30s)',
-    '🏃 Jumping jacks (20)',
-    '🏃 Arm swings (30s)',
-    '🏃 Light jog (1 min)'
-  ];
-
-  const armsWarmup = [
-    '💪 Arm circles (10 each way)',
-    '💪 Band rows (15)',
-    '💪 Tricep stretch (30s each)',
-    '💪 Wrist rolls (10 each way)',
-    '💪 Bicep stretch (30s each)'
-  ];
-
-  const backWarmup = [
-    '🏋️ Cat-cow stretch (10)',
-    '🏋️ Band pull-aparts (15)',
-    '🏋️ Scap push-ups (10)',
-    '🏋️ Superman holds (10s x3)',
-    '🏋️ Lat stretch (30s each)'
-  ];
-
-  let selectedWarmups = [];
-  switch (body) {
-    case 'Full Body':
-      selectedWarmups = fullBody.slice(0, 6);
-      break;
-    case 'Legs':
-      selectedWarmups = legWarmup;
-      break;
-    case 'Chest':
-      selectedWarmups = chestWarmup;
-      break;
-    case 'Core':
-      selectedWarmups = coreWarmup;
-      break;
-    case 'Cardio':
-      selectedWarmups = cardioWarmup;
-      break;
-    case 'Arms':
-      selectedWarmups = armsWarmup;
-      break;
-    case 'Back':
-      selectedWarmups = backWarmup;
-      break;
-    default:
-      selectedWarmups = fullBody.slice(0, 5);
-  }
+  const selectedWarmups = warmups[body] || warmups['Full Body'];
 
   const container = document.getElementById('warmupResult');
   container.innerHTML = `
@@ -866,15 +1104,13 @@ async function getWeather() {
     const d = await r.json();
     const t = Math.round(d.current.temp_c);
     const c = d.current.condition.text.toLowerCase();
-    let emoji = '🌤️',
-      msg = '';
-    if (c.includes('rain')) { emoji = '🌧️';
-      msg = 'Great for indoor training!'; } else if (c.includes('sun') || c.includes('clear')) { emoji = '☀️';
-      msg = 'Perfect weather!'; } else if (c.includes('cloud')) { emoji = '☁️';
-      msg = 'Get after it!'; } else if (t > 30) { emoji = '🌡️';
-      msg = 'Stay hydrated!'; } else if (t < 5) { emoji = '❄️';
-      msg = 'Warm up extra!'; } else { emoji = '💪';
-      msg = 'No excuses!'; }
+    let emoji = '🌤️', msg = '';
+    if (c.includes('rain')) { emoji = '🌧️'; msg = 'Great for indoor training!'; }
+    else if (c.includes('sun') || c.includes('clear')) { emoji = '☀️'; msg = 'Perfect weather!'; }
+    else if (c.includes('cloud')) { emoji = '☁️'; msg = 'Get after it!'; }
+    else if (t > 30) { emoji = '🌡️'; msg = 'Stay hydrated!'; }
+    else if (t < 5) { emoji = '❄️'; msg = 'Warm up extra!'; }
+    else { emoji = '💪'; msg = 'No excuses!'; }
     return `${emoji} ${t}°C · ${msg}`;
   } catch (e) {
     return '🌤️ Ready to train!';
@@ -913,6 +1149,9 @@ function render() {
   else if (streak >= 3) mot = `💪 ${streak}-day streak! Consistency is key!`;
   document.getElementById("motivation").textContent = mot;
 
+  // Best Session
+  renderBestSession();
+
   // Today - Chart
   renderTodayChart(td);
 
@@ -940,6 +1179,21 @@ function render() {
   // Progress - Achievements
   renderAchievements();
 
+  // Progress - Body Part Chart
+  renderBodyPartChart();
+
+  // Progress - Exercise Frequency
+  renderFrequencyTracker();
+
+  // Progress - This Day Last Year
+  renderThisDayLastYear();
+
+  // Progress - Weekly Wrap
+  renderWeeklyWrap();
+
+  // Progress - Smart Tags
+  renderSmartTags();
+
   // Progress - Weekly Chart
   renderWeeklyChart();
 
@@ -960,6 +1214,37 @@ function render() {
 
   // History
   renderHistory();
+}
+
+// ============================================
+// BEST SESSION
+// ============================================
+function renderBestSession() {
+  const best = getBestSession();
+  const container = document.getElementById('bestSessionContainer');
+  if (!best) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  const total = workouts.filter(w => w.date === todayKey()).length;
+  const diff = best.count - total;
+  
+  container.innerHTML = `
+    <div class="best-session">
+      <div class="title">🏆 Your Best Session</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">${fmtDate(best.date)}</div>
+      <div class="stats">
+        <span class="item">💪 <strong>${best.totalReps}</strong> reps</span>
+        <span class="item">⏱️ <strong>${best.totalMins}</strong> mins</span>
+        <span class="item">🏃 <strong>${best.totalKm}</strong> km</span>
+        <span class="item">🏆 <strong>${best.prs}</strong> PRs</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">
+        ${diff > 0 ? `🔥 You're ${diff} session${diff > 1 ? 's' : ''} away from matching it!` : '🎯 You matched your best session today!'}
+      </div>
+    </div>
+  `;
 }
 
 // ============================================
@@ -1002,6 +1287,320 @@ function renderTodayChart(td) {
 }
 
 // ============================================
+// BODY PART VOLUME CHART
+// ============================================
+function renderBodyPartChart() {
+  const container = document.getElementById('bodyPartChart');
+  const catXP = getCategoryXP();
+  const total = Object.values(catXP).reduce((s, v) => s + v, 0);
+  
+  if (total === 0) {
+    container.innerHTML = '<div class="empty">Log workouts to see your training distribution!</div>';
+    return;
+  }
+  
+  const colors = {
+    legs: '#6ee7a5',
+    chest: '#71b7ff',
+    core: '#ffb86b',
+    cardio: '#ff6b7a',
+    arms: '#a78bfa',
+    back: '#fbbf24',
+    custom: '#8e99a8'
+  };
+  
+  const names = {
+    legs: '🦵 Legs',
+    chest: '💪 Chest',
+    core: '🔥 Core',
+    cardio: '🏃 Cardio',
+    arms: '💪 Arms',
+    back: '🏋️ Back',
+    custom: '⭐ Custom'
+  };
+  
+  let totalDeg = 0;
+  const segments = [];
+  CATEGORIES.forEach(c => {
+    const val = catXP[c.id] || 0;
+    const pct = total > 0 ? (val / total) * 100 : 0;
+    const deg = pct * 3.6;
+    segments.push({ id: c.id, name: names[c.id], pct, deg, color: colors[c.id], val });
+    totalDeg += deg;
+  });
+  
+  // Build conic gradient
+  let gradient = 'conic-gradient(';
+  let currentDeg = 0;
+  segments.forEach((s, i) => {
+    if (s.pct > 0) {
+      gradient += `${s.color} ${currentDeg}deg ${currentDeg + s.deg}deg`;
+      if (i < segments.length - 1) gradient += ', ';
+    }
+    currentDeg += s.deg;
+  });
+  gradient += ')';
+  
+  const legend = segments.filter(s => s.pct > 0);
+  
+  container.innerHTML = `
+    <div class="donut-container">
+      <div class="donut" style="background:${gradient}">
+        <div class="donut-hole">${Math.round(legend.reduce((s, l) => s + l.pct, 0))}%</div>
+      </div>
+      <div class="donut-legend">
+        ${legend.map(l => `
+          <div class="item">
+            <span class="color" style="background:${l.color}"></span>
+            <span>${l.name} <strong>${Math.round(l.pct)}%</strong></span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">
+      ${legend.length} muscle groups trained
+    </div>
+  `;
+}
+
+// ============================================
+// EXERCISE FREQUENCY TRACKER
+// ============================================
+function renderFrequencyTracker() {
+  const container = document.getElementById('frequencyTracker');
+  if (workouts.length === 0) {
+    container.innerHTML = '<div class="empty">Log workouts to see frequency!</div>';
+    return;
+  }
+  
+  const freq = {};
+  workouts.forEach(w => {
+    freq[w.exercise] = (freq[w.exercise] || 0) + 1;
+  });
+  
+  const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+  const top = sorted.slice(0, 5);
+  const last30 = new Set();
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  workouts.forEach(w => {
+    const d = new Date(w.date);
+    if (d >= thirtyDaysAgo) last30.add(w.exercise);
+  });
+  
+  const neglected = Object.keys(freq).filter(ex => !last30.has(ex));
+  
+  container.innerHTML = `
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Most frequent:</div>
+    ${top.map(([ex, count], i) => `
+      <div class="historyRow" style="padding:4px 0;border-bottom:1px solid var(--line)">
+        <span style="font-weight:600">${icon(ex)} ${ex}</span>
+        <span style="float:right;color:var(--green);font-weight:700">${count}x</span>
+      </div>
+    `).join('')}
+    ${neglected.length > 0 ? `
+      <div style="margin-top:8px;padding:8px;background:rgba(255,107,122,.1);border-radius:10px;border:1px solid var(--red)">
+        <div style="font-size:11px;color:var(--red);font-weight:700">⚠️ Neglected Exercises (30+ days)</div>
+        <div style="font-size:12px;color:var(--text);margin-top:4px">
+          ${neglected.slice(0, 5).map(ex => `${icon(ex)} ${ex}`).join(' · ')}
+          ${neglected.length > 5 ? ` · +${neglected.length - 5} more` : ''}
+        </div>
+      </div>
+    ` : `
+      <div style="margin-top:8px;padding:8px;background:rgba(110,231,165,.1);border-radius:10px;border:1px solid var(--green)">
+        <div style="font-size:11px;color:var(--green);font-weight:700">✅ Balanced! No neglected exercises</div>
+      </div>
+    `}
+  `;
+}
+
+// ============================================
+// THIS DAY LAST YEAR
+// ============================================
+function renderThisDayLastYear() {
+  const container = document.getElementById('thisDayLastYear');
+  const now = new Date();
+  const lastYear = new Date(now);
+  lastYear.setFullYear(lastYear.getFullYear() - 1);
+  const key = lastYear.toISOString().slice(0, 10);
+  
+  const lastYearWorkouts = workouts.filter(w => w.date === key);
+  
+  if (lastYearWorkouts.length === 0) {
+    container.innerHTML = '<div class="empty">No workouts on this day last year.<br>Log something to compare next year!</div>';
+    return;
+  }
+  
+  const todayWorkouts = workouts.filter(w => w.date === todayKey());
+  
+  const lastYearReps = lastYearWorkouts.filter(x => x.unit === 'reps').reduce((s, x) => s + x.amount, 0);
+  const lastYearMins = lastYearWorkouts.filter(x => x.unit === 'minutes').reduce((s, x) => s + x.amount, 0);
+  const lastYearKm = lastYearWorkouts.filter(x => x.unit === 'km').reduce((s, x) => s + x.amount, 0);
+  
+  const todayReps = todayWorkouts.filter(x => x.unit === 'reps').reduce((s, x) => s + x.amount, 0);
+  const todayMins = todayWorkouts.filter(x => x.unit === 'minutes').reduce((s, x) => s + x.amount, 0);
+  const todayKm = todayWorkouts.filter(x => x.unit === 'km').reduce((s, x) => s + x.amount, 0);
+  
+  const repDiff = todayReps > 0 ? Math.round(((todayReps - lastYearReps) / lastYearReps) * 100) : 0;
+  const minDiff = todayMins > 0 ? Math.round(((todayMins - lastYearMins) / lastYearMins) * 100) : 0;
+  
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+      <div style="background:var(--panel2);padding:10px;border-radius:10px;border:1px solid var(--line)">
+        <div style="font-size:11px;color:var(--muted)">📅 ${fmtDate(key)}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text)">${lastYearReps} reps · ${lastYearMins} mins · ${lastYearKm} km</div>
+        <div style="font-size:10px;color:var(--muted)">${lastYearWorkouts.length} workouts</div>
+      </div>
+      <div style="background:var(--panel2);padding:10px;border-radius:10px;border:1px solid var(--line)">
+        <div style="font-size:11px;color:var(--muted)">📅 Today</div>
+        <div style="font-size:14px;font-weight:700;color:var(--green)">${todayReps} reps · ${todayMins} mins · ${todayKm} km</div>
+        <div style="font-size:10px;color:var(--muted)">${todayWorkouts.length} workouts</div>
+      </div>
+    </div>
+    ${todayWorkouts.length > 0 ? `
+      <div style="margin-top:6px;padding:8px;background:rgba(110,231,165,.1);border-radius:10px;border:1px solid var(--green);text-align:center;font-size:12px;color:var(--green);font-weight:700">
+        ${repDiff > 0 ? `📈 +${repDiff}% reps` : repDiff < 0 ? `📉 ${repDiff}% reps` : '📊 Same reps'} · 
+        ${minDiff > 0 ? `+${minDiff}% minutes` : minDiff < 0 ? `${minDiff}% minutes` : 'Same minutes'}
+      </div>
+    ` : `
+      <div style="margin-top:6px;padding:8px;background:rgba(255,107,122,.1);border-radius:10px;border:1px solid var(--red);text-align:center;font-size:11px;color:var(--red)">
+        ⚠️ You haven't logged anything today yet!
+      </div>
+    `}
+  `;
+}
+
+// ============================================
+// WEEKLY WRAP
+// ============================================
+function renderWeeklyWrap() {
+  const container = document.getElementById('weeklyWrap');
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(start.getDate() - start.getDay());
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  
+  const weekWorkouts = workouts.filter(w => {
+    const d = new Date(w.date);
+    return d >= start && d <= end;
+  });
+  
+  if (weekWorkouts.length === 0) {
+    container.innerHTML = '<div class="empty">Log workouts this week to see your wrap!</div>';
+    return;
+  }
+  
+  const totalWorkouts = weekWorkouts.length;
+  const totalReps = weekWorkouts.filter(x => x.unit === 'reps').reduce((s, x) => s + x.amount, 0);
+  const totalMins = weekWorkouts.filter(x => x.unit === 'minutes').reduce((s, x) => s + x.amount, 0);
+  const totalKm = weekWorkouts.filter(x => x.unit === 'km').reduce((s, x) => s + x.amount, 0);
+  const prs = weekWorkouts.filter(x => x.isPR).length;
+  const streak = getStreak();
+  
+  // Get best day
+  const dayCounts = {};
+  weekWorkouts.forEach(w => {
+    dayCounts[w.date] = (dayCounts[w.date] || 0) + 1;
+  });
+  let bestDay = null;
+  let bestCount = 0;
+  Object.entries(dayCounts).forEach(([date, count]) => {
+    if (count > bestCount) { bestCount = count; bestDay = date; }
+  });
+  
+  // Get favorite exercise
+  const freq = {};
+  weekWorkouts.forEach(w => {
+    freq[w.exercise] = (freq[w.exercise] || 0) + 1;
+  });
+  const favorite = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+  
+  const weekNum = Math.ceil((now - new Date(now.getFullYear(), 0, 1)) / (7 * 24 * 60 * 60 * 1000));
+  
+  container.innerHTML = `
+    <div class="wrap-card">
+      <div style="font-size:16px;font-weight:800;color:var(--gold);margin-bottom:6px">🏆 Week ${weekNum} Wrap</div>
+      <div class="stat-row"><span class="label">📊 Workouts</span><span class="value">${totalWorkouts}</span></div>
+      <div class="stat-row"><span class="label">💪 Total Reps</span><span class="value">${totalReps}</span></div>
+      <div class="stat-row"><span class="label">⏱️ Total Minutes</span><span class="value">${totalMins}</span></div>
+      <div class="stat-row"><span class="label">🏃 Total KM</span><span class="value">${totalKm}</span></div>
+      <div class="stat-row"><span class="label">🏅 PRs Set</span><span class="value">${prs}</span></div>
+      <div class="stat-row"><span class="label">🔥 Current Streak</span><span class="value">${streak} days</span></div>
+      <div class="stat-row"><span class="label">🏆 Best Day</span><span class="value">${bestDay ? fmtDate(bestDay) : 'N/A'}</span></div>
+      <div class="stat-row"><span class="label">⭐ Favorite Exercise</span><span class="value">${favorite ? `${icon(favorite[0])} ${favorite[0]} (${favorite[1]}x)` : 'N/A'}</span></div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);text-align:center">
+        ${totalWorkouts >= 5 ? '💪 Crushing it! Keep the momentum going!' : 
+          totalWorkouts >= 3 ? '🔥 Consistency is key! Keep going!' : 
+          '💪 Every workout counts! Aim for 5 this week!'}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================
+// SMART TAGS
+// ============================================
+function renderSmartTags() {
+  const container = document.getElementById('smartTags');
+  if (workouts.length === 0) {
+    container.innerHTML = '<div class="empty">Log workouts to get smart insights!</div>';
+    return;
+  }
+  
+  const tags = [];
+  const last7 = workouts.filter(w => {
+    const d = new Date(w.date);
+    const now = new Date();
+    const diff = (now - d) / (1000 * 60 * 60 * 24);
+    return diff <= 7;
+  });
+  
+  // Check for tired/sore patterns
+  const tiredCount = last7.filter(w => w.feeling === '😤' || w.feeling === '😴').length;
+  const soreCount = last7.filter(w => w.feeling === '🤕').length;
+  const greatCount = last7.filter(w => w.feeling === '😊' || w.feeling === '💪').length;
+  
+  if (tiredCount >= 3 && soreCount >= 2) {
+    tags.push({ label: 'Recovery Needed', type: 'recovery', desc: 'You\'ve been tired/sore often — take a rest day!' });
+  }
+  
+  if (greatCount >= 4) {
+    tags.push({ label: 'Peak Performance', type: 'peak', desc: 'You\'re feeling great! Keep pushing!' });
+  }
+  
+  if (last7.length >= 7) {
+    tags.push({ label: 'Rest Day Suggested', type: 'rest', desc: 'You\'ve worked out 7 days straight — take a rest day!' });
+  }
+  
+  if (soreCount >= 3) {
+    tags.push({ label: 'Recovery Focus', type: 'sore', desc: 'You\'re feeling sore — focus on recovery exercises!' });
+  }
+  
+  // Check for consistent timing
+  const times = last7.map(w => parseInt(w.time?.split(':')[0] || 12));
+  if (times.length > 3 && new Set(times).size <= 2) {
+    tags.push({ label: 'Consistent Routine', type: 'neutral', desc: 'You\'re working out at the same time — great habit!' });
+  }
+  
+  if (tags.length === 0) {
+    tags.push({ label: 'Balanced Training', type: 'neutral', desc: 'You\'re doing great! Keep it balanced!' });
+  }
+  
+  container.innerHTML = `
+    <div class="tag-container">
+      ${tags.map(t => `
+        <span class="tag ${t.type}">${t.label}</span>
+      `).join('')}
+    </div>
+    <div style="margin-top:6px;font-size:11px;color:var(--muted)">
+      ${tags[0]?.desc || 'Keep up the good work!'}
+    </div>
+  `;
+}
+
+// ============================================
 // LEVELS
 // ============================================
 function renderLevels() {
@@ -1029,7 +1628,6 @@ function renderLevels() {
   document.getElementById('xpCurrent').textContent = Math.floor(xpInLevel);
   document.getElementById('xpNext').textContent = xpNeeded;
 
-  // Categories
   const container = document.getElementById('levelCategories');
   container.innerHTML = CATEGORIES.map(c => {
     const cXP = catXP[c.id] || 0;
@@ -1053,7 +1651,7 @@ function renderLevels() {
 // ============================================
 function renderCapes() {
   const totalLevel = getTotalLevel();
-  const maxLevel = 7 * 99; // 7 categories * 99
+  const maxLevel = 7 * 99;
   const allLevel99 = totalLevel >= maxLevel;
 
   const unlockedAchievements = ACHIEVEMENTS.filter(a => a.check()).length;
@@ -1355,7 +1953,7 @@ function clearData() {
 // INIT
 // ============================================
 updateWeather();
-setInterval(updateWeather, 1800000); // 30 min
+setInterval(updateWeather, 1800000);
 generateWarmup();
 render();
 </script>
