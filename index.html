@@ -262,19 +262,21 @@
 <div class="fields">
 <div><label>Date</label><input id="entryDate" type="date"></div>
 <div><label>Time</label><input id="entryTime" type="time"></div>
-</div>
 <!-- Category Selector (only shows for Custom) -->
 <div id="categorySelector" style="display:none;margin-top:12px;">
-<label>Assign to level category</label>
-<select id="categoryAssign" style="width:100%;background:var(--bg);border:1px solid var(--line);color:white;border-radius:12px;padding:12px;outline:none;font-size:14px;">
-<option value="legs">🦵 Legs</option>
-<option value="chest">💪 Chest</option>
-<option value="core">🔥 Core</option>
-<option value="cardio">🏃 Cardio</option>
-<option value="arms">💪 Arms</option>
-<option value="back">🏋️ Back</option>
-<option value="custom">⭐ Custom (default)</option>
-</select>
+  <label>Assign to level category</label>
+  <select id="categoryAssign" style="width:100%;background:var(--bg);border:1px solid var(--line);color:white;border-radius:12px;padding:12px;outline:none;font-size:14px;">
+    <option value="legs">🦵 Legs</option>
+    <option value="chest">💪 Chest</option>
+    <option value="core">🔥 Core</option>
+    <option value="cardio">🏃 Cardio</option>
+    <option value="arms">💪 Arms</option>
+    <option value="back">🏋️ Back</option>
+    <option value="custom">⭐ Custom (default)</option>
+  </select>
+</div>
+<div><label>How do you feel?</label>
+<div class="feeling-grid" id="feelingGrid">
 </div>
 <div><label>How do you feel?</label>
 <div class="feeling-grid" id="feelingGrid">
@@ -346,6 +348,7 @@ function getLevelName(lvl) {
 }
 
 function getXPForLevel(lvl) {
+  // RuneScape-style XP curve: level^2 * 10
   return Math.floor(Math.pow(lvl, 2) * 10);
 }
 
@@ -355,10 +358,7 @@ function getLevelFromXP(xp) {
   return lvl;
 }
 
-function getCategoryForExercise(exercise, customCategory) {
-  // If custom exercise has a manually assigned category, use it
-  if (customCategory) return customCategory;
-  
+function getCategoryForExercise(exercise) {
   const lower = exercise.toLowerCase();
   if (lower.includes('squat') || lower.includes('lunge') || lower.includes('leg') || lower.includes('calf')) return 'legs';
   if (lower.includes('press') || lower.includes('bench') || lower.includes('push') || lower.includes('chest') || lower.includes('dip')) return 'chest';
@@ -373,8 +373,9 @@ function getCategoryXP() {
   const catXP = {};
   CATEGORIES.forEach(c => catXP[c.id] = 0);
   workouts.forEach(w => {
-    const cat = w.category || getCategoryForExercise(w.exercise);
+    const cat = getCategoryForExercise(w.exercise);
     if (catXP[cat] !== undefined) {
+      // XP = amount * unit multiplier
       let multiplier = 1;
       if (w.unit === 'km') multiplier = 5;
       else if (w.unit === 'minutes') multiplier = 3;
@@ -396,36 +397,44 @@ function getTotalLevel() {
 }
 
 // ============================================
-// ACHIEVEMENTS
+// ACHIEVEMENTS (Cookie Clicker Style)
 // ============================================
 const ACHIEVEMENTS = [
+  // Running
   { id: 'run_1', name: 'First Steps', desc: '1km total', icon: '🏃', category: 'running', tier: 'bronze', check: () => getTotalForExercise('Jogging') >= 1 },
   { id: 'run_2', name: 'Jogger', desc: '10km total', icon: '🏃', category: 'running', tier: 'silver', check: () => getTotalForExercise('Jogging') >= 10 },
   { id: 'run_3', name: 'Runner', desc: '50km total', icon: '🏃', category: 'running', tier: 'gold', check: () => getTotalForExercise('Jogging') >= 50 },
   { id: 'run_4', name: 'Marathoner', desc: '100km total', icon: '🏃', category: 'running', tier: 'diamond', check: () => getTotalForExercise('Jogging') >= 100 },
   { id: 'run_5', name: 'Ultramarathoner', desc: '500km total', icon: '🏃', category: 'running', tier: 'star', check: () => getTotalForExercise('Jogging') >= 500 },
+  // Strength
   { id: 'str_1', name: 'Beginner', desc: '100 reps total', icon: '💪', category: 'strength', tier: 'bronze', check: () => getTotalReps() >= 100 },
   { id: 'str_2', name: 'Intermediate', desc: '500 reps total', icon: '💪', category: 'strength', tier: 'silver', check: () => getTotalReps() >= 500 },
   { id: 'str_3', name: 'Advanced', desc: '1000 reps total', icon: '💪', category: 'strength', tier: 'gold', check: () => getTotalReps() >= 1000 },
   { id: 'str_4', name: 'Expert', desc: '5000 reps total', icon: '💪', category: 'strength', tier: 'diamond', check: () => getTotalReps() >= 5000 },
   { id: 'str_5', name: 'Legend', desc: '10000 reps total', icon: '💪', category: 'strength', tier: 'star', check: () => getTotalReps() >= 10000 },
+  // Streak
   { id: 'streak_1', name: 'Streak Starter', desc: '3-day streak', icon: '🔥', category: 'streak', tier: 'bronze', check: () => getStreak() >= 3 },
   { id: 'streak_2', name: 'Consistent', desc: '7-day streak', icon: '🔥', category: 'streak', tier: 'silver', check: () => getStreak() >= 7 },
   { id: 'streak_3', name: 'Dedicated', desc: '30-day streak', icon: '🔥', category: 'streak', tier: 'gold', check: () => getStreak() >= 30 },
   { id: 'streak_4', name: 'Unstoppable', desc: '90-day streak', icon: '🔥', category: 'streak', tier: 'diamond', check: () => getStreak() >= 90 },
   { id: 'streak_5', name: 'Immortal', desc: '365-day streak', icon: '🔥', category: 'streak', tier: 'star', check: () => getStreak() >= 365 },
+  // Variety
   { id: 'var_1', name: 'Explorer', desc: '5 exercises', icon: '🎯', category: 'variety', tier: 'bronze', check: () => getUniqueExercises() >= 5 },
   { id: 'var_2', name: 'Adventurer', desc: '10 exercises', icon: '🎯', category: 'variety', tier: 'silver', check: () => getUniqueExercises() >= 10 },
   { id: 'var_3', name: 'Pioneer', desc: '25 exercises', icon: '🎯', category: 'variety', tier: 'gold', check: () => getUniqueExercises() >= 25 },
   { id: 'var_4', name: 'Legendary', desc: '50 exercises', icon: '🎯', category: 'variety', tier: 'diamond', check: () => getUniqueExercises() >= 50 },
+  // Time
   { id: 'time_1', name: 'Early Bird', desc: '5 AM workout', icon: '🐦', category: 'time', tier: 'bronze', check: () => workouts.some(w => new Date(w.date+'T'+w.time).getHours() < 5) },
   { id: 'time_2', name: 'Night Stalker', desc: '10 PM workout', icon: '🦉', category: 'time', tier: 'silver', check: () => workouts.some(w => new Date(w.date+'T'+w.time).getHours() >= 22) },
+  // PRs
   { id: 'pr_1', name: 'PR Hunter', desc: '1 PR', icon: '📈', category: 'prs', tier: 'bronze', check: () => workouts.filter(w => w.isPR).length >= 1 },
   { id: 'pr_2', name: 'PR Collector', desc: '5 PRs', icon: '📈', category: 'prs', tier: 'silver', check: () => workouts.filter(w => w.isPR).length >= 5 },
   { id: 'pr_3', name: 'PR Machine', desc: '10 PRs', icon: '📈', category: 'prs', tier: 'gold', check: () => workouts.filter(w => w.isPR).length >= 10 },
+  // Volume
   { id: 'vol_1', name: 'Volume Starter', desc: '100 total volume', icon: '📊', category: 'volume', tier: 'bronze', check: () => getTotalVolume() >= 100 },
   { id: 'vol_2', name: 'Volume Builder', desc: '1000 total volume', icon: '📊', category: 'volume', tier: 'silver', check: () => getTotalVolume() >= 1000 },
   { id: 'vol_3', name: 'Volume Master', desc: '5000 total volume', icon: '📊', category: 'volume', tier: 'gold', check: () => getTotalVolume() >= 5000 },
+  // Special
   { id: 'hundred', name: 'Centurion', desc: '100 workouts', icon: '💯', category: 'special', tier: 'gold', check: () => workouts.length >= 100 },
 ];
 
@@ -518,8 +527,10 @@ function renderExercises() {
   document.getElementById("exerciseGrid").innerHTML = EX.map(x =>
     `<button class="ex ${selected === x[1] ? "selected" : ""}" onclick="selectEx('${x[1]}','${x[2]}')">${x[0]}<b>${x[1]}</b></button>`
   ).join("");
+  
   let customBox = document.getElementById("customNameContainer");
   let categorySelector = document.getElementById("categorySelector");
+  
   if (selected === "Custom") {
     customBox.style.display = "block";
     categorySelector.style.display = "block";
@@ -547,15 +558,11 @@ function selectFeeling(feeling) {
 // ============================================
 function saveWorkout() {
   let name = selected;
-  let assignedCategory = null;
-  
   if (selected === "Custom") {
     let customVal = document.getElementById("customNameInput").value.trim();
     if (!customVal) return;
     name = customVal;
-    assignedCategory = document.getElementById("categoryAssign").value;
   }
-  
   let a = Number(document.getElementById("amount").value);
   if (!a || a < 0) return;
   let unit = document.getElementById("unit").value;
@@ -580,8 +587,7 @@ function saveWorkout() {
     time: time,
     isPR: isPR,
     feeling: feeling,
-    notes: notes,
-    category: assignedCategory // Save the category for custom exercises
+    notes: notes
   });
 
   if (isPR) {
@@ -747,65 +753,96 @@ function selectWarmupBody(body) {
 
 function generateWarmup() {
   const body = selectedWarmupBody;
-  
-  const warmups = {
-    'Full Body': [
-      '🦵 Leg swings (10 each)',
-      '🦵 Bodyweight squats (15)',
-      '💪 Arm circles (10 each way)',
-      '💪 Band pull-aparts (15)',
-      '💪 Push-ups (10)',
-      '🔥 Cat-cow stretch (10)',
-      '🔥 Dead bug (10 each)',
-      '🔥 Bird dog (10 each)',
-      '🏃 High knees (30s)',
-      '🏃 Butt kicks (30s)'
-    ],
-    'Legs': [
-      '🦵 Leg swings (10 each)',
-      '🦵 Bodyweight squats (15)',
-      '🦵 Lunges (10 each)',
-      '🦵 Hip flexor stretch (30s each)',
-      '🦵 Ankle rotations (10 each)'
-    ],
-    'Chest': [
-      '💪 Arm circles (10 each way)',
-      '💪 Band pull-aparts (15)',
-      '💪 Push-ups (10)',
-      '💪 Scap push-ups (10)',
-      '💪 Chest stretch (30s each)'
-    ],
-    'Core': [
-      '🔥 Cat-cow stretch (10)',
-      '🔥 Dead bug (10 each)',
-      '🔥 Bird dog (10 each)',
-      '🔥 Plank hold (30s)',
-      '🔥 Glute bridge (15)'
-    ],
-    'Cardio': [
-      '🏃 High knees (30s)',
-      '🏃 Butt kicks (30s)',
-      '🏃 Jumping jacks (20)',
-      '🏃 Arm swings (30s)',
-      '🏃 Light jog (1 min)'
-    ],
-    'Arms': [
-      '💪 Arm circles (10 each way)',
-      '💪 Band rows (15)',
-      '💪 Tricep stretch (30s each)',
-      '💪 Wrist rolls (10 each way)',
-      '💪 Bicep stretch (30s each)'
-    ],
-    'Back': [
-      '🏋️ Cat-cow stretch (10)',
-      '🏋️ Band pull-aparts (15)',
-      '🏋️ Scap push-ups (10)',
-      '🏋️ Superman holds (10s x3)',
-      '🏋️ Lat stretch (30s each)'
-    ]
-  };
+  const warmups = [];
 
-  const selectedWarmups = warmups[body] || warmups['Full Body'];
+  const fullBody = [
+    '🦵 Leg swings (10 each)',
+    '🦵 Bodyweight squats (15)',
+    '💪 Arm circles (10 each way)',
+    '💪 Band pull-aparts (15)',
+    '💪 Push-ups (10)',
+    '🔥 Cat-cow stretch (10)',
+    '🔥 Dead bug (10 each)',
+    '🔥 Bird dog (10 each)',
+    '🏃 High knees (30s)',
+    '🏃 Butt kicks (30s)',
+    '🏃 Jumping jacks (20)'
+  ];
+
+  const legWarmup = [
+    '🦵 Leg swings (10 each)',
+    '🦵 Bodyweight squats (15)',
+    '🦵 Lunges (10 each)',
+    '🦵 Hip flexor stretch (30s each)',
+    '🦵 Ankle rotations (10 each)'
+  ];
+
+  const chestWarmup = [
+    '💪 Arm circles (10 each way)',
+    '💪 Band pull-aparts (15)',
+    '💪 Push-ups (10)',
+    '💪 Scap push-ups (10)',
+    '💪 Chest stretch (30s each)'
+  ];
+
+  const coreWarmup = [
+    '🔥 Cat-cow stretch (10)',
+    '🔥 Dead bug (10 each)',
+    '🔥 Bird dog (10 each)',
+    '🔥 Plank hold (30s)',
+    '🔥 Glute bridge (15)'
+  ];
+
+  const cardioWarmup = [
+    '🏃 High knees (30s)',
+    '🏃 Butt kicks (30s)',
+    '🏃 Jumping jacks (20)',
+    '🏃 Arm swings (30s)',
+    '🏃 Light jog (1 min)'
+  ];
+
+  const armsWarmup = [
+    '💪 Arm circles (10 each way)',
+    '💪 Band rows (15)',
+    '💪 Tricep stretch (30s each)',
+    '💪 Wrist rolls (10 each way)',
+    '💪 Bicep stretch (30s each)'
+  ];
+
+  const backWarmup = [
+    '🏋️ Cat-cow stretch (10)',
+    '🏋️ Band pull-aparts (15)',
+    '🏋️ Scap push-ups (10)',
+    '🏋️ Superman holds (10s x3)',
+    '🏋️ Lat stretch (30s each)'
+  ];
+
+  let selectedWarmups = [];
+  switch (body) {
+    case 'Full Body':
+      selectedWarmups = fullBody.slice(0, 6);
+      break;
+    case 'Legs':
+      selectedWarmups = legWarmup;
+      break;
+    case 'Chest':
+      selectedWarmups = chestWarmup;
+      break;
+    case 'Core':
+      selectedWarmups = coreWarmup;
+      break;
+    case 'Cardio':
+      selectedWarmups = cardioWarmup;
+      break;
+    case 'Arms':
+      selectedWarmups = armsWarmup;
+      break;
+    case 'Back':
+      selectedWarmups = backWarmup;
+      break;
+    default:
+      selectedWarmups = fullBody.slice(0, 5);
+  }
 
   const container = document.getElementById('warmupResult');
   container.innerHTML = `
@@ -829,13 +866,15 @@ async function getWeather() {
     const d = await r.json();
     const t = Math.round(d.current.temp_c);
     const c = d.current.condition.text.toLowerCase();
-    let emoji = '🌤️', msg = '';
-    if (c.includes('rain')) { emoji = '🌧️'; msg = 'Great for indoor training!'; }
-    else if (c.includes('sun') || c.includes('clear')) { emoji = '☀️'; msg = 'Perfect weather!'; }
-    else if (c.includes('cloud')) { emoji = '☁️'; msg = 'Get after it!'; }
-    else if (t > 30) { emoji = '🌡️'; msg = 'Stay hydrated!'; }
-    else if (t < 5) { emoji = '❄️'; msg = 'Warm up extra!'; }
-    else { emoji = '💪'; msg = 'No excuses!'; }
+    let emoji = '🌤️',
+      msg = '';
+    if (c.includes('rain')) { emoji = '🌧️';
+      msg = 'Great for indoor training!'; } else if (c.includes('sun') || c.includes('clear')) { emoji = '☀️';
+      msg = 'Perfect weather!'; } else if (c.includes('cloud')) { emoji = '☁️';
+      msg = 'Get after it!'; } else if (t > 30) { emoji = '🌡️';
+      msg = 'Stay hydrated!'; } else if (t < 5) { emoji = '❄️';
+      msg = 'Warm up extra!'; } else { emoji = '💪';
+      msg = 'No excuses!'; }
     return `${emoji} ${t}°C · ${msg}`;
   } catch (e) {
     return '🌤️ Ready to train!';
@@ -1014,7 +1053,7 @@ function renderLevels() {
 // ============================================
 function renderCapes() {
   const totalLevel = getTotalLevel();
-  const maxLevel = 7 * 99;
+  const maxLevel = 7 * 99; // 7 categories * 99
   const allLevel99 = totalLevel >= maxLevel;
 
   const unlockedAchievements = ACHIEVEMENTS.filter(a => a.check()).length;
@@ -1316,7 +1355,7 @@ function clearData() {
 // INIT
 // ============================================
 updateWeather();
-setInterval(updateWeather, 1800000);
+setInterval(updateWeather, 1800000); // 30 min
 generateWarmup();
 render();
 </script>
