@@ -1,0 +1,1343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#090d12">
+<link rel="manifest" href="manifest.json">
+<title>Pulse — Workout Tracker</title>
+<style>
+:root{--bg:#090d12;--panel:#111720;--panel2:#171f2a;--line:#27313d;--text:#f6f8fb;--muted:#8e99a8;--green:#6ee7a5;--blue:#71b7ff;--orange:#ffb86b;--red:#ff6b7a;--gold:#fbbf24;--purple:#a78bfa}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}body{min-height:100vh}button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
+.app{max-width:620px;margin:auto;padding:calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 92px)}
+.top{display:flex;justify-content:space-between;align-items:center;padding:14px 2px 16px}.brand{font-size:28px;font-weight:800;letter-spacing:-0.5px;color:var(--text)}.sub{color:var(--muted);font-size:12px;margin-top:2px}.gear{width:40px;height:40px;border:1px solid var(--line);background:var(--panel);border-radius:12px;color:white;font-size:18px;cursor:pointer;transition:all .15s}.gear:active{transform:scale(.92)}
+.hero{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px 20px;margin-bottom:12px}.hero .eyebrow{text-transform:uppercase;color:var(--green);font-size:10px;font-weight:700;letter-spacing:1px}.hero h1{font-size:24px;margin:4px 0 2px;letter-spacing:-0.5px;font-weight:700}.hero p{margin:0;color:var(--muted);font-size:14px}.hero .weather{font-size:12px;color:var(--muted);margin-top:6px;padding:6px 10px;background:var(--panel2);border-radius:10px;display:inline-block}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 10px;transition:all .15s}.stat:active{transform:scale(.95)}.stat strong{display:block;font-size:18px;font-weight:800}.stat span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}.cardhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.card h2{font-size:15px;margin:0;font-weight:700}.muted{color:var(--muted);font-size:11px;font-weight:500}
+.workout{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.workout:last-child{border-bottom:0}.ico{width:38px;height:38px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font-size:18px;flex-shrink:0}.wmain{flex:1;min-width:0}.wname{font-weight:700;font-size:14px}.wtime{font-size:10px;color:var(--muted);margin-top:1px}.wvalue{font-weight:800;color:var(--green);font-size:14px;white-space:nowrap;flex-shrink:0}.del{background:none;border:0;color:var(--muted);font-size:18px;padding:6px;cursor:pointer;transition:all .15s}.del:active{transform:scale(.8);color:var(--red)}
+.empty{text-align:center;color:var(--muted);padding:18px 8px;font-size:13px}
+.bottom{position:fixed;bottom:0;left:0;right:0;padding:10px max(16px,calc((100vw - 620px)/2 + 16px)) calc(env(safe-area-inset-bottom) + 10px);background:linear-gradient(transparent,rgba(9,13,18,.96) 25%);pointer-events:none}.bottom button{pointer-events:auto;width:100%;padding:14px;border:0;border-radius:16px;background:var(--green);font-weight:800;color:#07130d;font-size:15px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:5;align-items:flex-end}.modal.open{display:flex}.sheet{width:100%;max-width:620px;margin:auto auto 0;background:var(--panel);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:85vh;overflow:auto}.sheet h2{margin:0 0 14px;font-size:19px;font-weight:700}.close{float:right;background:var(--panel2);border:1px solid var(--line);color:white;width:34px;height:34px;border-radius:10px;font-size:16px;cursor:pointer}.exgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ex{background:var(--panel2);border:1px solid var(--line);color:white;border-radius:14px;padding:12px;text-align:left;font-weight:600;cursor:pointer;transition:all .15s}.ex:active{transform:scale(.95)}.ex.selected{border-color:var(--green);background:#183025}.ex b{display:block;margin-top:3px;font-size:13px;font-weight:400}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}label{font-size:10px;color:var(--muted);display:block;margin:0 0 4px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}input,select{width:100%;background:var(--bg);border:1px solid var(--line);color:white;border-radius:12px;padding:12px;outline:none;font-size:14px;transition:border .15s}input:focus,select:focus{border-color:var(--green)}
+.save{width:100%;background:var(--green);color:#07130d;border:0;border-radius:14px;padding:14px;font-weight:800;margin-top:12px;font-size:15px;cursor:pointer;transition:all .15s}.save:active{transform:scale(.97)}.save.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.historyRow{padding:12px 0;border-bottom:1px solid var(--line)}.historyRow:last-child{border:0}.hdate{font-weight:700;font-size:14px}.hitems{color:var(--muted);font-size:12px;line-height:1.6;margin-top:2px}.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);padding:4px 8px;border-radius:8px;margin:2px 3px 0 0;font-size:11px}
+.section{display:none}.section.active{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);padding:4px;border-radius:14px;margin-bottom:12px}.tab{flex:1;border:0;background:none;color:var(--muted);padding:8px;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s}.tab:active{transform:scale(.95)}.tab.active{background:var(--panel2);color:white}
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}.heatbox{aspect-ratio:1;background:var(--panel2);border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font-size:9px;color:var(--muted);font-weight:600;transition:all .15s}.heatbox.active{background:var(--green);border-color:var(--green);color:#07130d;font-weight:800}.heatbox.today{background:var(--gold);border-color:var(--gold);color:#07130d;font-weight:800}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;margin:2px}.badge-gold{background:var(--gold);color:#07130d}.badge-green{background:var(--green);color:#07130d}.badge-blue{background:var(--blue);color:#07130d}.badge-purple{background:var(--purple);color:#fff}.badge-red{background:var(--red);color:#fff}.badge-muted{background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.feeling-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:4px}.feeling-btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center;font-size:20px;cursor:pointer;transition:all .15s}.feeling-btn:active{transform:scale(.92)}.feeling-btn.selected{border-color:var(--green);background:rgba(110,231,165,.1)}.feeling-btn .label{display:block;font-size:8px;color:var(--muted);margin-top:1px}
+
+/* Chart */
+.chart-container{display:flex;align-items:flex-end;height:120px;padding:8px 0;border-bottom:1px solid var(--line);gap:12px;justify-content:space-around}
+.chart-point{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.chart-point .dot{width:8px;height:8px;border-radius:50%;background:var(--green);transition:all .3s}
+.chart-point .line{width:2px;background:var(--green);border-radius:2px;transition:height .5s cubic-bezier(.34,1.56,.64,1);min-height:4px}
+.chart-point .label{font-size:8px;color:var(--muted);font-weight:600;text-transform:uppercase}
+.chart-point .value{font-size:9px;color:var(--text);font-weight:700}
+
+/* Rest Timer */
+.rest-timer{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
+.rest-timer .timer-big{font-size:56px;font-weight:800;text-align:center;color:var(--green);font-variant-numeric:tabular-nums;letter-spacing:-2px;font-family:"SF Pro Display",sans-serif;transition:color .3s}
+.rest-timer .timer-big.warning{color:var(--orange)}
+.rest-timer .timer-big.danger{color:var(--red);animation:pulse .5s ease 3}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.97)}}
+.rest-timer .timer-progress{height:3px;background:var(--line);border-radius:99px;margin:10px 0;overflow:hidden}
+.rest-timer .timer-progress .bar{height:100%;width:100%;background:var(--green);border-radius:99px;transition:width .5s}
+.rest-timer .timer-progress .bar.warning{background:var(--orange)}
+.rest-timer .timer-progress .bar.danger{background:var(--red)}
+.rest-timer .timer-status{text-align:center;color:var(--muted);font-size:12px;margin-bottom:6px}
+.rest-timer .timer-warning{text-align:center;color:var(--red);font-size:11px;display:none;margin-bottom:6px}
+.rest-time-buttons{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;justify-content:center}
+.rest-time-buttons button{padding:5px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px;cursor:pointer;transition:all .15s;min-width:44px}
+.rest-time-buttons button:active{transform:scale(.92)}
+.rest-time-buttons button.active{background:var(--green);color:#07130d;border-color:var(--green)}
+.rest-controls{display:flex;gap:10px;justify-content:center;margin-top:6px;flex-wrap:wrap}
+.rest-controls button{padding:10px 20px;border:0;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;min-width:80px}
+.rest-controls button:active{transform:scale(.92)}
+.rest-controls .start-btn{background:var(--green);color:#07130d}
+.rest-controls .pause-btn{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.rest-controls .reset-btn{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+
+/* Warmup */
+.warmup-container{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:10px}
+.warmup-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;font-weight:500}
+.warmup-item:last-child{border-bottom:0}
+.warmup-item .check{color:var(--green);font-size:16px}
+.warmup-body-btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 14px;color:var(--text);font-weight:600;font-size:12px;cursor:pointer;transition:all .15s;margin:3px}
+.warmup-body-btn:active{transform:scale(.92)}
+.warmup-body-btn.selected{border-color:var(--green);background:rgba(110,231,165,.1)}
+
+/* Levels */
+.level-display{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.level-display .level-title{font-size:20px;font-weight:800;color:var(--gold)}
+.level-display .level-number{font-size:12px;color:var(--muted)}
+.level-display .xp-bar{height:4px;background:var(--line);border-radius:99px;margin:8px 0;overflow:hidden}
+.level-display .xp-bar .fill{height:100%;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:99px;transition:width .5s}
+.level-display .xp-text{font-size:11px;color:var(--muted)}
+.level-category{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--line);font-size:13px}
+.level-category:last-child{border-bottom:0}
+.level-category .cat-name{font-weight:600}
+.level-category .cat-level{font-weight:800;color:var(--green)}
+.level-category .cat-bar{flex:1;height:4px;background:var(--line);border-radius:99px;margin:0 10px;overflow:hidden}
+.level-category .cat-bar .fill{height:100%;background:var(--green);border-radius:99px;transition:width .5s}
+
+/* Achievements */
+.achievement-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
+.achievement-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;transition:all .15s}
+.achievement-card.unlocked{border-color:var(--gold);background:rgba(251,191,36,.08)}
+.achievement-card .icon{font-size:24px;display:block;margin-bottom:2px}
+.achievement-card .name{font-size:11px;font-weight:700;color:var(--text)}
+.achievement-card .desc{font-size:9px;color:var(--muted);margin-top:1px}
+.achievement-card .tier{font-size:8px;font-weight:700;margin-top:3px;display:inline-block;padding:1px 8px;border-radius:6px}
+.achievement-card .tier.bronze{background:#cd7f32;color:#fff}
+.achievement-card .tier.silver{background:#c0c0c0;color:#07130d}
+.achievement-card .tier.gold{background:var(--gold);color:#07130d}
+.achievement-card .tier.diamond{background:var(--blue);color:#07130d}
+.achievement-card .tier.star{background:var(--purple);color:#fff}
+.achievement-card.locked{opacity:.4}
+
+/* Cape Display */
+.cape-container{display:flex;gap:10px;justify-content:center;padding:8px 0;flex-wrap:wrap}
+.cape-item{text-align:center;padding:8px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);min-width:80px}
+.cape-item .icon{font-size:28px;display:block}
+.cape-item .name{font-size:10px;font-weight:700;margin-top:2px}
+.cape-item.locked{opacity:.3}
+.cape-item.unlocked{border-color:var(--gold);background:rgba(251,191,36,.08)}
+
+/* Tab indicators */
+.tab-indicators{display:flex;gap:4px;justify-content:center;padding:4px 0}
+.tab-dot{width:6px;height:6px;border-radius:50%;background:var(--line);transition:all .3s}
+.tab-dot.active{background:var(--green);width:18px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+<div>
+<div class="brand">Pulse</div>
+<div class="sub" id="greeting">Your personal workout log</div>
+</div>
+<button class="gear" onclick="showSettings()">⚙</button>
+</header>
+
+<div class="tabs">
+<button class="tab active" onclick="switchTab('today',this)" data-tab="0">Today</button>
+<button class="tab" onclick="switchTab('progress',this)" data-tab="1">Progress</button>
+<button class="tab" onclick="switchTab('history',this)" data-tab="2">History</button>
+<button class="tab" onclick="switchTab('warmup',this)" data-tab="3">Warmup</button>
+</div>
+
+<!-- TAB 1: TODAY -->
+<section id="today" class="section active">
+<div class="hero">
+<div class="eyebrow" id="heroEyebrow">TODAY</div>
+<h1 id="dateTitle"></h1>
+<p id="motivation">Every session counts.</p>
+<div class="weather" id="weatherWidget">🌤️ Loading weather...</div>
+</div>
+
+<div class="grid">
+<div class="stat"><strong id="sessionCount">0</strong><span>Sessions</span></div>
+<div class="stat"><strong id="repTotal">0</strong><span>Reps</span></div>
+<div class="stat"><strong id="timeTotal">0</strong><span>Mins</span></div>
+<div class="stat"><strong id="streakDisplay">0</strong><span>Streak</span></div>
+</div>
+
+<!-- Today's Chart -->
+<div class="card">
+<div class="cardhead"><h2>📈 Today's Activity</h2></div>
+<div id="todayChart"></div>
+</div>
+
+<!-- Rest Timer -->
+<div class="rest-timer" id="restTimer">
+<div class="rest-time-buttons">
+<button onclick="setRestTime(30)">30s</button>
+<button onclick="setRestTime(60)" class="active">60s</button>
+<button onclick="setRestTime(90)">90s</button>
+<button onclick="setRestTime(120)">120s</button>
+<button onclick="customRestTime()">⚙</button>
+</div>
+<div class="timer-big" id="timerDisplay">60</div>
+<div class="timer-progress"><div class="bar" id="timerProgress" style="width:100%"></div></div>
+<div class="timer-status" id="timerStatus">Ready</div>
+<div class="timer-warning" id="timerWarning">⏸️ Timer pauses when you leave</div>
+<div class="rest-controls">
+<button class="start-btn" onclick="startRestTimer()">▶ Start</button>
+<button class="pause-btn" onclick="pauseRestTimer()">⏸ Pause</button>
+<button class="reset-btn" onclick="resetRestTimer()">↺ Reset</button>
+</div>
+</div>
+
+<!-- Today's Workouts -->
+<div class="card">
+<div class="cardhead"><h2>Today's Workout</h2><span class="muted" id="todayDistance"></span></div>
+<div id="todayList"></div>
+</div>
+</section>
+
+<!-- TAB 2: PROGRESS -->
+<section id="progress" class="section">
+<!-- Level System -->
+<div class="level-display" id="levelDisplay">
+<div class="level-title" id="levelTitle">🪓 Level 1 — Bronze Warrior</div>
+<div class="level-number">Total Level: <span id="totalLevel">1</span> · Next: <span id="nextLevelName">Silver Spartan</span></div>
+<div class="xp-bar"><div class="fill" id="xpFill" style="width:0%"></div></div>
+<div class="xp-text"><span id="xpCurrent">0</span> / <span id="xpNext">100</span> XP</div>
+<div id="levelCategories" style="margin-top:8px"></div>
+</div>
+
+<!-- Capes -->
+<div class="card">
+<div class="cardhead"><h2>🎓 Cape Collection</h2></div>
+<div class="cape-container" id="capeContainer"></div>
+</div>
+
+<!-- Achievements -->
+<div class="card">
+<div class="cardhead"><h2>🏅 Achievements</h2><span class="muted" id="achievementCount">0/50</span></div>
+<div id="achievementList"></div>
+</div>
+
+<!-- Weekly Chart -->
+<div class="card"><h2>📊 Weekly Activity</h2><div id="weeklyChart"></div></div>
+
+<!-- Heatmap -->
+<div class="card"><h2>📅 28-Day Consistency</h2><div class="heatmap" id="heatmapGrid"></div></div>
+
+<!-- Personal Records -->
+<div class="card"><h2>🏆 Personal Records</h2><div id="prList"></div></div>
+
+<!-- Exercise Breakdown -->
+<div class="card"><h2>📊 Exercise Breakdown</h2><div id="exerciseBreakdown"></div></div>
+
+<!-- Monthly Insights -->
+<div class="card"><h2>📅 Monthly Insights</h2><div id="monthlyInsights"></div></div>
+
+<!-- Anniversary -->
+<div class="card"><h2>🎉 Anniversary Highlights</h2><div id="anniversaryHighlight"></div></div>
+</section>
+
+<!-- TAB 3: HISTORY -->
+<section id="history" class="section">
+<div class="card">
+<div class="cardhead"><h2>📚 Workout History</h2><span class="muted" id="totalWorkoutsLabel">0 total</span></div>
+<div id="historyList"></div>
+</div>
+</section>
+
+<!-- TAB 4: WARMUP -->
+<section id="warmup" class="section">
+<div class="card">
+<div class="cardhead"><h2>🔥 Warmup Generator</h2></div>
+<p class="note" style="margin-bottom:10px">Select what you're training today and get a personalized warmup routine.</p>
+<div id="warmupBodyParts" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+<button class="warmup-body-btn" onclick="selectWarmupBody('Full Body')">Full Body</button>
+<button class="warmup-body-btn" onclick="selectWarmupBody('Legs')">🦵 Legs</button>
+<button class="warmup-body-btn" onclick="selectWarmupBody('Chest')">💪 Chest</button>
+<button class="warmup-body-btn" onclick="selectWarmupBody('Core')">🔥 Core</button>
+<button class="warmup-body-btn" onclick="selectWarmupBody('Cardio')">🏃 Cardio</button>
+<button class="warmup-body-btn" onclick="selectWarmupBody('Arms')">💪 Arms</button>
+<button class="warmup-body-btn" onclick="selectWarmupBody('Back')">🏋️ Back</button>
+</div>
+<div id="warmupResult"></div>
+</div>
+</section>
+</div>
+
+<div class="bottom"><button onclick="openAdd()">＋ Log Workout</button></div>
+
+<!-- LOG MODAL -->
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
+<div class="sheet">
+<button class="close" onclick="closeModal()">✕</button>
+<h2>Log a Workout</h2>
+<div class="exgrid" id="exerciseGrid"></div>
+<div id="customNameContainer" style="display:none;margin-top:10px;"><label>Custom Workout Name</label><input id="customNameInput" type="text" placeholder="e.g., Pull-ups, Yoga, Swimming"></div>
+<div class="fields">
+<div><label>Amount</label><input id="amount" type="number" inputmode="decimal" min="0" step="0.1" placeholder="50"></div>
+<div><label>Unit</label><select id="unit"><option value="reps">reps</option><option value="minutes">minutes</option><option value="seconds">seconds</option><option value="km">km</option></select></div>
+</div>
+<div class="fields">
+<div><label>Date</label><input id="entryDate" type="date"></div>
+<div><label>Time</label><input id="entryTime" type="time"></div>
+</div>
+<div><label>How do you feel?</label>
+<div class="feeling-grid" id="feelingGrid">
+<button class="feeling-btn" onclick="selectFeeling('😊')" data-feeling="😊">😊<span class="label">Great</span></button>
+<button class="feeling-btn" onclick="selectFeeling('💪')" data-feeling="💪">💪<span class="label">Strong</span></button>
+<button class="feeling-btn" onclick="selectFeeling('😤')" data-feeling="😤">😤<span class="label">Tired</span></button>
+<button class="feeling-btn" onclick="selectFeeling('😴')" data-feeling="😴">😴<span class="label">Exhausted</span></button>
+<button class="feeling-btn" onclick="selectFeeling('🤕')" data-feeling="🤕">🤕<span class="label">Sore</span></button>
+</div>
+</div>
+<div><label>Notes (optional)</label><input id="notes" type="text" placeholder="How was your workout?"></div>
+<button class="save" onclick="saveWorkout()">💾 Save Workout</button>
+</div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+<div class="sheet">
+<button class="close" onclick="closeSettings()">✕</button>
+<h2>⚙️ Settings & Backup</h2>
+<p class="note">Back up your data to a file so you can safely restore it whenever needed.</p>
+<button class="save secondary" onclick="exportData()">📤 Export Data</button>
+<button class="save secondary" style="margin-top:8px" onclick="document.getElementById('importFile').click()">📥 Import Data</button>
+<input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
+<button class="save" style="background:var(--red);color:white;margin-top:12px" onclick="clearData()">🗑️ Delete All Data</button>
+</div>
+</div>
+
+<script>
+// ============================================
+// DATA & CONFIG
+// ============================================
+const KEY = "pulse-workouts-v2";
+const EX = [["🏃","Jogging","km"],["💪","Press-ups","reps"],["🧘","Plank","minutes"],["🔥","Sit-ups","reps"],["🦵","Squats","reps"],["🚴","Cycling","km"],["⭐","Custom","reps"]];
+let workouts = JSON.parse(localStorage.getItem(KEY) || "[]");
+let selected = "Jogging";
+let selectedFeeling = "😊";
+let selectedWarmupBody = "Full Body";
+
+// ============================================
+// LEVEL SYSTEM (RuneScape Style)
+// ============================================
+const CATEGORIES = [
+  { id: 'legs', name: '🦵 Legs', xp: 0, level: 1 },
+  { id: 'chest', name: '💪 Chest', xp: 0, level: 1 },
+  { id: 'core', name: '🔥 Core', xp: 0, level: 1 },
+  { id: 'cardio', name: '🏃 Cardio', xp: 0, level: 1 },
+  { id: 'arms', name: '💪 Arms', xp: 0, level: 1 },
+  { id: 'back', name: '🏋️ Back', xp: 0, level: 1 },
+  { id: 'custom', name: '⭐ Custom', xp: 0, level: 1 }
+];
+
+const LEVEL_NAMES = {
+  1: 'Bronze Warrior',
+  10: 'Silver Spartan',
+  25: 'Gold Gladiator',
+  50: 'Diamond Legend',
+  75: 'Platinum Emperor',
+  90: 'Mythic God',
+  99: 'Pulse Immortal'
+};
+
+function getLevelName(lvl) {
+  const keys = Object.keys(LEVEL_NAMES).map(Number).sort((a,b) => b - a);
+  for (let k of keys) {
+    if (lvl >= k) return LEVEL_NAMES[k];
+  }
+  return 'Bronze Warrior';
+}
+
+function getXPForLevel(lvl) {
+  // RuneScape-style XP curve: level^2 * 10
+  return Math.floor(Math.pow(lvl, 2) * 10);
+}
+
+function getLevelFromXP(xp) {
+  let lvl = 1;
+  while (getXPForLevel(lvl + 1) <= xp && lvl < 99) lvl++;
+  return lvl;
+}
+
+function getCategoryForExercise(exercise) {
+  const lower = exercise.toLowerCase();
+  if (lower.includes('squat') || lower.includes('lunge') || lower.includes('leg') || lower.includes('calf')) return 'legs';
+  if (lower.includes('press') || lower.includes('bench') || lower.includes('push') || lower.includes('chest') || lower.includes('dip')) return 'chest';
+  if (lower.includes('plank') || lower.includes('sit') || lower.includes('crunch') || lower.includes('core') || lower.includes('ab')) return 'core';
+  if (lower.includes('run') || lower.includes('jog') || lower.includes('cycle') || lower.includes('cardio') || lower.includes('km')) return 'cardio';
+  if (lower.includes('curl') || lower.includes('tricep') || lower.includes('pull') || lower.includes('arm') || lower.includes('bicep')) return 'arms';
+  if (lower.includes('row') || lower.includes('deadlift') || lower.includes('pull') || lower.includes('back') || lower.includes('lat')) return 'back';
+  return 'custom';
+}
+
+function getCategoryXP() {
+  const catXP = {};
+  CATEGORIES.forEach(c => catXP[c.id] = 0);
+  workouts.forEach(w => {
+    const cat = getCategoryForExercise(w.exercise);
+    if (catXP[cat] !== undefined) {
+      // XP = amount * unit multiplier
+      let multiplier = 1;
+      if (w.unit === 'km') multiplier = 5;
+      else if (w.unit === 'minutes') multiplier = 3;
+      else if (w.unit === 'seconds') multiplier = 0.1;
+      catXP[cat] += w.amount * multiplier;
+    }
+  });
+  return catXP;
+}
+
+function getTotalLevel() {
+  const catXP = getCategoryXP();
+  let total = 0;
+  CATEGORIES.forEach(c => {
+    const lvl = getLevelFromXP(catXP[c.id] || 0);
+    total += lvl;
+  });
+  return total;
+}
+
+// ============================================
+// ACHIEVEMENTS (Cookie Clicker Style)
+// ============================================
+const ACHIEVEMENTS = [
+  // Running
+  { id: 'run_1', name: 'First Steps', desc: '1km total', icon: '🏃', category: 'running', tier: 'bronze', check: () => getTotalForExercise('Jogging') >= 1 },
+  { id: 'run_2', name: 'Jogger', desc: '10km total', icon: '🏃', category: 'running', tier: 'silver', check: () => getTotalForExercise('Jogging') >= 10 },
+  { id: 'run_3', name: 'Runner', desc: '50km total', icon: '🏃', category: 'running', tier: 'gold', check: () => getTotalForExercise('Jogging') >= 50 },
+  { id: 'run_4', name: 'Marathoner', desc: '100km total', icon: '🏃', category: 'running', tier: 'diamond', check: () => getTotalForExercise('Jogging') >= 100 },
+  { id: 'run_5', name: 'Ultramarathoner', desc: '500km total', icon: '🏃', category: 'running', tier: 'star', check: () => getTotalForExercise('Jogging') >= 500 },
+  // Strength
+  { id: 'str_1', name: 'Beginner', desc: '100 reps total', icon: '💪', category: 'strength', tier: 'bronze', check: () => getTotalReps() >= 100 },
+  { id: 'str_2', name: 'Intermediate', desc: '500 reps total', icon: '💪', category: 'strength', tier: 'silver', check: () => getTotalReps() >= 500 },
+  { id: 'str_3', name: 'Advanced', desc: '1000 reps total', icon: '💪', category: 'strength', tier: 'gold', check: () => getTotalReps() >= 1000 },
+  { id: 'str_4', name: 'Expert', desc: '5000 reps total', icon: '💪', category: 'strength', tier: 'diamond', check: () => getTotalReps() >= 5000 },
+  { id: 'str_5', name: 'Legend', desc: '10000 reps total', icon: '💪', category: 'strength', tier: 'star', check: () => getTotalReps() >= 10000 },
+  // Streak
+  { id: 'streak_1', name: 'Streak Starter', desc: '3-day streak', icon: '🔥', category: 'streak', tier: 'bronze', check: () => getStreak() >= 3 },
+  { id: 'streak_2', name: 'Consistent', desc: '7-day streak', icon: '🔥', category: 'streak', tier: 'silver', check: () => getStreak() >= 7 },
+  { id: 'streak_3', name: 'Dedicated', desc: '30-day streak', icon: '🔥', category: 'streak', tier: 'gold', check: () => getStreak() >= 30 },
+  { id: 'streak_4', name: 'Unstoppable', desc: '90-day streak', icon: '🔥', category: 'streak', tier: 'diamond', check: () => getStreak() >= 90 },
+  { id: 'streak_5', name: 'Immortal', desc: '365-day streak', icon: '🔥', category: 'streak', tier: 'star', check: () => getStreak() >= 365 },
+  // Variety
+  { id: 'var_1', name: 'Explorer', desc: '5 exercises', icon: '🎯', category: 'variety', tier: 'bronze', check: () => getUniqueExercises() >= 5 },
+  { id: 'var_2', name: 'Adventurer', desc: '10 exercises', icon: '🎯', category: 'variety', tier: 'silver', check: () => getUniqueExercises() >= 10 },
+  { id: 'var_3', name: 'Pioneer', desc: '25 exercises', icon: '🎯', category: 'variety', tier: 'gold', check: () => getUniqueExercises() >= 25 },
+  { id: 'var_4', name: 'Legendary', desc: '50 exercises', icon: '🎯', category: 'variety', tier: 'diamond', check: () => getUniqueExercises() >= 50 },
+  // Time
+  { id: 'time_1', name: 'Early Bird', desc: '5 AM workout', icon: '🐦', category: 'time', tier: 'bronze', check: () => workouts.some(w => new Date(w.date+'T'+w.time).getHours() < 5) },
+  { id: 'time_2', name: 'Night Stalker', desc: '10 PM workout', icon: '🦉', category: 'time', tier: 'silver', check: () => workouts.some(w => new Date(w.date+'T'+w.time).getHours() >= 22) },
+  // PRs
+  { id: 'pr_1', name: 'PR Hunter', desc: '1 PR', icon: '📈', category: 'prs', tier: 'bronze', check: () => workouts.filter(w => w.isPR).length >= 1 },
+  { id: 'pr_2', name: 'PR Collector', desc: '5 PRs', icon: '📈', category: 'prs', tier: 'silver', check: () => workouts.filter(w => w.isPR).length >= 5 },
+  { id: 'pr_3', name: 'PR Machine', desc: '10 PRs', icon: '📈', category: 'prs', tier: 'gold', check: () => workouts.filter(w => w.isPR).length >= 10 },
+  // Volume
+  { id: 'vol_1', name: 'Volume Starter', desc: '100 total volume', icon: '📊', category: 'volume', tier: 'bronze', check: () => getTotalVolume() >= 100 },
+  { id: 'vol_2', name: 'Volume Builder', desc: '1000 total volume', icon: '📊', category: 'volume', tier: 'silver', check: () => getTotalVolume() >= 1000 },
+  { id: 'vol_3', name: 'Volume Master', desc: '5000 total volume', icon: '📊', category: 'volume', tier: 'gold', check: () => getTotalVolume() >= 5000 },
+  // Special
+  { id: 'hundred', name: 'Centurion', desc: '100 workouts', icon: '💯', category: 'special', tier: 'gold', check: () => workouts.length >= 100 },
+];
+
+function getTotalForExercise(ex) {
+  return workouts.filter(w => w.exercise === ex).reduce((s, w) => s + w.amount, 0);
+}
+
+function getTotalReps() {
+  return workouts.filter(w => w.unit === 'reps').reduce((s, w) => s + w.amount, 0);
+}
+
+function getUniqueExercises() {
+  return new Set(workouts.map(w => w.exercise)).size;
+}
+
+function getTotalVolume() {
+  return workouts.reduce((s, w) => s + w.amount, 0);
+}
+
+function getStreak() {
+  let streak = 0;
+  let d = new Date();
+  while (true) {
+    const key = d.toISOString().slice(0, 10);
+    if (workouts.some(w => w.date === key)) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else break;
+  }
+  return streak;
+}
+
+// ============================================
+// TODAY FUNCTIONS
+// ============================================
+const todayKey = () => {
+  let d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+};
+
+const fmtDate = (k) => {
+  return new Date(k + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+};
+
+const icon = (n) => {
+  const found = EX.find(x => x[1] === n);
+  return found ? found[0] : "⭐";
+};
+
+const getGreeting = () => {
+  const h = new Date().getHours();
+  return h < 5 ? "🌙 Night owl" : h < 12 ? "🌅 Morning session" : h < 18 ? "💪 Afternoon grind" : "🌙 Evening session";
+};
+
+// ============================================
+// PERSIST
+// ============================================
+function persist() {
+  localStorage.setItem(KEY, JSON.stringify(workouts));
+  render();
+}
+
+// ============================================
+// TABS
+// ============================================
+function switchTab(id, btn) {
+  document.querySelectorAll(".section").forEach(x => x.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+  btn.classList.add("active");
+  render();
+}
+
+// ============================================
+// MODAL
+// ============================================
+function openAdd() {
+  document.getElementById("modal").classList.add("open");
+  document.getElementById("entryDate").value = todayKey();
+  document.getElementById("entryTime").value = new Date().toTimeString().slice(0, 5);
+  renderExercises();
+  setTimeout(() => document.getElementById("amount").focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById("modal").classList.remove("open");
+}
+
+function renderExercises() {
+  document.getElementById("exerciseGrid").innerHTML = EX.map(x =>
+    `<button class="ex ${selected === x[1] ? "selected" : ""}" onclick="selectEx('${x[1]}','${x[2]}')">${x[0]}<b>${x[1]}</b></button>`
+  ).join("");
+  let customBox = document.getElementById("customNameContainer");
+  if (selected === "Custom") {
+    customBox.style.display = "block";
+  } else {
+    customBox.style.display = "none";
+    document.getElementById("customNameInput").value = "";
+  }
+}
+
+function selectEx(n, u) {
+  selected = n;
+  document.getElementById("unit").value = u;
+  renderExercises();
+}
+
+function selectFeeling(feeling) {
+  selectedFeeling = feeling;
+  document.querySelectorAll('.feeling-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector(`.feeling-btn[data-feeling="${feeling}"]`)?.classList.add('selected');
+}
+
+// ============================================
+// SAVE WORKOUT
+// ============================================
+function saveWorkout() {
+  let name = selected;
+  if (selected === "Custom") {
+    let customVal = document.getElementById("customNameInput").value.trim();
+    if (!customVal) return;
+    name = customVal;
+  }
+  let a = Number(document.getElementById("amount").value);
+  if (!a || a < 0) return;
+  let unit = document.getElementById("unit").value;
+  let date = document.getElementById("entryDate").value;
+  let time = document.getElementById("entryTime").value;
+  let notes = document.getElementById("notes").value || '';
+  let feeling = selectedFeeling;
+
+  // Check for PR
+  let existingPRs = {};
+  workouts.filter(w => w.exercise === name).forEach(w => {
+    if (!existingPRs[w.unit] || w.amount > existingPRs[w.unit]) existingPRs[w.unit] = w.amount;
+  });
+  let isPR = !existingPRs[unit] || a > existingPRs[unit];
+
+  workouts.push({
+    id: Date.now(),
+    exercise: name,
+    amount: a,
+    unit: unit,
+    date: date,
+    time: time,
+    isPR: isPR,
+    feeling: feeling,
+    notes: notes
+  });
+
+  if (isPR) {
+    setTimeout(() => alert(`🏆 NEW PR! ${name}: ${a} ${unit}`), 100);
+  }
+
+  closeModal();
+  document.getElementById("amount").value = "";
+  document.getElementById("customNameInput").value = "";
+  document.getElementById("notes").value = "";
+  persist();
+}
+
+function removeWorkout(id) {
+  if (confirm('Delete this workout?')) {
+    workouts = workouts.filter(x => x.id !== id);
+    persist();
+  }
+}
+
+// ============================================
+// REST TIMER
+// ============================================
+let restTimer = 60;
+let restMax = 60;
+let restInterval = null;
+let restPaused = false;
+let wakeLock = null;
+
+function setRestTime(seconds) {
+  restTimer = seconds;
+  restMax = seconds;
+  document.getElementById('timerDisplay').textContent = seconds;
+  document.getElementById('timerDisplay').className = 'timer-big';
+  document.getElementById('timerProgress').style.width = '100%';
+  document.getElementById('timerProgress').className = 'bar';
+  document.querySelectorAll('.rest-time-buttons button').forEach(b => b.classList.remove('active'));
+  if (event) event.target.classList.add('active');
+  resetRestTimer();
+}
+
+function customRestTime() {
+  const c = prompt('Enter rest time in seconds:', '60');
+  if (c && !isNaN(c)) {
+    setRestTime(parseInt(c));
+  }
+}
+
+function startRestTimer() {
+  if (restInterval) return;
+  keepScreenAwake();
+  restPaused = false;
+  document.getElementById('timerStatus').textContent = '⏱️ Running...';
+  document.getElementById('timerStatus').style.color = 'var(--green)';
+  document.getElementById('timerWarning').style.display = 'none';
+
+  restInterval = setInterval(() => {
+    if (!restPaused) {
+      restTimer--;
+      const display = document.getElementById('timerDisplay');
+      display.textContent = restTimer;
+
+      if (restTimer <= 3 && restTimer > 0) {
+        if (navigator.vibrate) navigator.vibrate(10);
+      }
+      if (restTimer <= 10) {
+        display.className = 'timer-big danger';
+        document.getElementById('timerProgress').className = 'bar danger';
+      } else if (restTimer <= 30) {
+        display.className = 'timer-big warning';
+        document.getElementById('timerProgress').className = 'bar warning';
+      } else {
+        display.className = 'timer-big';
+        document.getElementById('timerProgress').className = 'bar';
+      }
+
+      document.getElementById('timerProgress').style.width = (restTimer / restMax * 100) + '%';
+
+      if (restTimer <= 0) {
+        clearInterval(restInterval);
+        restInterval = null;
+        display.textContent = '⏰ DONE!';
+        display.className = 'timer-big';
+        document.getElementById('timerStatus').textContent = '✅ Rest complete! Get ready!';
+        document.getElementById('timerStatus').style.color = 'var(--green)';
+        if (navigator.vibrate) navigator.vibrate([50, 100, 50]);
+        releaseWakeLock();
+        setTimeout(() => {
+          document.getElementById('timerDisplay').textContent = restMax;
+          document.getElementById('timerDisplay').className = 'timer-big';
+          document.getElementById('timerProgress').style.width = '100%';
+          document.getElementById('timerProgress').className = 'bar';
+          document.getElementById('timerStatus').textContent = 'Ready';
+          document.getElementById('timerStatus').style.color = 'var(--muted)';
+        }, 2000);
+      }
+    }
+  }, 1000);
+}
+
+function pauseRestTimer() {
+  if (restInterval) {
+    restPaused = !restPaused;
+    document.getElementById('timerStatus').textContent = restPaused ? '⏸️ Paused' : '▶️ Running';
+    document.getElementById('timerStatus').style.color = restPaused ? 'var(--orange)' : 'var(--green)';
+  }
+}
+
+function resetRestTimer() {
+  clearInterval(restInterval);
+  restInterval = null;
+  restPaused = false;
+  restTimer = restMax;
+  document.getElementById('timerDisplay').textContent = restMax;
+  document.getElementById('timerDisplay').className = 'timer-big';
+  document.getElementById('timerProgress').style.width = '100%';
+  document.getElementById('timerProgress').className = 'bar';
+  document.getElementById('timerStatus').textContent = 'Ready';
+  document.getElementById('timerStatus').style.color = 'var(--muted)';
+  releaseWakeLock();
+}
+
+async function keepScreenAwake() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (e) {}
+}
+
+function releaseWakeLock() {
+  if (wakeLock) {
+    wakeLock.release();
+    wakeLock = null;
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    document.getElementById('timerWarning').style.display = 'block';
+    if (restInterval && !restPaused) {
+      pauseRestTimer();
+      document.getElementById('timerStatus').textContent = '⏸️ Paused (left)';
+    }
+  } else {
+    document.getElementById('timerWarning').style.display = 'none';
+  }
+});
+
+// ============================================
+// WARMUP GENERATOR
+// ============================================
+function selectWarmupBody(body) {
+  selectedWarmupBody = body;
+  document.querySelectorAll('.warmup-body-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.warmup-body-btn').forEach(b => {
+    if (b.textContent.trim().includes(body) || b.textContent.trim() === body) {
+      b.classList.add('selected');
+    }
+  });
+  generateWarmup();
+}
+
+function generateWarmup() {
+  const body = selectedWarmupBody;
+  const warmups = [];
+
+  const fullBody = [
+    '🦵 Leg swings (10 each)',
+    '🦵 Bodyweight squats (15)',
+    '💪 Arm circles (10 each way)',
+    '💪 Band pull-aparts (15)',
+    '💪 Push-ups (10)',
+    '🔥 Cat-cow stretch (10)',
+    '🔥 Dead bug (10 each)',
+    '🔥 Bird dog (10 each)',
+    '🏃 High knees (30s)',
+    '🏃 Butt kicks (30s)',
+    '🏃 Jumping jacks (20)'
+  ];
+
+  const legWarmup = [
+    '🦵 Leg swings (10 each)',
+    '🦵 Bodyweight squats (15)',
+    '🦵 Lunges (10 each)',
+    '🦵 Hip flexor stretch (30s each)',
+    '🦵 Ankle rotations (10 each)'
+  ];
+
+  const chestWarmup = [
+    '💪 Arm circles (10 each way)',
+    '💪 Band pull-aparts (15)',
+    '💪 Push-ups (10)',
+    '💪 Scap push-ups (10)',
+    '💪 Chest stretch (30s each)'
+  ];
+
+  const coreWarmup = [
+    '🔥 Cat-cow stretch (10)',
+    '🔥 Dead bug (10 each)',
+    '🔥 Bird dog (10 each)',
+    '🔥 Plank hold (30s)',
+    '🔥 Glute bridge (15)'
+  ];
+
+  const cardioWarmup = [
+    '🏃 High knees (30s)',
+    '🏃 Butt kicks (30s)',
+    '🏃 Jumping jacks (20)',
+    '🏃 Arm swings (30s)',
+    '🏃 Light jog (1 min)'
+  ];
+
+  const armsWarmup = [
+    '💪 Arm circles (10 each way)',
+    '💪 Band rows (15)',
+    '💪 Tricep stretch (30s each)',
+    '💪 Wrist rolls (10 each way)',
+    '💪 Bicep stretch (30s each)'
+  ];
+
+  const backWarmup = [
+    '🏋️ Cat-cow stretch (10)',
+    '🏋️ Band pull-aparts (15)',
+    '🏋️ Scap push-ups (10)',
+    '🏋️ Superman holds (10s x3)',
+    '🏋️ Lat stretch (30s each)'
+  ];
+
+  let selectedWarmups = [];
+  switch (body) {
+    case 'Full Body':
+      selectedWarmups = fullBody.slice(0, 6);
+      break;
+    case 'Legs':
+      selectedWarmups = legWarmup;
+      break;
+    case 'Chest':
+      selectedWarmups = chestWarmup;
+      break;
+    case 'Core':
+      selectedWarmups = coreWarmup;
+      break;
+    case 'Cardio':
+      selectedWarmups = cardioWarmup;
+      break;
+    case 'Arms':
+      selectedWarmups = armsWarmup;
+      break;
+    case 'Back':
+      selectedWarmups = backWarmup;
+      break;
+    default:
+      selectedWarmups = fullBody.slice(0, 5);
+  }
+
+  const container = document.getElementById('warmupResult');
+  container.innerHTML = `
+    <div class="warmup-container">
+      <div style="font-weight:700;margin-bottom:6px;color:var(--gold)">🔥 ${body} Warmup Routine</div>
+      ${selectedWarmups.map(w => `<div class="warmup-item"><span class="check">✓</span> ${w}</div>`).join('')}
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)">
+        ⏱️ Complete each exercise with proper form. Rest 30s between exercises.
+      </div>
+    </div>
+  `;
+}
+
+// ============================================
+// WEATHER
+// ============================================
+async function getWeather() {
+  try {
+    const r = await fetch('https://api.weatherapi.com/v1/current.json?key=b1a4c5d6e7f8g9h0i1j2k3l4m5n6o7p8&q=auto:ip');
+    if (!r.ok) throw Error();
+    const d = await r.json();
+    const t = Math.round(d.current.temp_c);
+    const c = d.current.condition.text.toLowerCase();
+    let emoji = '🌤️',
+      msg = '';
+    if (c.includes('rain')) { emoji = '🌧️';
+      msg = 'Great for indoor training!'; } else if (c.includes('sun') || c.includes('clear')) { emoji = '☀️';
+      msg = 'Perfect weather!'; } else if (c.includes('cloud')) { emoji = '☁️';
+      msg = 'Get after it!'; } else if (t > 30) { emoji = '🌡️';
+      msg = 'Stay hydrated!'; } else if (t < 5) { emoji = '❄️';
+      msg = 'Warm up extra!'; } else { emoji = '💪';
+      msg = 'No excuses!'; }
+    return `${emoji} ${t}°C · ${msg}`;
+  } catch (e) {
+    return '🌤️ Ready to train!';
+  }
+}
+
+async function updateWeather() {
+  const widget = document.getElementById('weatherWidget');
+  if (widget) widget.textContent = await getWeather();
+}
+
+// ============================================
+// RENDER
+// ============================================
+function render() {
+  const t = todayKey();
+  const td = workouts.filter(x => x.date === t);
+
+  // Today - Hero
+  document.getElementById("dateTitle").textContent = fmtDate(t);
+  document.getElementById("greeting").textContent = getGreeting();
+  document.getElementById("heroEyebrow").textContent = getGreeting();
+
+  // Today - Stats
+  document.getElementById("sessionCount").textContent = td.length;
+  document.getElementById("repTotal").textContent = td.filter(x => x.unit === "reps").reduce((s, x) => s + x.amount, 0);
+  document.getElementById("timeTotal").textContent = Math.round(td.filter(x => x.unit === "minutes").reduce((s, x) => s + x.amount, 0));
+  document.getElementById("streakDisplay").textContent = getStreak();
+
+  let km = td.filter(x => x.unit === "km").reduce((s, x) => s + x.amount, 0);
+  document.getElementById("todayDistance").textContent = km ? km + " km" : "";
+
+  let streak = getStreak();
+  let mot = td.length ? "Nice work — keep the momentum going." : "Ready when you are.";
+  if (streak >= 7) mot = `🔥 ${streak}-day streak! Unstoppable!`;
+  else if (streak >= 3) mot = `💪 ${streak}-day streak! Consistency is key!`;
+  document.getElementById("motivation").textContent = mot;
+
+  // Today - Chart
+  renderTodayChart(td);
+
+  // Today - Workout List
+  document.getElementById("todayList").innerHTML = td.length ?
+    td.sort((a, b) => a.time.localeCompare(b.time)).map(x =>
+      `<div class="workout">
+        <div class="ico">${icon(x.exercise)}</div>
+        <div class="wmain">
+          <div class="wname">${x.exercise} ${x.isPR ? '🏆' : ''} ${x.feeling || ''}</div>
+          <div class="wtime">${x.time || ''} ${x.notes ? '· ' + x.notes : ''}</div>
+        </div>
+        <div class="wvalue">${x.amount} ${x.unit}</div>
+        <button class="del" onclick="removeWorkout(${x.id})">×</button>
+      </div>`
+    ).join("") :
+    '<div class="empty">Nothing logged yet.<br>Tap "Log workout" when you finish.</div>';
+
+  // Progress - Level System
+  renderLevels();
+
+  // Progress - Capes
+  renderCapes();
+
+  // Progress - Achievements
+  renderAchievements();
+
+  // Progress - Weekly Chart
+  renderWeeklyChart();
+
+  // Progress - Heatmap
+  renderHeatmap();
+
+  // Progress - PRs
+  renderPRs();
+
+  // Progress - Exercise Breakdown
+  renderBreakdown();
+
+  // Progress - Monthly Insights
+  renderMonthlyInsights();
+
+  // Progress - Anniversary
+  renderAnniversary();
+
+  // History
+  renderHistory();
+}
+
+// ============================================
+// TODAY CHART
+// ============================================
+function renderTodayChart(td) {
+  const container = document.getElementById('todayChart');
+  if (td.length === 0) {
+    container.innerHTML = '<div class="empty">No workouts logged today.<br>Log something to see your stats!</div>';
+    return;
+  }
+
+  const reps = td.filter(x => x.unit === 'reps').reduce((s, x) => s + x.amount, 0);
+  const mins = Math.round(td.filter(x => x.unit === 'minutes').reduce((s, x) => s + x.amount, 0));
+  const sets = td.length;
+  const prs = td.filter(x => x.isPR).length;
+
+  const data = [reps, mins, sets, prs];
+  const labels = ['Reps', 'Mins', 'Sets', 'PRs'];
+  const max = Math.max(...data, 1);
+
+  container.innerHTML = `
+    <div class="chart-container">
+      ${data.map((val, i) => `
+        <div class="chart-point">
+          <div class="value">${val}</div>
+          <div class="line" style="height:${Math.max((val / max) * 80, 4)}px"></div>
+          <div class="dot" style="background:${val > 0 ? 'var(--green)' : 'var(--line)'}"></div>
+          <div class="label">${labels[i]}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--muted)">
+      <span>💪 ${reps} total reps</span>
+      <span>⏱️ ${mins} minutes</span>
+      <span>🏋️ ${sets} exercises</span>
+      <span>🏆 ${prs} PRs</span>
+    </div>
+  `;
+}
+
+// ============================================
+// LEVELS
+// ============================================
+function renderLevels() {
+  const catXP = getCategoryXP();
+  const totalLevel = getTotalLevel();
+  const xp = workouts.reduce((s, w) => {
+    let mult = 1;
+    if (w.unit === 'km') mult = 5;
+    else if (w.unit === 'minutes') mult = 3;
+    else if (w.unit === 'seconds') mult = 0.1;
+    return s + (w.amount * mult);
+  }, 0);
+  const level = getLevelFromXP(xp);
+  const nextLevel = level + 1;
+  const xpForNext = getXPForLevel(nextLevel);
+  const xpForCurrent = getXPForLevel(level);
+  const xpInLevel = xp - xpForCurrent;
+  const xpNeeded = xpForNext - xpForCurrent;
+  const pct = Math.min((xpInLevel / xpNeeded) * 100, 100);
+
+  document.getElementById('levelTitle').textContent = `🪓 Level ${level} — ${getLevelName(level)}`;
+  document.getElementById('totalLevel').textContent = totalLevel;
+  document.getElementById('nextLevelName').textContent = getLevelName(nextLevel) || 'Max Level';
+  document.getElementById('xpFill').style.width = pct + '%';
+  document.getElementById('xpCurrent').textContent = Math.floor(xpInLevel);
+  document.getElementById('xpNext').textContent = xpNeeded;
+
+  // Categories
+  const container = document.getElementById('levelCategories');
+  container.innerHTML = CATEGORIES.map(c => {
+    const cXP = catXP[c.id] || 0;
+    const cLevel = getLevelFromXP(cXP);
+    const nextLvl = cLevel + 1;
+    const xpForNextC = getXPForLevel(nextLvl);
+    const xpForCurrentC = getXPForLevel(cLevel);
+    const xpInC = cXP - xpForCurrentC;
+    const xpNeededC = xpForNextC - xpForCurrentC;
+    const pctC = Math.min((xpInC / xpNeededC) * 100, 100);
+    return `<div class="level-category">
+      <span class="cat-name">${c.name}</span>
+      <span class="cat-bar"><span class="fill" style="width:${pctC}%"></span></span>
+      <span class="cat-level">Lv.${cLevel}</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================================
+// CAPES
+// ============================================
+function renderCapes() {
+  const totalLevel = getTotalLevel();
+  const maxLevel = 7 * 99; // 7 categories * 99
+  const allLevel99 = totalLevel >= maxLevel;
+
+  const unlockedAchievements = ACHIEVEMENTS.filter(a => a.check()).length;
+  const totalAchievements = ACHIEVEMENTS.length;
+  const allBronzeSilverGold = unlockedAchievements >= totalAchievements * 0.7;
+  const allAchievements = unlockedAchievements >= totalAchievements;
+
+  const capes = [
+    { id: 'max', name: 'Max Cape', icon: '🎓', unlocked: allLevel99, desc: 'All skills Level 99' },
+    { id: 'comp', name: 'Comp Cape', icon: '🏆', unlocked: allBronzeSilverGold, desc: '70%+ achievements' },
+    { id: 'trim', name: 'Trimmed Comp', icon: '✨', unlocked: allAchievements, desc: '100% achievements' }
+  ];
+
+  const container = document.getElementById('capeContainer');
+  container.innerHTML = capes.map(c =>
+    `<div class="cape-item ${c.unlocked ? 'unlocked' : 'locked'}">
+      <span class="icon">${c.icon}</span>
+      <div class="name">${c.name}</div>
+      <div style="font-size:8px;color:var(--muted);margin-top:2px">${c.unlocked ? '✅ Unlocked' : '🔒 Locked'}</div>
+      <div style="font-size:7px;color:var(--muted)">${c.desc}</div>
+    </div>`
+  ).join('');
+}
+
+// ============================================
+// ACHIEVEMENTS
+// ============================================
+function renderAchievements() {
+  const unlocked = ACHIEVEMENTS.filter(a => a.check());
+  const total = ACHIEVEMENTS.length;
+  document.getElementById('achievementCount').textContent = `${unlocked.length}/${total}`;
+
+  const tierColors = { bronze: 'bronze', silver: 'silver', gold: 'gold', diamond: 'diamond', star: 'star' };
+
+  const container = document.getElementById('achievementList');
+  container.innerHTML = `
+    <div class="achievement-grid">
+      ${ACHIEVEMENTS.map(a => {
+        const isUnlocked = a.check();
+        return `<div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'}">
+          <span class="icon">${a.icon}</span>
+          <div class="name">${a.name}</div>
+          <div class="desc">${a.desc}</div>
+          <span class="tier ${tierColors[a.tier] || 'bronze'}">${a.tier.toUpperCase()}</span>
+          ${isUnlocked ? '<div style="font-size:10px;color:var(--green);margin-top:2px">✅</div>' : ''}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ============================================
+// WEEKLY CHART
+// ============================================
+function renderWeeklyChart() {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const data = days.map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay() + i + 1);
+    const key = d.toISOString().slice(0, 10);
+    return workouts.filter(w => w.date === key).reduce((s, w) => s + w.amount, 0);
+  });
+  const max = Math.max(...data, 1);
+  const container = document.getElementById('weeklyChart');
+  container.innerHTML = `
+    <div class="chart-container" style="height:100px">
+      ${data.map((val, i) => `
+        <div class="chart-point">
+          <div class="value">${val}</div>
+          <div class="line" style="height:${Math.max((val / max) * 70, 4)}px"></div>
+          <div class="dot" style="background:${val > 0 ? 'var(--green)' : 'var(--line)'}"></div>
+          <div class="label">${days[i]}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ============================================
+// HEATMAP
+// ============================================
+function renderHeatmap() {
+  let html = "";
+  const dObj = new Date();
+  for (let i = 27; i >= 0; i--) {
+    let target = new Date(dObj);
+    target.setDate(dObj.getDate() - i);
+    let k = target.toISOString().slice(0, 10);
+    let hasLogged = workouts.some(x => x.date === k);
+    let isToday = k === todayKey();
+    html += `<div class="heatbox ${hasLogged ? "active" : ""} ${isToday ? "today" : ""}">${target.getDate()}</div>`;
+  }
+  document.getElementById("heatmapGrid").innerHTML = html;
+}
+
+// ============================================
+// PRS
+// ============================================
+function renderPRs() {
+  let prMap = {};
+  workouts.forEach(w => {
+    if (!prMap[w.exercise]) prMap[w.exercise] = {};
+    if (!prMap[w.exercise][w.unit] || w.amount > prMap[w.exercise][w.unit]) {
+      prMap[w.exercise][w.unit] = w.amount;
+    }
+  });
+  const uniqueExs = Object.keys(prMap);
+  document.getElementById("prList").innerHTML = uniqueExs.length ?
+    uniqueExs.map(exName => {
+      let entries = Object.entries(prMap[exName]);
+      return `<div class="historyRow">🏆 <b>${exName}</b>: ${entries.map(([unit, amount]) =>
+        `<span class="badge badge-gold">${amount} ${unit}</span>`
+      ).join(" ")}</div>`;
+    }).join("") :
+    `<div class="empty">Log workouts to unlock records.</div>`;
+}
+
+// ============================================
+// BREAKDOWN
+// ============================================
+function renderBreakdown() {
+  let breakdown = {};
+  workouts.forEach(w => {
+    if (!breakdown[w.exercise]) breakdown[w.exercise] = { total: 0, count: 0, unit: w.unit };
+    breakdown[w.exercise].total += w.amount;
+    breakdown[w.exercise].count++;
+  });
+  const uniqueExs = Object.keys(breakdown);
+  document.getElementById("exerciseBreakdown").innerHTML = uniqueExs.length ?
+    uniqueExs.map(exName => {
+      let b = breakdown[exName];
+      let displayTotal = b.unit === "km" || b.unit === "minutes" ? b.total.toFixed(1) : b.total;
+      return `<div class="historyRow">${icon(exName)} <b>${exName}</b> — Total: <b>${displayTotal} ${b.unit}</b> (${b.count} logs)</div>`;
+    }).join("") :
+    `<div class="empty">No stats available yet.</div>`;
+}
+
+// ============================================
+// MONTHLY INSIGHTS
+// ============================================
+function renderMonthlyInsights() {
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+  const monthly = workouts.filter(w => {
+    const d = new Date(w.date);
+    return d.getMonth() === month && d.getFullYear() === year;
+  });
+  const totalSessions = monthly.length;
+  const totalReps = monthly.filter(w => w.unit === 'reps').reduce((s, w) => s + w.amount, 0);
+  const totalMinutes = monthly.filter(w => w.unit === 'minutes').reduce((s, w) => s + w.amount, 0);
+  const avgPerSession = totalSessions > 0 ? (totalReps + totalMinutes) / totalSessions : 0;
+  const bestDay = monthly.reduce((best, w) => {
+    const date = w.date;
+    const dayTotal = monthly.filter(x => x.date === date).reduce((s, x) => s + x.amount, 0);
+    return dayTotal > best.total ? { date, total: dayTotal } : best;
+  }, { date: null, total: 0 });
+
+  document.getElementById("monthlyInsights").innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px">
+      <div style="text-align:center;background:var(--panel2);padding:10px;border-radius:10px;border:1px solid var(--line)">
+        <div style="font-size:18px;font-weight:800;color:var(--green)">${totalSessions}</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase">Sessions</div>
+      </div>
+      <div style="text-align:center;background:var(--panel2);padding:10px;border-radius:10px;border:1px solid var(--line)">
+        <div style="font-size:18px;font-weight:800;color:var(--gold)">${totalReps + totalMinutes}</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase">Volume</div>
+      </div>
+      <div style="text-align:center;background:var(--panel2);padding:10px;border-radius:10px;border:1px solid var(--line)">
+        <div style="font-size:18px;font-weight:800;color:var(--blue)">${bestDay.date ? fmtDate(bestDay.date) : '—'}</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase">Best Day</div>
+      </div>
+    </div>
+    <div style="margin-top:6px;font-size:11px;color:var(--muted);text-align:center">
+      ${totalSessions > 0 ? `Avg ${avgPerSession.toFixed(1)} per session` : 'Log more to see insights!'}
+    </div>
+  `;
+}
+
+// ============================================
+// ANNIVERSARY
+// ============================================
+function renderAnniversary() {
+  if (workouts.length === 0) {
+    document.getElementById('anniversaryHighlight').innerHTML = '<div class="empty">Log workouts to see anniversaries!</div>';
+    return;
+  }
+  const first = workouts[0];
+  const firstDate = new Date(first.date);
+  const now = new Date();
+  const days = Math.floor((now - firstDate) / 86400000);
+  const anniversaries = [30, 90, 180, 365];
+  const found = anniversaries.find(d => {
+    const check = new Date(now);
+    check.setDate(check.getDate() - d);
+    return check.toISOString().slice(0, 10) === first.date;
+  });
+
+  if (found) {
+    const months = Math.floor(found / 30);
+    const title = found >= 365 ? '🎉 1 YEAR ANNIVERSARY!' :
+      found >= 180 ? '🎉 6 MONTH ANNIVERSARY!' :
+      found >= 90 ? '🎉 3 MONTH ANNIVERSARY!' :
+      '🎉 1 MONTH ANNIVERSARY!';
+    const totalVolume = workouts.reduce((s, w) => s + w.amount, 0);
+    const totalPRs = workouts.filter(w => w.isPR).length;
+    const bestEx = Object.entries(workouts.reduce((acc, w) => {
+      acc[w.exercise] = (acc[w.exercise] || 0) + 1;
+      return acc;
+    }, {})).sort((a, b) => b[1] - a[1])[0];
+
+    document.getElementById('anniversaryHighlight').innerHTML = `
+      <div style="background:var(--panel2);border:1px solid var(--gold);border-radius:14px;padding:16px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--gold)">${title}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">
+          <div><div style="font-size:18px;font-weight:800;color:var(--green)">${workouts.length}</div><div style="font-size:9px;color:var(--muted)">Workouts</div></div>
+          <div><div style="font-size:18px;font-weight:800;color:var(--gold)">${totalVolume}</div><div style="font-size:9px;color:var(--muted)">Volume</div></div>
+          <div><div style="font-size:18px;font-weight:800;color:var(--blue)">${totalPRs}</div><div style="font-size:9px;color:var(--muted)">PRs</div></div>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:var(--muted)">Best: <span style="color:var(--text);font-weight:700">${bestEx ? bestEx[0] : 'N/A'}</span></div>
+      </div>
+    `;
+  } else {
+    const next = anniversaries.find(d => days < d);
+    document.getElementById('anniversaryHighlight').innerHTML =
+      `<div style="color:var(--muted);font-size:12px;padding:8px">Next anniversary in ${next ? next - days : '365'} days</div>`;
+  }
+}
+
+// ============================================
+// HISTORY
+// ============================================
+function renderHistory() {
+  let dates = [...new Set(workouts.map(x => x.date))].sort().reverse();
+  document.getElementById("historyList").innerHTML = dates.length ?
+    dates.map(d =>
+      `<div class="historyRow">
+        <div class="hdate">${fmtDate(d)}</div>
+        <div class="hitems">${workouts.filter(x => x.date === d).map(x =>
+          `<span class="pill">${icon(x.exercise)} ${x.amount} ${x.unit} ${x.feeling || ''}</span>`
+        ).join("")}</div>
+      </div>`
+    ).join("") :
+    '<div class="empty">Your history will appear here.</div>';
+  document.getElementById("totalWorkoutsLabel").textContent = workouts.length + " total";
+}
+
+// ============================================
+// SETTINGS
+// ============================================
+function showSettings() {
+  document.getElementById("settingsModal").classList.add("open");
+}
+
+function closeSettings() {
+  document.getElementById("settingsModal").classList.remove("open");
+}
+
+function exportData() {
+  let blob = new Blob([JSON.stringify(workouts, null, 2)], { type: "application/json" });
+  let a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "pulse-workouts-backup.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData(event) {
+  let file = event.target.files[0];
+  if (!file) return;
+  let reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      let imported = JSON.parse(e.target.result);
+      if (Array.isArray(imported)) {
+        workouts = imported;
+        persist();
+        closeSettings();
+        alert("✅ Data imported successfully!");
+      } else {
+        alert("Invalid backup file format.");
+      }
+    } catch (err) {
+      alert("Error reading backup file.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearData() {
+  if (confirm("Delete all workout data? This cannot be undone.")) {
+    workouts = [];
+    persist();
+    closeSettings();
+  }
+}
+
+// ============================================
+// INIT
+// ============================================
+updateWeather();
+setInterval(updateWeather, 1800000); // 30 min
+generateWarmup();
+render();
+</script>
+</body>
+</html>
