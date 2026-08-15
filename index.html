@@ -153,6 +153,27 @@
 .tag.rest{background:var(--orange);color:#07130d}
 .tag.sore{background:var(--red);color:#fff}
 .tag.neutral{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+
+/* Minimum Tab Styles */
+.minimum-settings{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.minimum-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.minimum-row:last-child{border-bottom:0}
+.minimum-row .min-icon{font-size:18px;width:30px}
+.minimum-row .min-name{flex:1;font-weight:600;font-size:13px}
+.minimum-row .min-target{font-weight:700;color:var(--green);cursor:pointer;padding:4px 10px;border-radius:8px;background:var(--bg);min-width:50px;text-align:center}
+.minimum-row .min-target:active{transform:scale(.95)}
+.minimum-row .min-toggle{cursor:pointer;font-size:18px;padding:4px 8px;border-radius:8px;transition:all .15s;background:var(--bg)}
+.minimum-row .min-toggle:active{transform:scale(.9)}
+.minimum-row .min-toggle.on{color:var(--green)}
+.minimum-row .min-toggle.off{color:var(--muted)}
+.minimum-progress{margin-top:10px}
+.minimum-progress .prog-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px}
+.minimum-progress .prog-row .prog-label{width:60px;font-weight:600}
+.minimum-progress .prog-row .prog-bar{flex:1;height:6px;background:var(--line);border-radius:99px;overflow:hidden}
+.minimum-progress .prog-row .prog-bar .fill{height:100%;background:var(--green);border-radius:99px;transition:width .5s}
+.minimum-progress .prog-row .prog-bar .fill.done{background:var(--gold)}
+.minimum-progress .prog-row .prog-status{width:30px;text-align:right;font-weight:700;font-size:11px}
+.minimum-overall{text-align:center;padding:12px;font-size:14px;font-weight:700;color:var(--gold)}
 </style>
 </head>
 <body>
@@ -170,6 +191,7 @@
 <button class="tab" onclick="switchTab('progress',this)" data-tab="1">Progress</button>
 <button class="tab" onclick="switchTab('history',this)" data-tab="2">History</button>
 <button class="tab" onclick="switchTab('warmup',this)" data-tab="3">Warmup</button>
+<button class="tab" onclick="switchTab('minimum',this)" data-tab="4">Minimum</button>
 </div>
 
 <!-- TAB 1: TODAY -->
@@ -333,6 +355,21 @@
 <div id="warmupResult"></div>
 </div>
 </section>
+
+<!-- TAB 5: MINIMUM -->
+<section id="minimum" class="section">
+<div class="card">
+<div class="cardhead"><h2>🎯 Daily Minimum</h2></div>
+<p class="note" style="margin-bottom:10px">Do at least this much every day. Tap any number to edit. Toggle exercises on/off.</p>
+<div class="minimum-settings" id="minimumSettings">
+<!-- Settings rendered by JS -->
+</div>
+<div class="minimum-progress" id="minimumProgress">
+<!-- Progress rendered by JS -->
+</div>
+<div class="minimum-overall" id="minimumOverall">🔥 0% Complete</div>
+</div>
+</section>
 </div>
 
 <div class="bottom"><button onclick="openAdd()">＋ Log Workout</button></div>
@@ -404,11 +441,142 @@
 // DATA & CONFIG
 // ============================================
 const KEY = "pulse-workouts-v2";
+const MIN_KEY = "pulse-minimum-v2";
 const EX = [["🏃","Jogging","km"],["💪","Press-ups","reps"],["🧘","Plank","minutes"],["🔥","Sit-ups","reps"],["🦵","Squats","reps"],["🚴","Cycling","km"],["⭐","Custom","reps"]];
 let workouts = JSON.parse(localStorage.getItem(KEY) || "[]");
 let selected = "Jogging";
 let selectedFeeling = "😊";
 let selectedWarmupBody = "Full Body";
+
+// ============================================
+// DAILY MINIMUM CONFIG
+// ============================================
+const DEFAULT_MINIMUM = [
+  { id: 'pressups', name: 'Press-ups', icon: '💪', target: 100, unit: 'reps', enabled: true },
+  { id: 'squats', name: 'Squats', icon: '🦵', target: 100, unit: 'reps', enabled: true },
+  { id: 'situps', name: 'Sit-ups', icon: '🔥', target: 100, unit: 'reps', enabled: true },
+  { id: 'plank', name: 'Plank', icon: '🧘', target: 5, unit: 'minutes', enabled: true },
+  { id: 'jogging', name: 'Jogging', icon: '🏃', target: 5, unit: 'km', enabled: true }
+];
+
+function getMinimumConfig() {
+  const saved = localStorage.getItem(MIN_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      // Merge with defaults to ensure all fields exist
+      return DEFAULT_MINIMUM.map(d => {
+        const found = parsed.find(p => p.id === d.id);
+        return found ? { ...d, ...found } : d;
+      });
+    } catch (e) { return DEFAULT_MINIMUM; }
+  }
+  return DEFAULT_MINIMUM;
+}
+
+function saveMinimumConfig(config) {
+  localStorage.setItem(MIN_KEY, JSON.stringify(config));
+}
+
+// ============================================
+// SOUND SYSTEM (RuneScape Style Jingles!)
+// ============================================
+let audioCtx = null;
+let audioInitialized = false;
+
+function initAudio() {
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  audioInitialized = true;
+}
+
+function playSound(type) {
+  try {
+    initAudio();
+    if (!audioCtx) return;
+    
+    const now = audioCtx.currentTime;
+    
+    switch(type) {
+      case 'achievement':
+        // RuneScape achievement jingle - ascending happy melody
+        playNote(523, 0.15, now);
+        playNote(659, 0.15, now + 0.15);
+        playNote(784, 0.2, now + 0.3);
+        playNote(1047, 0.3, now + 0.55);
+        break;
+        
+      case 'levelup':
+        // RuneScape level up jingle - rising triumphant
+        playNote(440, 0.1, now);
+        playNote(554, 0.1, now + 0.12);
+        playNote(659, 0.1, now + 0.24);
+        playNote(784, 0.1, now + 0.36);
+        playNote(988, 0.1, now + 0.48);
+        playNote(1175, 0.4, now + 0.6);
+        break;
+        
+      case 'pr':
+        // PR celebration - short victorious burst
+        playNote(880, 0.1, now);
+        playNote(1109, 0.1, now + 0.1);
+        playNote(1319, 0.25, now + 0.2);
+        break;
+        
+      case 'click':
+        // Soft click for UI interactions
+        playNote(800, 0.05, now);
+        break;
+        
+      default:
+        break;
+    }
+  } catch(e) {
+    // Silently fail if audio isn't supported
+  }
+}
+
+function playNote(freq, duration, startTime) {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'square';
+    gain.gain.value = 0.08;
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  } catch(e) {}
+}
+
+// ============================================
+// HAPTIC SYSTEM
+// ============================================
+function haptic(type = 'light') {
+  if (!navigator.vibrate) return;
+  const patterns = {
+    light: 10,
+    medium: 20,
+    heavy: 50,
+    success: [10, 30, 10, 30, 10],
+    error: [50, 100, 50],
+    selection: [5],
+    levelup: [10, 20, 10, 30, 20]
+  };
+  const pattern = patterns[type] || patterns.light;
+  navigator.vibrate(pattern);
+}
 
 // ============================================
 // WORKOUT TIMER (Background-aware)
@@ -424,11 +592,9 @@ function startWorkoutTimer() {
   if (workoutTimerRunning && !workoutTimerPaused) return;
   
   if (workoutTimerPaused) {
-    // Resume from pause
     workoutTimerPaused = false;
     workoutTimerStartTime = Date.now() - workoutTimerElapsed;
   } else {
-    // Start fresh
     workoutTimerRunning = true;
     workoutTimerStartTime = Date.now();
     workoutTimerElapsed = 0;
@@ -440,6 +606,7 @@ function startWorkoutTimer() {
   if (workoutTimerInterval) clearInterval(workoutTimerInterval);
   workoutTimerInterval = setInterval(updateWorkoutTimerDisplay, 1000);
   updateWorkoutTimerDisplay();
+  haptic('medium');
 }
 
 function pauseWorkoutTimer() {
@@ -450,6 +617,7 @@ function pauseWorkoutTimer() {
   workoutTimerInterval = null;
   document.getElementById('workoutTimerStatus').textContent = '⏸️ Paused';
   document.getElementById('workoutTimerStatus').style.color = 'var(--orange)';
+  haptic('light');
 }
 
 function resetWorkoutTimer() {
@@ -462,6 +630,7 @@ function resetWorkoutTimer() {
   document.getElementById('workoutTimerDisplay').textContent = '00:00:00';
   document.getElementById('workoutTimerStatus').textContent = '⏸️ Not started';
   document.getElementById('workoutTimerStatus').style.color = 'var(--muted)';
+  haptic('light');
 }
 
 function updateWorkoutTimerDisplay() {
@@ -475,15 +644,12 @@ function updateWorkoutTimerDisplay() {
   document.getElementById('workoutTimerDisplay').textContent = `${hours}:${minutes}:${seconds}`;
 }
 
-// Handle visibility change for background timer
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    // App went to background
     if (workoutTimerRunning && !workoutTimerPaused) {
       workoutTimerBackgroundStart = Date.now();
     }
   } else {
-    // App came back to foreground
     if (workoutTimerRunning && !workoutTimerPaused && workoutTimerBackgroundStart) {
       const bgTime = Date.now() - workoutTimerBackgroundStart;
       workoutTimerStartTime += bgTime;
@@ -494,7 +660,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // ============================================
-// LEVEL SYSTEM (RuneScape Style)
+// LEVEL SYSTEM
 // ============================================
 const CATEGORIES = [
   { id: 'legs', name: '🦵 Legs', xp: 0, level: 1 },
@@ -535,9 +701,7 @@ function getLevelFromXP(xp) {
 }
 
 function getCategoryForExercise(exercise, customCategory) {
-  // If custom exercise has a manually assigned category, use it
   if (customCategory) return customCategory;
-  
   const lower = exercise.toLowerCase();
   if (lower.includes('squat') || lower.includes('lunge') || lower.includes('leg') || lower.includes('calf')) return 'legs';
   if (lower.includes('press') || lower.includes('bench') || lower.includes('push') || lower.includes('chest') || lower.includes('dip')) return 'chest';
@@ -552,7 +716,6 @@ function getCategoryXP() {
   const catXP = {};
   CATEGORIES.forEach(c => catXP[c.id] = 0);
   workouts.forEach(w => {
-    // Use saved category if it exists, otherwise auto-detect
     const cat = w.category || getCategoryForExercise(w.exercise);
     if (catXP[cat] !== undefined) {
       let multiplier = 1;
@@ -640,16 +803,13 @@ function getStreak() {
 
 function getBestSession() {
   if (workouts.length === 0) return null;
-  
   const sessions = {};
   workouts.forEach(w => {
     if (!sessions[w.date]) sessions[w.date] = [];
     sessions[w.date].push(w);
   });
-  
   let best = null;
   let bestScore = 0;
-  
   Object.keys(sessions).forEach(date => {
     const dayWorkouts = sessions[date];
     const totalReps = dayWorkouts.filter(x => x.unit === 'reps').reduce((s, x) => s + x.amount, 0);
@@ -658,13 +818,11 @@ function getBestSession() {
     const prs = dayWorkouts.filter(x => x.isPR).length;
     const volume = totalReps + (totalMins * 3) + (totalKm * 5);
     const score = volume + (prs * 20);
-    
     if (score > bestScore) {
       bestScore = score;
       best = { date, totalReps, totalMins, totalKm, prs, volume, count: dayWorkouts.length };
     }
   });
-  
   return best;
 }
 
@@ -706,6 +864,7 @@ function switchTab(id, btn) {
   document.getElementById(id).classList.add("active");
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
   btn.classList.add("active");
+  haptic('light');
   render();
 }
 
@@ -718,20 +877,20 @@ function openAdd() {
   document.getElementById("entryTime").value = new Date().toTimeString().slice(0, 5);
   renderExercises();
   setTimeout(() => document.getElementById("amount").focus(), 100);
+  haptic('medium');
 }
 
 function closeModal() {
   document.getElementById("modal").classList.remove("open");
+  haptic('light');
 }
 
 function renderExercises() {
   document.getElementById("exerciseGrid").innerHTML = EX.map(x =>
     `<button class="ex ${selected === x[1] ? "selected" : ""}" onclick="selectEx('${x[1]}','${x[2]}')">${x[0]}<b>${x[1]}</b></button>`
   ).join("");
-  
   let customBox = document.getElementById("customNameContainer");
   let categorySelector = document.getElementById("categorySelector");
-  
   if (selected === "Custom") {
     customBox.style.display = "block";
     categorySelector.style.display = "block";
@@ -746,12 +905,15 @@ function selectEx(n, u) {
   selected = n;
   document.getElementById("unit").value = u;
   renderExercises();
+  haptic('selection');
+  playSound('click');
 }
 
 function selectFeeling(feeling) {
   selectedFeeling = feeling;
   document.querySelectorAll('.feeling-btn').forEach(b => b.classList.remove('selected'));
   document.querySelector(`.feeling-btn[data-feeling="${feeling}"]`)?.classList.add('selected');
+  haptic('light');
 }
 
 // ============================================
@@ -763,27 +925,24 @@ function quickReLog() {
     return;
   }
   const last = workouts[workouts.length - 1];
-  // Find the exercise in EX list
   const found = EX.find(x => x[1] === last.exercise);
   if (found) {
     selected = last.exercise;
     document.getElementById("unit").value = last.unit;
   } else {
-    // Custom exercise
     selected = "Custom";
     document.getElementById("customNameInput").value = last.exercise;
     document.getElementById("unit").value = last.unit;
-    // Show custom inputs
     document.getElementById("customNameContainer").style.display = "block";
     document.getElementById("categorySelector").style.display = "block";
   }
   document.getElementById("amount").value = last.amount;
   renderExercises();
-  // If custom, make sure we show the custom name
   if (selected === "Custom") {
     document.getElementById("customNameInput").value = last.exercise;
   }
   haptic('light');
+  playSound('click');
 }
 
 function quickReLogWithIncrement() {
@@ -809,12 +968,7 @@ function quickReLogWithIncrement() {
     document.getElementById("customNameInput").value = last.exercise;
   }
   haptic('light');
-}
-
-function haptic(style) {
-  if (navigator.vibrate) {
-    navigator.vibrate(10);
-  }
+  playSound('click');
 }
 
 // ============================================
@@ -859,8 +1013,14 @@ function saveWorkout() {
     category: assignedCategory
   });
 
+  // Play sounds and haptics for PR
   if (isPR) {
+    haptic('success');
+    playSound('pr');
     setTimeout(() => alert(`🏆 NEW PR! ${name}: ${a} ${unit}`), 100);
+  } else {
+    haptic('medium');
+    playSound('click');
   }
 
   closeModal();
@@ -868,13 +1028,193 @@ function saveWorkout() {
   document.getElementById("customNameInput").value = "";
   document.getElementById("notes").value = "";
   persist();
+  
+  // Check achievements and level ups after persist
+  setTimeout(checkAchievementsAndLevels, 100);
 }
 
 function removeWorkout(id) {
   if (confirm('Delete this workout?')) {
     workouts = workouts.filter(x => x.id !== id);
+    haptic('error');
     persist();
   }
+}
+
+// ============================================
+// ACHIEVEMENT & LEVEL CHECK
+// ============================================
+let shownAchievements = JSON.parse(localStorage.getItem('pulse-shown-achievements') || '[]');
+let previousLevels = JSON.parse(localStorage.getItem('pulse-previous-levels') || '{}');
+
+function checkAchievementsAndLevels() {
+  // Check achievements
+  ACHIEVEMENTS.forEach(a => {
+    if (!shownAchievements.includes(a.id) && a.check()) {
+      shownAchievements.push(a.id);
+      localStorage.setItem('pulse-shown-achievements', JSON.stringify(shownAchievements));
+      showAchievementPopup(a);
+    }
+  });
+
+  // Check levels
+  const catXP = getCategoryXP();
+  const totalLevel = getTotalLevel();
+  const xp = workouts.reduce((s, w) => {
+    let mult = 1;
+    if (w.unit === 'km') mult = 5;
+    else if (w.unit === 'minutes') mult = 3;
+    else if (w.unit === 'seconds') mult = 0.1;
+    return s + (w.amount * mult);
+  }, 0);
+  const currentLevel = getLevelFromXP(xp);
+  
+  // Check global level up
+  const prevGlobal = previousLevels.global || 1;
+  if (currentLevel > prevGlobal) {
+    previousLevels.global = currentLevel;
+    localStorage.setItem('pulse-previous-levels', JSON.stringify(previousLevels));
+    showLevelUpPopup('global', currentLevel);
+  }
+
+  // Check body part levels
+  CATEGORIES.forEach(c => {
+    const cXP = catXP[c.id] || 0;
+    const cLevel = getLevelFromXP(cXP);
+    const prev = previousLevels[c.id] || 1;
+    if (cLevel > prev) {
+      previousLevels[c.id] = cLevel;
+      localStorage.setItem('pulse-previous-levels', JSON.stringify(previousLevels));
+      showLevelUpPopup(c.id, cLevel, c.name);
+    }
+  });
+}
+
+function showAchievementPopup(achievement) {
+  haptic('heavy');
+  playSound('achievement');
+  
+  // Create popup overlay
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;
+    display:flex;align-items:center;justify-content:center;
+    animation:fadeIn .3s ease;backdrop-filter:blur(8px);
+  `;
+  
+  overlay.innerHTML = `
+    <div style="
+      background:linear-gradient(135deg,#1a2a1f,#0d1520);
+      border:2px solid var(--gold);
+      border-radius:24px;
+      padding:40px 32px 32px;
+      max-width:400px;
+      width:90%;
+      text-align:center;
+      box-shadow:0 0 60px rgba(251,191,36,.2);
+    ">
+      <div style="font-size:56px;margin-bottom:8px">🏅</div>
+      <div style="font-size:14px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:2px">Achievement Unlocked!</div>
+      <div style="font-size:24px;font-weight:800;color:var(--text);margin-top:8px">${achievement.icon} ${achievement.name}</div>
+      <div style="font-size:14px;color:var(--muted);margin-top:4px">${achievement.desc}</div>
+      <div style="margin-top:12px;display:inline-block;padding:4px 16px;border-radius:8px;background:var(--gold);color:#07130d;font-weight:700;font-size:12px;text-transform:uppercase">${achievement.tier}</div>
+      <button onclick="this.closest('div[style]').parentElement.remove()" style="
+        margin-top:16px;
+        padding:10px 32px;
+        border:0;
+        border-radius:12px;
+        background:var(--green);
+        color:#07130d;
+        font-weight:700;
+        font-size:14px;
+        cursor:pointer;
+      ">Continue</button>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+  triggerConfetti();
+}
+
+function showLevelUpPopup(type, level, name) {
+  haptic('levelup');
+  playSound('levelup');
+  
+  const isGlobal = type === 'global';
+  const title = isGlobal ? '⬆️ LEVEL UP!' : '⬆️ SKILL LEVEL UP!';
+  const icon = isGlobal ? '🪓' : '💪';
+  const displayName = isGlobal ? `Level ${level} — ${getLevelName(level)}` : `${name} Level ${level}`;
+  const subText = isGlobal ? `Total Level: ${getTotalLevel()}` : '';
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;
+    display:flex;align-items:center;justify-content:center;
+    animation:fadeIn .3s ease;backdrop-filter:blur(8px);
+  `;
+  
+  overlay.innerHTML = `
+    <div style="
+      background:linear-gradient(135deg,#1a2a1f,#0d1520);
+      border:2px solid var(--gold);
+      border-radius:24px;
+      padding:40px 32px 32px;
+      max-width:400px;
+      width:90%;
+      text-align:center;
+      box-shadow:0 0 60px rgba(251,191,36,.2);
+    ">
+      <div style="font-size:56px;margin-bottom:8px">${icon}</div>
+      <div style="font-size:20px;font-weight:800;color:var(--gold)">${title}</div>
+      <div style="font-size:22px;font-weight:900;color:var(--text);margin-top:8px">${displayName}</div>
+      ${subText ? `<div style="font-size:14px;color:var(--muted);margin-top:4px">${subText}</div>` : ''}
+      <button onclick="this.closest('div[style]').parentElement.remove()" style="
+        margin-top:16px;
+        padding:10px 32px;
+        border:0;
+        border-radius:12px;
+        background:var(--green);
+        color:#07130d;
+        font-weight:700;
+        font-size:14px;
+        cursor:pointer;
+      ">Continue</button>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+  triggerConfetti();
+}
+
+function triggerConfetti() {
+  const colors = ['#fbbf24', '#6ee7a5', '#71b7ff', '#ff6b7a', '#a78bfa', '#fff'];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.style.cssText = `
+      position:fixed;top:-10px;left:${Math.random()*100}%;
+      width:${Math.random()*8+4}px;height:${Math.random()*8+4}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      pointer-events:none;z-index:101;
+      animation:confettiFall ${Math.random()*2+1}s linear forwards;
+      animation-delay:${Math.random()*0.3}s;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+}
+
+// Add confetti keyframe if not exists
+if (!document.getElementById('confetti-style')) {
+  const style = document.createElement('style');
+  style.id = 'confetti-style';
+  style.textContent = `
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0deg) scale(1); opacity:1; }
+      100% { transform: translateY(110vh) rotate(720deg) scale(0.5); opacity:0; }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 // ============================================
@@ -896,6 +1236,8 @@ function setRestTime(seconds) {
   document.querySelectorAll('.rest-time-buttons button').forEach(b => b.classList.remove('active'));
   if (event) event.target.classList.add('active');
   resetRestTimer();
+  haptic('light');
+  playSound('click');
 }
 
 function customRestTime() {
@@ -912,6 +1254,7 @@ function startRestTimer() {
   document.getElementById('timerStatus').textContent = '⏱️ Running...';
   document.getElementById('timerStatus').style.color = 'var(--green)';
   document.getElementById('timerWarning').style.display = 'none';
+  haptic('medium');
 
   restInterval = setInterval(() => {
     if (!restPaused) {
@@ -920,7 +1263,7 @@ function startRestTimer() {
       display.textContent = restTimer;
 
       if (restTimer <= 3 && restTimer > 0) {
-        if (navigator.vibrate) navigator.vibrate(10);
+        haptic('light');
       }
       if (restTimer <= 10) {
         display.className = 'timer-big danger';
@@ -942,7 +1285,8 @@ function startRestTimer() {
         display.className = 'timer-big';
         document.getElementById('timerStatus').textContent = '✅ Rest complete! Get ready!';
         document.getElementById('timerStatus').style.color = 'var(--green)';
-        if (navigator.vibrate) navigator.vibrate([50, 100, 50]);
+        haptic('heavy');
+        playSound('click');
         releaseWakeLock();
         setTimeout(() => {
           document.getElementById('timerDisplay').textContent = restMax;
@@ -962,6 +1306,7 @@ function pauseRestTimer() {
     restPaused = !restPaused;
     document.getElementById('timerStatus').textContent = restPaused ? '⏸️ Paused' : '▶️ Running';
     document.getElementById('timerStatus').style.color = restPaused ? 'var(--orange)' : 'var(--green)';
+    haptic('light');
   }
 }
 
@@ -977,6 +1322,7 @@ function resetRestTimer() {
   document.getElementById('timerStatus').textContent = 'Ready';
   document.getElementById('timerStatus').style.color = 'var(--muted)';
   releaseWakeLock();
+  haptic('light');
 }
 
 async function keepScreenAwake() {
@@ -1018,70 +1364,53 @@ function selectWarmupBody(body) {
     }
   });
   generateWarmup();
+  haptic('light');
+  playSound('click');
 }
 
 function generateWarmup() {
   const body = selectedWarmupBody;
-
   const warmups = {
     'Full Body': [
-      '🦵 Leg swings (10 each)',
-      '🦵 Bodyweight squats (15)',
-      '💪 Arm circles (10 each way)',
-      '💪 Band pull-aparts (15)',
-      '💪 Push-ups (10)',
-      '🔥 Cat-cow stretch (10)',
-      '🔥 Dead bug (10 each)',
-      '🔥 Bird dog (10 each)',
-      '🏃 High knees (30s)',
-      '🏃 Butt kicks (30s)'
+      '🦵 Leg swings (10 each)', '🦵 Bodyweight squats (15)',
+      '💪 Arm circles (10 each way)', '💪 Band pull-aparts (15)',
+      '💪 Push-ups (10)', '🔥 Cat-cow stretch (10)',
+      '🔥 Dead bug (10 each)', '🔥 Bird dog (10 each)',
+      '🏃 High knees (30s)', '🏃 Butt kicks (30s)'
     ],
     'Legs': [
-      '🦵 Leg swings (10 each)',
-      '🦵 Bodyweight squats (15)',
-      '🦵 Lunges (10 each)',
-      '🦵 Hip flexor stretch (30s each)',
+      '🦵 Leg swings (10 each)', '🦵 Bodyweight squats (15)',
+      '🦵 Lunges (10 each)', '🦵 Hip flexor stretch (30s each)',
       '🦵 Ankle rotations (10 each)'
     ],
     'Chest': [
-      '💪 Arm circles (10 each way)',
-      '💪 Band pull-aparts (15)',
-      '💪 Push-ups (10)',
-      '💪 Scap push-ups (10)',
+      '💪 Arm circles (10 each way)', '💪 Band pull-aparts (15)',
+      '💪 Push-ups (10)', '💪 Scap push-ups (10)',
       '💪 Chest stretch (30s each)'
     ],
     'Core': [
-      '🔥 Cat-cow stretch (10)',
-      '🔥 Dead bug (10 each)',
-      '🔥 Bird dog (10 each)',
-      '🔥 Plank hold (30s)',
+      '🔥 Cat-cow stretch (10)', '🔥 Dead bug (10 each)',
+      '🔥 Bird dog (10 each)', '🔥 Plank hold (30s)',
       '🔥 Glute bridge (15)'
     ],
     'Cardio': [
-      '🏃 High knees (30s)',
-      '🏃 Butt kicks (30s)',
-      '🏃 Jumping jacks (20)',
-      '🏃 Arm swings (30s)',
+      '🏃 High knees (30s)', '🏃 Butt kicks (30s)',
+      '🏃 Jumping jacks (20)', '🏃 Arm swings (30s)',
       '🏃 Light jog (1 min)'
     ],
     'Arms': [
-      '💪 Arm circles (10 each way)',
-      '💪 Band rows (15)',
-      '💪 Tricep stretch (30s each)',
-      '💪 Wrist rolls (10 each way)',
+      '💪 Arm circles (10 each way)', '💪 Band rows (15)',
+      '💪 Tricep stretch (30s each)', '💪 Wrist rolls (10 each way)',
       '💪 Bicep stretch (30s each)'
     ],
     'Back': [
-      '🏋️ Cat-cow stretch (10)',
-      '🏋️ Band pull-aparts (15)',
-      '🏋️ Scap push-ups (10)',
-      '🏋️ Superman holds (10s x3)',
+      '🏋️ Cat-cow stretch (10)', '🏋️ Band pull-aparts (15)',
+      '🏋️ Scap push-ups (10)', '🏋️ Superman holds (10s x3)',
       '🏋️ Lat stretch (30s each)'
     ]
   };
 
   const selectedWarmups = warmups[body] || warmups['Full Body'];
-
   const container = document.getElementById('warmupResult');
   container.innerHTML = `
     <div class="warmup-container">
@@ -1120,6 +1449,92 @@ async function getWeather() {
 async function updateWeather() {
   const widget = document.getElementById('weatherWidget');
   if (widget) widget.textContent = await getWeather();
+}
+
+// ============================================
+// MINIMUM TAB RENDER
+// ============================================
+function renderMinimumTab() {
+  const config = getMinimumConfig();
+  const today = todayKey();
+  const todayWorkouts = workouts.filter(w => w.date === today);
+  
+  // Render settings
+  const settingsContainer = document.getElementById('minimumSettings');
+  settingsContainer.innerHTML = config.map(m => `
+    <div class="minimum-row">
+      <span class="min-icon">${m.icon}</span>
+      <span class="min-name">${m.name}</span>
+      <span class="min-target" onclick="editMinimum('${m.id}')">${m.target} ${m.unit}</span>
+      <span class="min-toggle ${m.enabled ? 'on' : 'off'}" onclick="toggleMinimum('${m.id}')">${m.enabled ? '✅' : '❌'}</span>
+    </div>
+  `).join('');
+
+  // Render progress
+  const progressContainer = document.getElementById('minimumProgress');
+  const overallContainer = document.getElementById('minimumOverall');
+  
+  let totalProgress = 0;
+  let totalEnabled = 0;
+  
+  const progressHTML = config.filter(m => m.enabled).map(m => {
+    totalEnabled++;
+    // Get today's progress for this exercise
+    let progress = 0;
+    const matchingWorkouts = todayWorkouts.filter(w => w.exercise === m.name);
+    if (matchingWorkouts.length > 0) {
+      progress = matchingWorkouts.reduce((s, w) => s + w.amount, 0);
+    }
+    const pct = Math.min((progress / m.target) * 100, 100);
+    totalProgress += pct;
+    const done = pct >= 100;
+    return `
+      <div class="prog-row">
+        <span class="prog-label">${m.icon} ${m.name}</span>
+        <span class="prog-bar"><span class="fill ${done ? 'done' : ''}" style="width:${pct}%"></span></span>
+        <span class="prog-status">${done ? '✅' : Math.round(pct) + '%'}</span>
+      </div>
+    `;
+  }).join('');
+
+  const avgPct = totalEnabled > 0 ? Math.round(totalProgress / totalEnabled) : 0;
+  
+  progressContainer.innerHTML = progressHTML || '<div class="empty">No exercises enabled. Toggle some on!</div>';
+  
+  let msg = '🔥 ' + avgPct + '% Complete';
+  if (avgPct === 100) msg = '🎉 100% Complete! You crushed it!';
+  else if (avgPct >= 75) msg = '💪 ' + avgPct + '% Complete! Almost there!';
+  else if (avgPct >= 50) msg = '🔥 ' + avgPct + '% Complete! Keep going!';
+  else if (avgPct > 0) msg = '⏳ ' + avgPct + '% Complete — You got this!';
+  else msg = '📋 0% Complete — Start logging!';
+  
+  overallContainer.textContent = msg;
+}
+
+function editMinimum(id) {
+  const config = getMinimumConfig();
+  const item = config.find(m => m.id === id);
+  if (!item) return;
+  
+  const newVal = prompt(`Enter new target for ${item.name}:`, item.target);
+  if (newVal !== null && !isNaN(newVal) && Number(newVal) > 0) {
+    item.target = Number(newVal);
+    saveMinimumConfig(config);
+    renderMinimumTab();
+    haptic('medium');
+    playSound('click');
+  }
+}
+
+function toggleMinimum(id) {
+  const config = getMinimumConfig();
+  const item = config.find(m => m.id === id);
+  if (!item) return;
+  item.enabled = !item.enabled;
+  saveMinimumConfig(config);
+  renderMinimumTab();
+  haptic('light');
+  playSound('click');
 }
 
 // ============================================
@@ -1214,6 +1629,9 @@ function render() {
 
   // History
   renderHistory();
+
+  // Minimum
+  renderMinimumTab();
 }
 
 // ============================================
@@ -1226,10 +1644,8 @@ function renderBestSession() {
     container.innerHTML = '';
     return;
   }
-  
   const total = workouts.filter(w => w.date === todayKey()).length;
   const diff = best.count - total;
-  
   container.innerHTML = `
     <div class="best-session">
       <div class="title">🏆 Your Best Session</div>
@@ -1256,16 +1672,13 @@ function renderTodayChart(td) {
     container.innerHTML = '<div class="empty">No workouts logged today.<br>Log something to see your stats!</div>';
     return;
   }
-
   const reps = td.filter(x => x.unit === 'reps').reduce((s, x) => s + x.amount, 0);
   const mins = Math.round(td.filter(x => x.unit === 'minutes').reduce((s, x) => s + x.amount, 0));
   const sets = td.length;
   const prs = td.filter(x => x.isPR).length;
-
   const data = [reps, mins, sets, prs];
   const labels = ['Reps', 'Mins', 'Sets', 'PRs'];
   const max = Math.max(...data, 1);
-
   container.innerHTML = `
     <div class="chart-container">
       ${data.map((val, i) => `
@@ -1293,32 +1706,12 @@ function renderBodyPartChart() {
   const container = document.getElementById('bodyPartChart');
   const catXP = getCategoryXP();
   const total = Object.values(catXP).reduce((s, v) => s + v, 0);
-  
   if (total === 0) {
     container.innerHTML = '<div class="empty">Log workouts to see your training distribution!</div>';
     return;
   }
-  
-  const colors = {
-    legs: '#6ee7a5',
-    chest: '#71b7ff',
-    core: '#ffb86b',
-    cardio: '#ff6b7a',
-    arms: '#a78bfa',
-    back: '#fbbf24',
-    custom: '#8e99a8'
-  };
-  
-  const names = {
-    legs: '🦵 Legs',
-    chest: '💪 Chest',
-    core: '🔥 Core',
-    cardio: '🏃 Cardio',
-    arms: '💪 Arms',
-    back: '🏋️ Back',
-    custom: '⭐ Custom'
-  };
-  
+  const colors = { legs: '#6ee7a5', chest: '#71b7ff', core: '#ffb86b', cardio: '#ff6b7a', arms: '#a78bfa', back: '#fbbf24', custom: '#8e99a8' };
+  const names = { legs: '🦵 Legs', chest: '💪 Chest', core: '🔥 Core', cardio: '🏃 Cardio', arms: '💪 Arms', back: '🏋️ Back', custom: '⭐ Custom' };
   let totalDeg = 0;
   const segments = [];
   CATEGORIES.forEach(c => {
@@ -1328,8 +1721,6 @@ function renderBodyPartChart() {
     segments.push({ id: c.id, name: names[c.id], pct, deg, color: colors[c.id], val });
     totalDeg += deg;
   });
-  
-  // Build conic gradient
   let gradient = 'conic-gradient(';
   let currentDeg = 0;
   segments.forEach((s, i) => {
@@ -1340,9 +1731,7 @@ function renderBodyPartChart() {
     currentDeg += s.deg;
   });
   gradient += ')';
-  
   const legend = segments.filter(s => s.pct > 0);
-  
   container.innerHTML = `
     <div class="donut-container">
       <div class="donut" style="background:${gradient}">
@@ -1372,12 +1761,8 @@ function renderFrequencyTracker() {
     container.innerHTML = '<div class="empty">Log workouts to see frequency!</div>';
     return;
   }
-  
   const freq = {};
-  workouts.forEach(w => {
-    freq[w.exercise] = (freq[w.exercise] || 0) + 1;
-  });
-  
+  workouts.forEach(w => { freq[w.exercise] = (freq[w.exercise] || 0) + 1; });
   const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
   const top = sorted.slice(0, 5);
   const last30 = new Set();
@@ -1388,9 +1773,7 @@ function renderFrequencyTracker() {
     const d = new Date(w.date);
     if (d >= thirtyDaysAgo) last30.add(w.exercise);
   });
-  
   const neglected = Object.keys(freq).filter(ex => !last30.has(ex));
-  
   container.innerHTML = `
     <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Most frequent:</div>
     ${top.map(([ex, count], i) => `
@@ -1424,27 +1807,20 @@ function renderThisDayLastYear() {
   const lastYear = new Date(now);
   lastYear.setFullYear(lastYear.getFullYear() - 1);
   const key = lastYear.toISOString().slice(0, 10);
-  
   const lastYearWorkouts = workouts.filter(w => w.date === key);
-  
   if (lastYearWorkouts.length === 0) {
     container.innerHTML = '<div class="empty">No workouts on this day last year.<br>Log something to compare next year!</div>';
     return;
   }
-  
   const todayWorkouts = workouts.filter(w => w.date === todayKey());
-  
   const lastYearReps = lastYearWorkouts.filter(x => x.unit === 'reps').reduce((s, x) => s + x.amount, 0);
   const lastYearMins = lastYearWorkouts.filter(x => x.unit === 'minutes').reduce((s, x) => s + x.amount, 0);
   const lastYearKm = lastYearWorkouts.filter(x => x.unit === 'km').reduce((s, x) => s + x.amount, 0);
-  
   const todayReps = todayWorkouts.filter(x => x.unit === 'reps').reduce((s, x) => s + x.amount, 0);
   const todayMins = todayWorkouts.filter(x => x.unit === 'minutes').reduce((s, x) => s + x.amount, 0);
   const todayKm = todayWorkouts.filter(x => x.unit === 'km').reduce((s, x) => s + x.amount, 0);
-  
   const repDiff = todayReps > 0 ? Math.round(((todayReps - lastYearReps) / lastYearReps) * 100) : 0;
   const minDiff = todayMins > 0 ? Math.round(((todayMins - lastYearMins) / lastYearMins) * 100) : 0;
-  
   container.innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
       <div style="background:var(--panel2);padding:10px;border-radius:10px;border:1px solid var(--line)">
@@ -1481,44 +1857,31 @@ function renderWeeklyWrap() {
   start.setDate(start.getDate() - start.getDay());
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
-  
   const weekWorkouts = workouts.filter(w => {
     const d = new Date(w.date);
     return d >= start && d <= end;
   });
-  
   if (weekWorkouts.length === 0) {
     container.innerHTML = '<div class="empty">Log workouts this week to see your wrap!</div>';
     return;
   }
-  
   const totalWorkouts = weekWorkouts.length;
   const totalReps = weekWorkouts.filter(x => x.unit === 'reps').reduce((s, x) => s + x.amount, 0);
   const totalMins = weekWorkouts.filter(x => x.unit === 'minutes').reduce((s, x) => s + x.amount, 0);
   const totalKm = weekWorkouts.filter(x => x.unit === 'km').reduce((s, x) => s + x.amount, 0);
   const prs = weekWorkouts.filter(x => x.isPR).length;
   const streak = getStreak();
-  
-  // Get best day
   const dayCounts = {};
-  weekWorkouts.forEach(w => {
-    dayCounts[w.date] = (dayCounts[w.date] || 0) + 1;
-  });
+  weekWorkouts.forEach(w => { dayCounts[w.date] = (dayCounts[w.date] || 0) + 1; });
   let bestDay = null;
   let bestCount = 0;
   Object.entries(dayCounts).forEach(([date, count]) => {
     if (count > bestCount) { bestCount = count; bestDay = date; }
   });
-  
-  // Get favorite exercise
   const freq = {};
-  weekWorkouts.forEach(w => {
-    freq[w.exercise] = (freq[w.exercise] || 0) + 1;
-  });
+  weekWorkouts.forEach(w => { freq[w.exercise] = (freq[w.exercise] || 0) + 1; });
   const favorite = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
-  
   const weekNum = Math.ceil((now - new Date(now.getFullYear(), 0, 1)) / (7 * 24 * 60 * 60 * 1000));
-  
   container.innerHTML = `
     <div class="wrap-card">
       <div style="font-size:16px;font-weight:800;color:var(--gold);margin-bottom:6px">🏆 Week ${weekNum} Wrap</div>
@@ -1548,7 +1911,6 @@ function renderSmartTags() {
     container.innerHTML = '<div class="empty">Log workouts to get smart insights!</div>';
     return;
   }
-  
   const tags = [];
   const last7 = workouts.filter(w => {
     const d = new Date(w.date);
@@ -1556,43 +1918,31 @@ function renderSmartTags() {
     const diff = (now - d) / (1000 * 60 * 60 * 24);
     return diff <= 7;
   });
-  
-  // Check for tired/sore patterns
   const tiredCount = last7.filter(w => w.feeling === '😤' || w.feeling === '😴').length;
   const soreCount = last7.filter(w => w.feeling === '🤕').length;
   const greatCount = last7.filter(w => w.feeling === '😊' || w.feeling === '💪').length;
-  
   if (tiredCount >= 3 && soreCount >= 2) {
     tags.push({ label: 'Recovery Needed', type: 'recovery', desc: 'You\'ve been tired/sore often — take a rest day!' });
   }
-  
   if (greatCount >= 4) {
     tags.push({ label: 'Peak Performance', type: 'peak', desc: 'You\'re feeling great! Keep pushing!' });
   }
-  
   if (last7.length >= 7) {
     tags.push({ label: 'Rest Day Suggested', type: 'rest', desc: 'You\'ve worked out 7 days straight — take a rest day!' });
   }
-  
   if (soreCount >= 3) {
     tags.push({ label: 'Recovery Focus', type: 'sore', desc: 'You\'re feeling sore — focus on recovery exercises!' });
   }
-  
-  // Check for consistent timing
   const times = last7.map(w => parseInt(w.time?.split(':')[0] || 12));
   if (times.length > 3 && new Set(times).size <= 2) {
     tags.push({ label: 'Consistent Routine', type: 'neutral', desc: 'You\'re working out at the same time — great habit!' });
   }
-  
   if (tags.length === 0) {
     tags.push({ label: 'Balanced Training', type: 'neutral', desc: 'You\'re doing great! Keep it balanced!' });
   }
-  
   container.innerHTML = `
     <div class="tag-container">
-      ${tags.map(t => `
-        <span class="tag ${t.type}">${t.label}</span>
-      `).join('')}
+      ${tags.map(t => `<span class="tag ${t.type}">${t.label}</span>`).join('')}
     </div>
     <div style="margin-top:6px;font-size:11px;color:var(--muted)">
       ${tags[0]?.desc || 'Keep up the good work!'}
@@ -1620,14 +1970,12 @@ function renderLevels() {
   const xpInLevel = xp - xpForCurrent;
   const xpNeeded = xpForNext - xpForCurrent;
   const pct = Math.min((xpInLevel / xpNeeded) * 100, 100);
-
   document.getElementById('levelTitle').textContent = `🪓 Level ${level} — ${getLevelName(level)}`;
   document.getElementById('totalLevel').textContent = totalLevel;
   document.getElementById('nextLevelName').textContent = getLevelName(nextLevel) || 'Max Level';
   document.getElementById('xpFill').style.width = pct + '%';
   document.getElementById('xpCurrent').textContent = Math.floor(xpInLevel);
   document.getElementById('xpNext').textContent = xpNeeded;
-
   const container = document.getElementById('levelCategories');
   container.innerHTML = CATEGORIES.map(c => {
     const cXP = catXP[c.id] || 0;
@@ -1653,18 +2001,15 @@ function renderCapes() {
   const totalLevel = getTotalLevel();
   const maxLevel = 7 * 99;
   const allLevel99 = totalLevel >= maxLevel;
-
   const unlockedAchievements = ACHIEVEMENTS.filter(a => a.check()).length;
   const totalAchievements = ACHIEVEMENTS.length;
   const allBronzeSilverGold = unlockedAchievements >= totalAchievements * 0.7;
   const allAchievements = unlockedAchievements >= totalAchievements;
-
   const capes = [
     { id: 'max', name: 'Max Cape', icon: '🎓', unlocked: allLevel99, desc: 'All skills Level 99' },
     { id: 'comp', name: 'Comp Cape', icon: '🏆', unlocked: allBronzeSilverGold, desc: '70%+ achievements' },
     { id: 'trim', name: 'Trimmed Comp', icon: '✨', unlocked: allAchievements, desc: '100% achievements' }
   ];
-
   const container = document.getElementById('capeContainer');
   container.innerHTML = capes.map(c =>
     `<div class="cape-item ${c.unlocked ? 'unlocked' : 'locked'}">
@@ -1683,9 +2028,7 @@ function renderAchievements() {
   const unlocked = ACHIEVEMENTS.filter(a => a.check());
   const total = ACHIEVEMENTS.length;
   document.getElementById('achievementCount').textContent = `${unlocked.length}/${total}`;
-
   const tierColors = { bronze: 'bronze', silver: 'silver', gold: 'gold', diamond: 'diamond', star: 'star' };
-
   const container = document.getElementById('achievementList');
   container.innerHTML = `
     <div class="achievement-grid">
@@ -1809,7 +2152,6 @@ function renderMonthlyInsights() {
     const dayTotal = monthly.filter(x => x.date === date).reduce((s, x) => s + x.amount, 0);
     return dayTotal > best.total ? { date, total: dayTotal } : best;
   }, { date: null, total: 0 });
-
   document.getElementById("monthlyInsights").innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px">
       <div style="text-align:center;background:var(--panel2);padding:10px;border-radius:10px;border:1px solid var(--line)">
@@ -1849,7 +2191,6 @@ function renderAnniversary() {
     check.setDate(check.getDate() - d);
     return check.toISOString().slice(0, 10) === first.date;
   });
-
   if (found) {
     const months = Math.floor(found / 30);
     const title = found >= 365 ? '🎉 1 YEAR ANNIVERSARY!' :
@@ -1862,7 +2203,6 @@ function renderAnniversary() {
       acc[w.exercise] = (acc[w.exercise] || 0) + 1;
       return acc;
     }, {})).sort((a, b) => b[1] - a[1])[0];
-
     document.getElementById('anniversaryHighlight').innerHTML = `
       <div style="background:var(--panel2);border:1px solid var(--gold);border-radius:14px;padding:16px;text-align:center">
         <div style="font-size:20px;font-weight:800;color:var(--gold)">${title}</div>
@@ -1904,10 +2244,12 @@ function renderHistory() {
 // ============================================
 function showSettings() {
   document.getElementById("settingsModal").classList.add("open");
+  haptic('medium');
 }
 
 function closeSettings() {
   document.getElementById("settingsModal").classList.remove("open");
+  haptic('light');
 }
 
 function exportData() {
@@ -1917,6 +2259,8 @@ function exportData() {
   a.download = "pulse-workouts-backup.json";
   a.click();
   URL.revokeObjectURL(a.href);
+  haptic('success');
+  playSound('click');
 }
 
 function importData(event) {
@@ -1930,6 +2274,7 @@ function importData(event) {
         workouts = imported;
         persist();
         closeSettings();
+        haptic('success');
         alert("✅ Data imported successfully!");
       } else {
         alert("Invalid backup file format.");
@@ -1946,6 +2291,7 @@ function clearData() {
     workouts = [];
     persist();
     closeSettings();
+    haptic('error');
   }
 }
 
@@ -1956,6 +2302,9 @@ updateWeather();
 setInterval(updateWeather, 1800000);
 generateWarmup();
 render();
+
+// Check achievements and levels on load
+setTimeout(checkAchievementsAndLevels, 500);
 </script>
 </body>
 </html>
