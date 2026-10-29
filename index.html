@@ -455,6 +455,28 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 
 <!-- Anniversary -->
 <div class="card"><h2>🎉 Anniversary Highlights</h2><div id="anniversaryHighlight"></div></div>
+
+<!-- 1RM Estimates -->
+<div class="card">
+<div class="cardhead"><h2>💪 Strength Estimates (1RM)</h2></div>
+<div class="muted" style="font-size:11px;margin-bottom:8px">Estimated one-rep max using Epley formula</div>
+<div id="oneRMList"></div>
+</div>
+
+<!-- Volume Trend -->
+<div class="card">
+<div class="cardhead"><h2>📈 Weekly Volume Trend</h2></div>
+<div id="volumeTrend"></div>
+</div>
+
+<!-- Shareable Progress Card -->
+<div class="card">
+<div class="cardhead"><h2>📸 Shareable Progress</h2></div>
+<div class="muted" style="font-size:11px;margin-bottom:8px">Share your stats as an image</div>
+<button class="save secondary" onclick="generateShareCard()">📱 Generate Share Card</button>
+<canvas id="shareCanvas" style="display:none"></canvas>
+<div id="sharePreview" style="margin-top:10px"></div>
+</div>
 </section>
 
 <!-- TAB 3: HISTORY -->
@@ -530,12 +552,12 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 <div class="exgrid" id="exerciseGrid"></div>
 <div id="customNameContainer" style="display:none;margin-top:10px;"><label>Custom Workout Name</label><input id="customNameInput" type="text" placeholder="e.g., Pull-ups, Yoga, Swimming"></div>
 <div class="fields">
-<div><label>Amount</label><input id="amount" type="number" inputmode="decimal" min="0" step="0.1" placeholder="50" onkeydown="if(event.key==='Enter')saveWorkout()"></div>
-<div><label>Unit</label><select id="unit"><option value="reps">reps</option><option value="minutes">minutes</option><option value="seconds">seconds</option><option value="km">km</option></select></div>
+<div><label>Sets</label><input id="sets" type="number" inputmode="numeric" min="1" max="99" step="1" value="1" placeholder="1"></div>
+<div><label>Amount <span id="amountLabel">(per set)</span></label><input id="amount" type="number" inputmode="decimal" min="0" step="0.1" placeholder="50" onkeydown="if(event.key==='Enter')saveWorkout()"></div>
 </div>
 <div class="fields">
-<div><label>Weight / load — kg (optional)</label><input id="weight" type="number" inputmode="decimal" min="0" step="0.5" placeholder="e.g. 20" onkeydown="if(event.key==='Enter')saveWorkout()"></div>
-<div><label>&nbsp;</label><div class="note" style="padding-top:12px">For weighted reps, e.g. 10 reps @ 20kg.</div></div>
+<div><label>Unit</label><select id="unit"><option value="reps">reps</option><option value="minutes">minutes</option><option value="seconds">seconds</option><option value="km">km</option></select></div>
+<div><label>Weight (kg)</label><input id="weight" type="number" inputmode="decimal" min="0" step="0.5" placeholder="e.g. 20" onkeydown="if(event.key==='Enter')saveWorkout()"></div>
 </div>
 <div class="fields">
 <div><label>Date</label><input id="entryDate" type="date"></div>
@@ -1050,7 +1072,8 @@ function xpForWorkout(w) {
   if (w.unit === 'km') mult = 5;
   else if (w.unit === 'minutes') mult = 3;
   else if (w.unit === 'seconds') mult = 0.1;
-  let xp = w.amount * mult;
+  let sets = w.sets || 1;
+  let xp = w.amount * sets * mult;
   if (w.weight && w.unit === 'reps') xp *= (1 + Math.min(w.weight, 300) / 100);
   return xp;
 }
@@ -1345,6 +1368,7 @@ function editWorkout(id) {
   selected = exMeta(w.exercise) ? w.exercise : "Custom";
   renderExercises();
   document.getElementById("unit").value = w.unit;
+  document.getElementById("sets").value = w.sets || 1;
   document.getElementById("amount").value = w.amount;
   document.getElementById("weight").value = (w.weight != null ? w.weight : "");
   document.getElementById("entryDate").value = w.date;
@@ -1364,6 +1388,7 @@ function editWorkout(id) {
 
 function clearModalFields() {
   document.getElementById("amount").value = "";
+  document.getElementById("sets").value = "1";
   document.getElementById("customNameInput").value = "";
   document.getElementById("notes").value = "";
   document.getElementById("weight").value = "";
@@ -1502,6 +1527,7 @@ function saveWorkout() {
   
   let a = Number(document.getElementById("amount").value);
   if (!a || a < 0) return;
+  let sets = Math.max(1, Math.round(Number(document.getElementById("sets").value) || 1));
   let unit = document.getElementById("unit").value;
   let date = document.getElementById("entryDate").value;
   let time = document.getElementById("entryTime").value;
@@ -1519,7 +1545,7 @@ function saveWorkout() {
   if (editingId !== null) {
     const w = workouts.find(x => x.id === editingId);
     if (w) {
-      w.exercise = name; w.amount = a; w.unit = unit; w.date = date; w.time = time;
+      w.exercise = name; w.amount = a; w.sets = sets; w.unit = unit; w.date = date; w.time = time;
       w.notes = notes; w.feeling = feeling; w.weight = weight; w.category = assignedCategory;
     }
     editingId = null;
@@ -1543,6 +1569,7 @@ function saveWorkout() {
     id: Date.now(),
     exercise: name,
     amount: a,
+    sets: sets,
     unit: unit,
     date: date,
     time: time,
@@ -2142,8 +2169,8 @@ function render() {
 
   // Today - Stats
   document.getElementById("sessionCount").textContent = td.length;
-  document.getElementById("repTotal").textContent = td.filter(x => x.unit === "reps").reduce((s, x) => s + x.amount, 0);
-  document.getElementById("timeTotal").textContent = Math.round(td.filter(x => x.unit === "minutes").reduce((s, x) => s + x.amount, 0));
+  document.getElementById("repTotal").textContent = td.filter(x => x.unit === "reps").reduce((s, x) => s + x.amount * (x.sets||1), 0);
+  document.getElementById("timeTotal").textContent = Math.round(td.filter(x => x.unit === "minutes").reduce((s, x) => s + x.amount * (x.sets||1), 0));
   document.getElementById("streakDisplay").textContent = getStreak();
 
   let km = td.filter(x => x.unit === "km").reduce((s, x) => s + x.amount, 0);
@@ -2170,7 +2197,7 @@ function render() {
           <div class="wname">${esc(x.exercise)} ${x.isPR ? '🏆' : ''} ${x.feeling || ''}</div>
           <div class="wtime">${x.time || ''}${x.notes ? ' · ' + esc(x.notes) : ''}</div>
         </div>
-        <div class="wvalue">${x.amount} ${x.unit}${x.weight ? ' · ' + x.weight + 'kg' : ''}</div>
+        <div class="wvalue">${(x.sets||1)>1 ? x.sets+'×' : ''}${x.amount} ${x.unit}${x.weight ? ' @ ' + x.weight + 'kg' : ''}</div>
         <button class="del" onclick="removeWorkout(${x.id})">×</button>
       </div>`
     ).join("") :
@@ -2217,6 +2244,10 @@ function render() {
 
   // Progress - Anniversary
   renderAnniversary();
+
+  // Progress - 1RM & Volume Trend
+  render1RM();
+  renderVolumeTrend();
 
   // Today - Rest day + Routines
   renderRestDayBtn();
@@ -2832,6 +2863,203 @@ function renderAnniversary() {
 }
 
 // ============================================
+// 1RM ESTIMATES (Epley formula)
+// ============================================
+function render1RM() {
+  const el = document.getElementById('oneRMList');
+  if (!el) return;
+  // Find weighted exercises with reps
+  const weighted = workouts.filter(w => w.weight && w.unit === 'reps' && w.amount > 0);
+  if (!weighted.length) {
+    el.innerHTML = '<div class="empty">Log weighted exercises to see estimated 1RM.</div>';
+    return;
+  }
+  // Group by exercise, find best estimated 1RM per exercise
+  const byEx = {};
+  weighted.forEach(w => {
+    const sets = w.sets || 1;
+    const reps = w.amount;
+    const wt = w.weight;
+    // Epley formula: 1RM = weight × (1 + reps/30)
+    const oneRM = wt * (1 + reps / 30);
+    if (!byEx[w.exercise] || oneRM > byEx[w.exercise].oneRM) {
+      byEx[w.exercise] = { oneRM, reps, weight: wt, sets, date: w.date };
+    }
+  });
+  const sorted = Object.entries(byEx).sort((a,b) => b[1].oneRM - a[1].oneRM);
+  el.innerHTML = sorted.map(([name, d]) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
+      <div>
+        <div style="font-weight:700;font-size:13px">${esc(name)}</div>
+        <div style="font-size:10px;color:var(--muted)">Best: ${d.sets > 1 ? d.sets+'×' : ''}${d.reps} @ ${d.weight}kg · ${d.date.slice(5)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:18px;font-weight:800;color:var(--accent);font-family:var(--mono)">${Math.round(d.oneRM)}kg</div>
+        <div style="font-size:9px;color:var(--muted)">Est. 1RM</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================
+// WEEKLY VOLUME TREND
+// ============================================
+function renderVolumeTrend() {
+  const el = document.getElementById('volumeTrend');
+  if (!el) return;
+  if (workouts.length < 2) {
+    el.innerHTML = '<div class="empty">Need more data for volume trends.</div>';
+    return;
+  }
+  // Get last 8 weeks of volume
+  const now = new Date();
+  const weeks = [];
+  for (let i = 7; i >= 0; i--) {
+    const wStart = new Date(now);
+    wStart.setDate(wStart.getDate() - (i * 7 + now.getDay()));
+    const wEnd = new Date(wStart);
+    wEnd.setDate(wEnd.getDate() + 6);
+    const startKey = dateKey(wStart);
+    const endKey = dateKey(wEnd);
+    const vol = workouts
+      .filter(w => w.date >= startKey && w.date <= endKey)
+      .reduce((s, w) => s + (w.amount * (w.sets || 1)), 0);
+    weeks.push({ label: `W${8 - i}`, vol: Math.round(vol) });
+  }
+  const max = Math.max(...weeks.map(w => w.vol), 1);
+  el.innerHTML = `
+    <div class="pchart">
+      ${weeks.map(w => `
+        <div class="pchart-col">
+          <div class="v">${w.vol}</div>
+          <div class="bar" style="height:${Math.max((w.vol / max) * 100, 3)}px"></div>
+          <div class="l">${w.label}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px;text-align:center">Total volume (sets × reps) per week</div>
+  `;
+}
+
+// ============================================
+// SHAREABLE PROGRESS CARD
+// ============================================
+function generateShareCard() {
+  const canvas = document.getElementById('shareCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = 600, H = 400;
+  canvas.width = W; canvas.height = H;
+
+  // Background
+  ctx.fillStyle = '#05080c';
+  ctx.fillRect(0, 0, W, H);
+  // Border glow
+  ctx.strokeStyle = '#49e39a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, W - 2, H - 2);
+  // Grid pattern
+  ctx.strokeStyle = 'rgba(73,227,154,0.05)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  // Title
+  ctx.fillStyle = '#49e39a';
+  ctx.font = 'bold 28px system-ui, sans-serif';
+  ctx.fillText('PULSE', 30, 50);
+  ctx.fillStyle = '#8a96a3';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.fillText('WORKOUT TRACKER', 130, 50);
+
+  // Stats
+  const totalSessions = workouts.length;
+  const totalVol = workouts.reduce((s, w) => s + w.amount * (w.sets || 1), 0);
+  const totalPRs = workouts.filter(w => w.isPR).length;
+  const streak = getStreak();
+  const title = getTitle();
+  const totalLvl = getTotalLevel();
+
+  ctx.fillStyle = '#e8ecf1';
+  ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.fillText(title.name, 30, 90);
+  ctx.fillStyle = '#8a96a3';
+  ctx.font = '13px system-ui, sans-serif';
+  ctx.fillText(`Total Level ${totalLvl}`, 30, 110);
+
+  // Stat boxes
+  const stats = [
+    { label: 'Sessions', value: totalSessions, color: '#49e39a' },
+    { label: 'Volume', value: totalVol, color: '#5aa8ff' },
+    { label: 'PRs', value: totalPRs, color: '#ffd700' },
+    { label: 'Streak', value: streak + 'd', color: '#ff7b54' }
+  ];
+  stats.forEach((s, i) => {
+    const x = 30 + i * 140, y = 140;
+    ctx.fillStyle = '#0b1016';
+    ctx.fillRect(x, y, 120, 70);
+    ctx.strokeStyle = '#1a2230';
+    ctx.strokeRect(x, y, 120, 70);
+    ctx.fillStyle = s.color;
+    ctx.font = 'bold 26px system-ui, sans-serif';
+    ctx.fillText(String(s.value), x + 12, y + 35);
+    ctx.fillStyle = '#8a96a3';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.fillText(s.label, x + 12, y + 55);
+  });
+
+  // Category levels
+  const catXP = getCategoryXP();
+  const cats = Object.entries(catXP).slice(0, 7);
+  ctx.fillStyle = '#e8ecf1';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.fillText('Category Levels', 30, 250);
+  cats.forEach(([cat, xp], i) => {
+    const lvl = getXPLevel(xp);
+    const x = 30, y = 264 + i * 18;
+    ctx.fillStyle = '#8a96a3';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.fillText(cat.charAt(0).toUpperCase() + cat.slice(1), x, y);
+    ctx.fillStyle = '#49e39a';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.fillText(`Lv.${lvl}`, x + 90, y);
+  });
+
+  // Date
+  ctx.fillStyle = '#555e6b';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillText(new Date().toLocaleDateString(), W - 120, H - 15);
+  ctx.fillText('pulse-tracker', 30, H - 15);
+
+  // Show preview
+  canvas.style.display = 'block';
+  canvas.style.width = '100%';
+  canvas.style.borderRadius = '12px';
+
+  // Download button
+  const preview = document.getElementById('sharePreview');
+  preview.innerHTML = '<button class="save secondary" onclick="downloadShareCard()">📥 Save Image</button>';
+  haptic('success');
+  playSound('levelup');
+}
+
+function downloadShareCard() {
+  const canvas = document.getElementById('shareCanvas');
+  const link = document.createElement('a');
+  link.download = 'pulse-progress.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast('📸 Progress card saved!');
+}
+
+// Helper for 1RM: get level from XP (simplified)
+function getXPLevel(xp) {
+  for (let l = 99; l >= 1; l--) {
+    if (xp >= getXPForLevel(l)) return l;
+  }
+  return 1;
+}
+
+// ============================================
 // HISTORY
 // ============================================
 function renderHistory() {
@@ -2844,7 +3072,7 @@ function renderHistory() {
       `<div class="historyRow">
         <div class="hdate">${fmtDate(d)}</div>
         <div class="hitems">${list.filter(x => x.date === d).map(x =>
-          `<span class="pill" onclick="editWorkout(${x.id})" style="cursor:pointer">${icon(x.exercise)} ${esc(x.exercise)} · ${x.amount} ${x.unit}${x.weight ? ' @' + x.weight + 'kg' : ''} ${x.isPR ? '🏆' : ''} ${x.feeling || ''}${x.notes ? ' · ' + esc(x.notes) : ''}</span>`
+          `<span class="pill" onclick="editWorkout(${x.id})" style="cursor:pointer">${icon(x.exercise)} ${esc(x.exercise)} · ${(x.sets||1)>1?x.sets+'×':''}${x.amount} ${x.unit}${x.weight ? ' @' + x.weight + 'kg' : ''} ${x.isPR ? '🏆' : ''} ${x.feeling || ''}${x.notes ? ' · ' + esc(x.notes) : ''}</span>`
         ).join("")}</div>
       </div>`
     ).join("") :
@@ -3224,7 +3452,7 @@ function exportData() {
 }
 
 function exportCSV() {
-  const headers = ['date', 'time', 'exercise', 'amount', 'unit', 'weight_kg', 'isPR', 'feeling', 'notes'];
+  const headers = ['date', 'time', 'exercise', 'sets', 'amount', 'unit', 'weight_kg', 'isPR', 'feeling', 'notes'];
   const q = v => {
     const s = String(v == null ? '' : v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -3232,7 +3460,7 @@ function exportCSV() {
   const rows = workouts
     .slice()
     .sort((a, b) => ((a.date || '') + (a.time || '')).localeCompare((b.date || '') + (b.time || '')))
-    .map(w => [w.date, w.time || '', w.exercise, w.amount, w.unit, w.weight != null ? w.weight : '', w.isPR ? 'yes' : '', w.feeling || '', w.notes || ''].map(q).join(','));
+    .map(w => [w.date, w.time || '', w.exercise, w.sets||1, w.amount, w.unit, w.weight != null ? w.weight : '', w.isPR ? 'yes' : '', w.feeling || '', w.notes || ''].map(q).join(','));
   const csv = headers.join(',') + '\n' + rows.join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
