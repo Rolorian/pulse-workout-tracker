@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#090d12">
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pulse">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Pulse — Workout Tracker</title>
 <style>
 :root{--bg:#090d12;--panel:#111720;--panel2:#171f2a;--line:#27313d;--text:#f6f8fb;--muted:#8e99a8;--green:#6ee7a5;--blue:#71b7ff;--orange:#ffb86b;--red:#ff6b7a;--gold:#fbbf24;--purple:#a78bfa}
@@ -174,6 +180,63 @@
 .minimum-progress .prog-row .prog-bar .fill.done{background:var(--gold)}
 .minimum-progress .prog-row .prog-status{width:30px;text-align:right;font-weight:700;font-size:11px}
 .minimum-overall{text-align:center;padding:12px;font-size:14px;font-weight:700;color:var(--gold)}
+
+/* Toast (undo etc.) */
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(120%);bottom:calc(env(safe-area-inset-bottom) + 86px);background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;z-index:120;box-shadow:0 10px 30px rgba(0,0,0,.5);transition:transform .25s cubic-bezier(.34,1.56,.64,1);max-width:92vw;pointer-events:none;visibility:hidden}
+.toast.show{transform:translateX(-50%) translateY(0);pointer-events:auto;visibility:visible}
+.toast .msg{font-size:13px;font-weight:600;color:var(--text)}
+.toast button{background:var(--green);color:#07130d;border:0;border-radius:10px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer}
+
+/* Install hint */
+.install-hint{background:var(--panel);border:1px solid var(--blue);border-radius:16px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text)}
+.install-hint .x{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--muted);width:28px;height:28px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0}
+.install-hint button.go{background:var(--blue);color:#07130d;border:0;border-radius:10px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer;flex-shrink:0}
+
+/* History search */
+.search-box{width:100%;background:var(--bg);border:1px solid var(--line);color:white;border-radius:12px;padding:10px 12px;outline:none;font-size:14px;margin-bottom:10px}
+.search-box:focus{border-color:var(--green)}
+
+/* Calendar */
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-head button{background:var(--panel2);border:1px solid var(--line);color:white;width:32px;height:32px;border-radius:10px;font-size:16px;cursor:pointer}
+.cal-head .cal-title{font-weight:700;font-size:14px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dow{font-size:9px;color:var(--muted);text-align:center;font-weight:700;text-transform:uppercase;padding:2px 0}
+.cal-day{aspect-ratio:1;border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;font-size:11px;color:var(--muted);background:var(--panel2);position:relative}
+.cal-day.empty{border:0;background:transparent}
+.cal-day.has{background:rgba(110,231,165,.15);border-color:var(--green);color:var(--text);font-weight:700}
+.cal-day.rest{background:rgba(113,183,255,.15);border-color:var(--blue);color:var(--text)}
+.cal-day.today{outline:2px solid var(--gold);outline-offset:-2px}
+.cal-day .cnt{position:absolute;bottom:2px;right:3px;font-size:7px;color:var(--green);font-weight:800}
+
+/* Progress chart select */
+.ex-select{width:100%;background:var(--bg);border:1px solid var(--line);color:white;border-radius:12px;padding:10px;outline:none;font-size:13px;margin-bottom:8px}
+.pchart{display:flex;align-items:flex-end;height:130px;gap:4px;padding:6px 0;border-bottom:1px solid var(--line)}
+.pchart-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;min-width:0}
+.pchart-col .bar{width:70%;max-width:26px;background:linear-gradient(180deg,var(--green),var(--blue));border-radius:4px 4px 0 0;transition:height .4s cubic-bezier(.34,1.56,.64,1);min-height:3px}
+.pchart-col .v{font-size:8px;color:var(--text);font-weight:700}
+.pchart-col .l{font-size:7px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+/* Routines */
+.routine-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.routine-item:last-child{border-bottom:0}
+.routine-item .rmain{flex:1;min-width:0}
+.routine-item .rname{font-weight:700;font-size:14px}
+.routine-item .rdesc{font-size:11px;color:var(--muted);margin-top:1px}
+.routine-item .rlog{background:var(--green);color:#07130d;border:0;border-radius:10px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer;flex-shrink:0}
+.routine-item .rdel{background:none;border:0;color:var(--muted);font-size:16px;padding:4px;cursor:pointer}
+
+/* Settings toggle rows */
+.set-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.set-row:last-child{border-bottom:0}
+.set-row .set-name{flex:1;font-weight:600}
+.set-row .set-sub{font-size:10px;color:var(--muted);font-weight:400}
+.set-toggle{cursor:pointer;font-size:20px;padding:2px 6px}
+.set-toggle.on{color:var(--green)}
+.set-toggle.off{color:var(--muted)}
+.rest-day-btn{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:14px;padding:11px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:12px;transition:all .15s}
+.rest-day-btn:active{transform:scale(.97)}
+.rest-day-btn.active{background:rgba(113,183,255,.12);border-color:var(--blue);color:var(--blue)}
 </style>
 </head>
 <body>
@@ -185,6 +248,8 @@
 </div>
 <button class="gear" onclick="showSettings()">⚙</button>
 </header>
+
+<div id="installHint"></div>
 
 <div class="tabs">
 <button class="tab active" onclick="switchTab('today',this)" data-tab="0">Today</button>
@@ -234,10 +299,10 @@
 <!-- Rest Timer -->
 <div class="rest-timer" id="restTimer">
 <div class="rest-time-buttons">
-<button onclick="setRestTime(30)">30s</button>
-<button onclick="setRestTime(60)" class="active">60s</button>
-<button onclick="setRestTime(90)">90s</button>
-<button onclick="setRestTime(120)">120s</button>
+<button onclick="setRestTime(30,this)">30s</button>
+<button onclick="setRestTime(60,this)" class="active">60s</button>
+<button onclick="setRestTime(90,this)">90s</button>
+<button onclick="setRestTime(120,this)">120s</button>
 <button onclick="customRestTime()">⚙</button>
 </div>
 <div class="timer-big" id="timerDisplay">60</div>
@@ -255,6 +320,15 @@
 <div class="card">
 <div class="cardhead"><h2>Today's Workout</h2><span class="muted" id="todayDistance"></span></div>
 <div id="todayList"></div>
+</div>
+
+<!-- Rest Day -->
+<button class="rest-day-btn" id="restDayBtn" onclick="toggleRestDay()">🛌 Mark today as a rest day</button>
+
+<!-- Routines -->
+<div class="card">
+<div class="cardhead"><h2>⚡ Routines</h2><span class="muted" onclick="saveTodayAsRoutine()" style="cursor:pointer;color:var(--green)">＋ Save today</span></div>
+<div id="routineList"></div>
 </div>
 </section>
 
@@ -279,6 +353,13 @@
 <div class="card">
 <div class="cardhead"><h2>🏅 Achievements</h2><span class="muted" id="achievementCount">0/50</span></div>
 <div id="achievementList"></div>
+</div>
+
+<!-- Per-Exercise Progress -->
+<div class="card">
+<div class="cardhead"><h2>📈 Exercise Progress</h2></div>
+<select class="ex-select" id="progressExSelect" onchange="renderProgressChart()"></select>
+<div id="progressChart"></div>
 </div>
 
 <!-- Body Part Volume Chart -->
@@ -332,8 +413,18 @@
 
 <!-- TAB 3: HISTORY -->
 <section id="history" class="section">
+<!-- Calendar -->
+<div class="card">
+<div class="cal-head">
+<button onclick="calShift(-1)">‹</button>
+<span class="cal-title" id="calTitle"></span>
+<button onclick="calShift(1)">›</button>
+</div>
+<div id="calGrid" class="cal-grid"></div>
+</div>
 <div class="card">
 <div class="cardhead"><h2>📚 Workout History</h2><span class="muted" id="totalWorkoutsLabel">0 total</span></div>
+<input class="search-box" id="historySearch" type="text" placeholder="🔍 Search exercise or note..." oninput="renderHistory()">
 <div id="historyList"></div>
 </div>
 </section>
@@ -374,11 +465,14 @@
 
 <div class="bottom"><button onclick="openAdd()">＋ Log Workout</button></div>
 
+<!-- Toast -->
+<div class="toast" id="toast"><span class="msg" id="toastMsg"></span><button id="toastBtn" onclick="toastAction()">Undo</button></div>
+
 <!-- LOG MODAL -->
 <div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
 <div class="sheet">
 <button class="close" onclick="closeModal()">✕</button>
-<h2>Log a Workout</h2>
+<h2 id="modalTitle">Log a Workout</h2>
 
 <!-- Quick Log Buttons -->
 <div class="quick-log-row">
@@ -389,8 +483,12 @@
 <div class="exgrid" id="exerciseGrid"></div>
 <div id="customNameContainer" style="display:none;margin-top:10px;"><label>Custom Workout Name</label><input id="customNameInput" type="text" placeholder="e.g., Pull-ups, Yoga, Swimming"></div>
 <div class="fields">
-<div><label>Amount</label><input id="amount" type="number" inputmode="decimal" min="0" step="0.1" placeholder="50"></div>
+<div><label>Amount</label><input id="amount" type="number" inputmode="decimal" min="0" step="0.1" placeholder="50" onkeydown="if(event.key==='Enter')saveWorkout()"></div>
 <div><label>Unit</label><select id="unit"><option value="reps">reps</option><option value="minutes">minutes</option><option value="seconds">seconds</option><option value="km">km</option></select></div>
+</div>
+<div class="fields">
+<div><label>Weight / load — kg (optional)</label><input id="weight" type="number" inputmode="decimal" min="0" step="0.5" placeholder="e.g. 20" onkeydown="if(event.key==='Enter')saveWorkout()"></div>
+<div><label>&nbsp;</label><div class="note" style="padding-top:12px">For weighted reps, e.g. 10 reps @ 20kg.</div></div>
 </div>
 <div class="fields">
 <div><label>Date</label><input id="entryDate" type="date"></div>
@@ -419,7 +517,7 @@
 </div>
 </div>
 <div><label>Notes (optional)</label><input id="notes" type="text" placeholder="How was your workout?"></div>
-<button class="save" onclick="saveWorkout()">💾 Save Workout</button>
+<button class="save" id="saveBtn" onclick="saveWorkout()">💾 Save Workout</button>
 </div>
 </div>
 
@@ -428,8 +526,19 @@
 <div class="sheet">
 <button class="close" onclick="closeSettings()">✕</button>
 <h2>⚙️ Settings & Backup</h2>
-<p class="note">Back up your data to a file so you can safely restore it whenever needed.</p>
-<button class="save secondary" onclick="exportData()">📤 Export Data</button>
+
+<div class="set-row">
+<div><div class="set-name">🔊 Sounds</div><div class="set-sub">Level-up & achievement jingles</div></div>
+<span class="set-toggle" id="toggleSound" onclick="toggleSetting('sound')"></span>
+</div>
+<div class="set-row">
+<div><div class="set-name">📳 Haptics</div><div class="set-sub">Vibration feedback</div></div>
+<span class="set-toggle" id="toggleHaptics" onclick="toggleSetting('haptics')"></span>
+</div>
+
+<p class="note" id="backupStatus" style="margin-top:14px">Back up your data so you can restore it anytime.</p>
+<button class="save secondary" onclick="exportData()">📤 Export backup (JSON)</button>
+<button class="save secondary" style="margin-top:8px" onclick="exportCSV()">📊 Export as CSV (spreadsheet)</button>
 <button class="save secondary" style="margin-top:8px" onclick="document.getElementById('importFile').click()">📥 Import Data</button>
 <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
 <button class="save" style="background:var(--red);color:white;margin-top:12px" onclick="clearData()">🗑️ Delete All Data</button>
@@ -442,11 +551,50 @@
 // ============================================
 const KEY = "pulse-workouts-v2";
 const MIN_KEY = "pulse-minimum-v2";
+const ROUTINE_KEY = "pulse-routines-v1";
+const RESTDAY_KEY = "pulse-restdays-v1";
+const SETTINGS_KEY = "pulse-settings-v1";
+const BACKUP_KEY = "pulse-last-backup-v1";
 const EX = [["🏃","Jogging","km"],["💪","Press-ups","reps"],["🧘","Plank","minutes"],["🔥","Sit-ups","reps"],["🦵","Squats","reps"],["🚴","Cycling","km"],["⭐","Custom","reps"]];
 let workouts = JSON.parse(localStorage.getItem(KEY) || "[]");
 let selected = "Jogging";
 let selectedFeeling = "😊";
 let selectedWarmupBody = "Full Body";
+let editingId = null;            // when editing an existing workout
+let lastDeleted = null;          // for undo
+let toastTimer = null;
+let calOffset = 0;               // month offset for calendar (0 = current)
+
+// Settings (sounds / haptics on by default)
+function getSettings() {
+  try { return Object.assign({ sound: true, haptics: true }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); }
+  catch (e) { return { sound: true, haptics: true }; }
+}
+let settings = getSettings();
+function saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
+
+// Local-time date key (yyyy-mm-dd) — used EVERYWHERE so streaks/heatmap/calendar
+// never drift by a day across timezones or around midnight.
+function dateKey(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+// Escape user-entered text before putting it in innerHTML.
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// Rest days (planned days that don't break your streak)
+function getRestDays() {
+  try { return JSON.parse(localStorage.getItem(RESTDAY_KEY) || "[]"); } catch (e) { return []; }
+}
+function saveRestDays(arr) { localStorage.setItem(RESTDAY_KEY, JSON.stringify(arr)); }
+
+// Routines (saved workout templates)
+function getRoutines() {
+  try { return JSON.parse(localStorage.getItem(ROUTINE_KEY) || "[]"); } catch (e) { return []; }
+}
+function saveRoutines(arr) { localStorage.setItem(ROUTINE_KEY, JSON.stringify(arr)); }
 
 // ============================================
 // DAILY MINIMUM CONFIG
@@ -499,6 +647,7 @@ function initAudio() {
 }
 
 function playSound(type) {
+  if (!settings.sound) return;
   try {
     initAudio();
     if (!audioCtx) return;
@@ -535,7 +684,14 @@ function playSound(type) {
         // Soft click for UI interactions
         playNote(800, 0.05, now);
         break;
-        
+
+      case 'alarm':
+        // Rest-over alarm — three rising beeps, louder
+        playNote(880, 0.18, now);
+        playNote(880, 0.18, now + 0.25);
+        playNote(1175, 0.35, now + 0.5);
+        break;
+
       default:
         break;
     }
@@ -544,26 +700,47 @@ function playSound(type) {
   }
 }
 
-function playNote(freq, duration, startTime) {
+// Richer, bell-like note: a triangle body + a quiet sine octave for sparkle,
+// with a soft attack and smooth exponential release (no clicky edges).
+function playNote(freq, duration, startTime, opts) {
   if (!audioCtx) return;
   try {
+    opts = opts || {};
+    const type = opts.type || 'triangle';
+    const peak = opts.gain != null ? opts.gain : 0.12;
+
+    const g1 = audioCtx.createGain();
+    g1.connect(audioCtx.destination);
+    g1.gain.setValueAtTime(0.0001, startTime);
+    g1.gain.exponentialRampToValueAtTime(peak, startTime + 0.015);
+    g1.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
     const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.frequency.value = freq;
-    osc.type = 'square';
-    gain.gain.value = 0.08;
-    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startTime);
+    osc.connect(g1);
     osc.start(startTime);
-    osc.stop(startTime + duration);
-  } catch(e) {}
+    osc.stop(startTime + duration + 0.02);
+
+    // sparkle layer an octave up
+    const g2 = audioCtx.createGain();
+    g2.connect(audioCtx.destination);
+    g2.gain.setValueAtTime(0.0001, startTime);
+    g2.gain.exponentialRampToValueAtTime(peak * 0.22, startTime + 0.015);
+    g2.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(freq * 2, startTime);
+    osc2.connect(g2);
+    osc2.start(startTime);
+    osc2.stop(startTime + duration + 0.02);
+  } catch (e) {}
 }
 
 // ============================================
 // HAPTIC SYSTEM
 // ============================================
 function haptic(type = 'light') {
+  if (!settings.haptics) return;
   if (!navigator.vibrate) return;
   const patterns = {
     light: 10,
@@ -789,14 +966,18 @@ function getTotalVolume() {
 }
 
 function getStreak() {
+  const rest = new Set(getRestDays());
   let streak = 0;
   let d = new Date();
+  // "Today pending": if nothing is logged today yet, don't reset the streak to 0 —
+  // start counting from yesterday so the number holds until the day is actually missed.
+  const tKey = dateKey(d);
+  if (!workouts.some(w => w.date === tKey) && !rest.has(tKey)) d.setDate(d.getDate() - 1);
   while (true) {
-    const key = d.toISOString().slice(0, 10);
-    if (workouts.some(w => w.date === key)) {
-      streak++;
-      d.setDate(d.getDate() - 1);
-    } else break;
+    const key = dateKey(d);
+    if (workouts.some(w => w.date === key)) { streak++; d.setDate(d.getDate() - 1); }
+    else if (rest.has(key)) { d.setDate(d.getDate() - 1); } // rest day freeze: keeps streak alive
+    else break;
   }
   return streak;
 }
@@ -851,9 +1032,56 @@ const getGreeting = () => {
 // ============================================
 // PERSIST
 // ============================================
+// Recompute PR flags across ALL workouts in chronological order, so back-dating
+// or deleting entries can never leave stale 🏆 flags behind.
+function recomputePRs() {
+  const best = {}; // "exercise|unit" -> best amount seen so far (chronologically)
+  const order = workouts.map((w, i) => i).sort((a, b) => {
+    const wa = workouts[a], wb = workouts[b];
+    const ka = (wa.date || '') + 'T' + (wa.time || '00:00');
+    const kb = (wb.date || '') + 'T' + (wb.time || '00:00');
+    if (ka < kb) return -1;
+    if (ka > kb) return 1;
+    return (wa.id || 0) - (wb.id || 0);
+  });
+  order.forEach(i => {
+    const w = workouts[i];
+    const k = w.exercise + '|' + w.unit;
+    if (best[k] === undefined || w.amount > best[k]) { w.isPR = true; best[k] = w.amount; }
+    else { w.isPR = false; }
+  });
+}
+
 function persist() {
+  recomputePRs();
   localStorage.setItem(KEY, JSON.stringify(workouts));
   render();
+}
+
+// ============================================
+// TOAST (with optional Undo)
+// ============================================
+function showToast(msg, actionLabel, actionFn, ms = 5000) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  const btn = document.getElementById('toastBtn');
+  if (actionLabel && actionFn) {
+    btn.style.display = '';
+    btn.textContent = actionLabel;
+    showToast._action = actionFn;
+  } else {
+    btn.style.display = 'none';
+    showToast._action = null;
+  }
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+function toastAction() {
+  if (showToast._action) showToast._action();
+  showToast._action = null;
+  document.getElementById('toast').classList.remove('show');
+  clearTimeout(toastTimer);
 }
 
 // ============================================
@@ -872,16 +1100,58 @@ function switchTab(id, btn) {
 // MODAL
 // ============================================
 function openAdd() {
+  editingId = null;
+  document.getElementById("modalTitle").textContent = "Log a Workout";
+  document.getElementById("saveBtn").textContent = "💾 Save Workout";
   document.getElementById("modal").classList.add("open");
   document.getElementById("entryDate").value = todayKey();
   document.getElementById("entryTime").value = new Date().toTimeString().slice(0, 5);
+  clearModalFields();
+  selectedFeeling = "😊";
+  document.querySelectorAll('.feeling-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector('.feeling-btn[data-feeling="😊"]')?.classList.add('selected');
   renderExercises();
   setTimeout(() => document.getElementById("amount").focus(), 100);
   haptic('medium');
 }
 
+function editWorkout(id) {
+  const w = workouts.find(x => x.id === id);
+  if (!w) return;
+  editingId = id;
+  document.getElementById("modalTitle").textContent = "Edit Workout";
+  document.getElementById("saveBtn").textContent = "💾 Update Workout";
+  document.getElementById("modal").classList.add("open");
+  selected = EX.find(x => x[1] === w.exercise) ? w.exercise : "Custom";
+  renderExercises();
+  document.getElementById("unit").value = w.unit;
+  document.getElementById("amount").value = w.amount;
+  document.getElementById("weight").value = (w.weight != null ? w.weight : "");
+  document.getElementById("entryDate").value = w.date;
+  document.getElementById("entryTime").value = w.time || "";
+  document.getElementById("notes").value = w.notes || "";
+  if (selected === "Custom") {
+    document.getElementById("customNameContainer").style.display = "block";
+    document.getElementById("categorySelector").style.display = "block";
+    document.getElementById("customNameInput").value = w.exercise;
+    if (w.category) document.getElementById("categoryAssign").value = w.category;
+  }
+  selectedFeeling = w.feeling || "😊";
+  document.querySelectorAll('.feeling-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector(`.feeling-btn[data-feeling="${selectedFeeling}"]`)?.classList.add('selected');
+  haptic('medium');
+}
+
+function clearModalFields() {
+  document.getElementById("amount").value = "";
+  document.getElementById("customNameInput").value = "";
+  document.getElementById("notes").value = "";
+  document.getElementById("weight").value = "";
+}
+
 function closeModal() {
   document.getElementById("modal").classList.remove("open");
+  editingId = null;
   haptic('light');
 }
 
@@ -992,8 +1262,27 @@ function saveWorkout() {
   let time = document.getElementById("entryTime").value;
   let notes = document.getElementById("notes").value || '';
   let feeling = selectedFeeling;
+  let weightRaw = document.getElementById("weight").value;
+  let weight = (weightRaw !== '' && !isNaN(weightRaw) && Number(weightRaw) > 0) ? Number(weightRaw) : null;
 
-  // Check for PR
+  // --- EDIT MODE: update the existing entry ---
+  if (editingId !== null) {
+    const w = workouts.find(x => x.id === editingId);
+    if (w) {
+      w.exercise = name; w.amount = a; w.unit = unit; w.date = date; w.time = time;
+      w.notes = notes; w.feeling = feeling; w.weight = weight; w.category = assignedCategory;
+    }
+    editingId = null;
+    closeModal();
+    clearModalFields();
+    persist();
+    haptic('medium'); playSound('click');
+    showToast('✏️ Workout updated');
+    setTimeout(checkAchievementsAndLevels, 100);
+    return;
+  }
+
+  // Check for PR (for the celebratory popup; stored flags are set by recomputePRs)
   let existingPRs = {};
   workouts.filter(w => w.exercise === name).forEach(w => {
     if (!existingPRs[w.unit] || w.amount > existingPRs[w.unit]) existingPRs[w.unit] = w.amount;
@@ -1010,6 +1299,7 @@ function saveWorkout() {
     isPR: isPR,
     feeling: feeling,
     notes: notes,
+    weight: weight,
     category: assignedCategory
   });
 
@@ -1024,21 +1314,26 @@ function saveWorkout() {
   }
 
   closeModal();
-  document.getElementById("amount").value = "";
-  document.getElementById("customNameInput").value = "";
-  document.getElementById("notes").value = "";
+  clearModalFields();
   persist();
-  
+
   // Check achievements and level ups after persist
   setTimeout(checkAchievementsAndLevels, 100);
 }
 
 function removeWorkout(id) {
-  if (confirm('Delete this workout?')) {
-    workouts = workouts.filter(x => x.id !== id);
-    haptic('error');
+  const idx = workouts.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  lastDeleted = { item: workouts[idx], index: idx };
+  workouts.splice(idx, 1);
+  haptic('error');
+  persist();
+  showToast('🗑️ Workout deleted', 'Undo', () => {
+    workouts.splice(Math.min(lastDeleted.index, workouts.length), 0, lastDeleted.item);
+    lastDeleted = null;
     persist();
-  }
+    haptic('light');
+  });
 }
 
 // ============================================
@@ -1226,7 +1521,7 @@ let restInterval = null;
 let restPaused = false;
 let wakeLock = null;
 
-function setRestTime(seconds) {
+function setRestTime(seconds, btn) {
   restTimer = seconds;
   restMax = seconds;
   document.getElementById('timerDisplay').textContent = seconds;
@@ -1234,7 +1529,7 @@ function setRestTime(seconds) {
   document.getElementById('timerProgress').style.width = '100%';
   document.getElementById('timerProgress').className = 'bar';
   document.querySelectorAll('.rest-time-buttons button').forEach(b => b.classList.remove('active'));
-  if (event) event.target.classList.add('active');
+  if (btn && btn.classList) btn.classList.add('active');
   resetRestTimer();
   haptic('light');
   playSound('click');
@@ -1242,7 +1537,7 @@ function setRestTime(seconds) {
 
 function customRestTime() {
   const c = prompt('Enter rest time in seconds:', '60');
-  if (c && !isNaN(c)) {
+  if (c && !isNaN(c) && parseInt(c) > 0) {
     setRestTime(parseInt(c));
   }
 }
@@ -1285,8 +1580,8 @@ function startRestTimer() {
         display.className = 'timer-big';
         document.getElementById('timerStatus').textContent = '✅ Rest complete! Get ready!';
         document.getElementById('timerStatus').style.color = 'var(--green)';
-        haptic('heavy');
-        playSound('click');
+        haptic('success');
+        playSound('alarm');
         releaseWakeLock();
         setTimeout(() => {
           document.getElementById('timerDisplay').textContent = restMax;
@@ -1426,23 +1721,47 @@ function generateWarmup() {
 // ============================================
 // WEATHER
 // ============================================
+// Keyless weather via Open-Meteo (no API key, free). Uses device location once,
+// caches coords, and falls back silently if location/permission isn't available.
+function getCoords() {
+  const cached = localStorage.getItem('pulse-coords');
+  if (cached) { try { return Promise.resolve(JSON.parse(cached)); } catch (e) {} }
+  if (!navigator.geolocation) return Promise.resolve(null);
+  return new Promise(res => {
+    navigator.geolocation.getCurrentPosition(
+      p => {
+        const c = { lat: +p.coords.latitude.toFixed(3), lon: +p.coords.longitude.toFixed(3) };
+        localStorage.setItem('pulse-coords', JSON.stringify(c));
+        res(c);
+      },
+      () => res(null),
+      { timeout: 8000, maximumAge: 3600000 }
+    );
+  });
+}
+
 async function getWeather() {
   try {
-    const r = await fetch('https://api.weatherapi.com/v1/current.json?key=b1a4c5d6e7f8g9h0i1j2k3l4m5n6o7p8&q=auto:ip');
+    const c = await getCoords();
+    if (!c) return '💪 Ready to train!';
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current=temperature_2m,weather_code`);
     if (!r.ok) throw Error();
     const d = await r.json();
-    const t = Math.round(d.current.temp_c);
-    const c = d.current.condition.text.toLowerCase();
-    let emoji = '🌤️', msg = '';
-    if (c.includes('rain')) { emoji = '🌧️'; msg = 'Great for indoor training!'; }
-    else if (c.includes('sun') || c.includes('clear')) { emoji = '☀️'; msg = 'Perfect weather!'; }
-    else if (c.includes('cloud')) { emoji = '☁️'; msg = 'Get after it!'; }
-    else if (t > 30) { emoji = '🌡️'; msg = 'Stay hydrated!'; }
-    else if (t < 5) { emoji = '❄️'; msg = 'Warm up extra!'; }
-    else { emoji = '💪'; msg = 'No excuses!'; }
+    const t = Math.round(d.current.temperature_2m);
+    const code = d.current.weather_code;
+    let emoji = '🌤️', msg = 'No excuses!';
+    if (code === 0 || code === 1) { emoji = '☀️'; msg = 'Perfect weather!'; }
+    else if (code === 2 || code === 3) { emoji = '☁️'; msg = 'Get after it!'; }
+    else if (code >= 45 && code <= 48) { emoji = '🌫️'; msg = 'Stay sharp out there!'; }
+    else if (code >= 51 && code <= 67) { emoji = '🌧️'; msg = 'Great for indoor training!'; }
+    else if (code >= 71 && code <= 77) { emoji = '❄️'; msg = 'Warm up extra!'; }
+    else if (code >= 80 && code <= 82) { emoji = '🌧️'; msg = 'Great for indoor training!'; }
+    else if (code >= 95) { emoji = '⛈️'; msg = 'Indoor session today!'; }
+    if (t > 30) { emoji = '🌡️'; msg = 'Stay hydrated!'; }
+    else if (t < 2 && !(code >= 71 && code <= 77)) { emoji = '❄️'; msg = 'Warm up extra!'; }
     return `${emoji} ${t}°C · ${msg}`;
   } catch (e) {
-    return '🌤️ Ready to train!';
+    return '💪 Ready to train!';
   }
 }
 
@@ -1572,14 +1891,14 @@ function render() {
 
   // Today - Workout List
   document.getElementById("todayList").innerHTML = td.length ?
-    td.sort((a, b) => a.time.localeCompare(b.time)).map(x =>
+    td.slice().sort((a, b) => (a.time || '').localeCompare(b.time || '')).map(x =>
       `<div class="workout">
         <div class="ico">${icon(x.exercise)}</div>
-        <div class="wmain">
-          <div class="wname">${x.exercise} ${x.isPR ? '🏆' : ''} ${x.feeling || ''}</div>
-          <div class="wtime">${x.time || ''} ${x.notes ? '· ' + x.notes : ''}</div>
+        <div class="wmain" onclick="editWorkout(${x.id})" style="cursor:pointer">
+          <div class="wname">${esc(x.exercise)} ${x.isPR ? '🏆' : ''} ${x.feeling || ''}</div>
+          <div class="wtime">${x.time || ''}${x.notes ? ' · ' + esc(x.notes) : ''}</div>
         </div>
-        <div class="wvalue">${x.amount} ${x.unit}</div>
+        <div class="wvalue">${x.amount} ${x.unit}${x.weight ? ' · ' + x.weight + 'kg' : ''}</div>
         <button class="del" onclick="removeWorkout(${x.id})">×</button>
       </div>`
     ).join("") :
@@ -1627,11 +1946,22 @@ function render() {
   // Progress - Anniversary
   renderAnniversary();
 
+  // Today - Rest day + Routines
+  renderRestDayBtn();
+  renderRoutines();
+
+  // Progress - Per-exercise progress chart
+  renderProgressChart();
+
   // History
   renderHistory();
+  renderCalendar();
 
   // Minimum
   renderMinimumTab();
+
+  // Install hint
+  renderInstallHint();
 }
 
 // ============================================
@@ -1806,7 +2136,7 @@ function renderThisDayLastYear() {
   const now = new Date();
   const lastYear = new Date(now);
   lastYear.setFullYear(lastYear.getFullYear() - 1);
-  const key = lastYear.toISOString().slice(0, 10);
+  const key = dateKey(lastYear);
   const lastYearWorkouts = workouts.filter(w => w.date === key);
   if (lastYearWorkouts.length === 0) {
     container.innerHTML = '<div class="empty">No workouts on this day last year.<br>Log something to compare next year!</div>';
@@ -2054,7 +2384,7 @@ function renderWeeklyChart() {
   const data = days.map((_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - d.getDay() + i + 1);
-    const key = d.toISOString().slice(0, 10);
+    const key = dateKey(d);
     return workouts.filter(w => w.date === key).reduce((s, w) => s + w.amount, 0);
   });
   const max = Math.max(...data, 1);
@@ -2082,7 +2412,7 @@ function renderHeatmap() {
   for (let i = 27; i >= 0; i--) {
     let target = new Date(dObj);
     target.setDate(dObj.getDate() - i);
-    let k = target.toISOString().slice(0, 10);
+    let k = dateKey(target);
     let hasLogged = workouts.some(x => x.date === k);
     let isToday = k === todayKey();
     html += `<div class="heatbox ${hasLogged ? "active" : ""} ${isToday ? "today" : ""}">${target.getDate()}</div>`;
@@ -2189,7 +2519,7 @@ function renderAnniversary() {
   const found = anniversaries.find(d => {
     const check = new Date(now);
     check.setDate(check.getDate() - d);
-    return check.toISOString().slice(0, 10) === first.date;
+    return dateKey(check) === first.date;
   });
   if (found) {
     const months = Math.floor(found / 30);
@@ -2225,18 +2555,253 @@ function renderAnniversary() {
 // HISTORY
 // ============================================
 function renderHistory() {
-  let dates = [...new Set(workouts.map(x => x.date))].sort().reverse();
+  const q = (document.getElementById("historySearch")?.value || "").trim().toLowerCase();
+  let list = workouts;
+  if (q) list = workouts.filter(x => (x.exercise || '').toLowerCase().includes(q) || (x.notes || '').toLowerCase().includes(q));
+  let dates = [...new Set(list.map(x => x.date))].sort().reverse();
   document.getElementById("historyList").innerHTML = dates.length ?
     dates.map(d =>
       `<div class="historyRow">
         <div class="hdate">${fmtDate(d)}</div>
-        <div class="hitems">${workouts.filter(x => x.date === d).map(x =>
-          `<span class="pill">${icon(x.exercise)} ${x.amount} ${x.unit} ${x.feeling || ''}</span>`
+        <div class="hitems">${list.filter(x => x.date === d).map(x =>
+          `<span class="pill" onclick="editWorkout(${x.id})" style="cursor:pointer">${icon(x.exercise)} ${esc(x.exercise)} · ${x.amount} ${x.unit}${x.weight ? ' @' + x.weight + 'kg' : ''} ${x.isPR ? '🏆' : ''} ${x.feeling || ''}${x.notes ? ' · ' + esc(x.notes) : ''}</span>`
         ).join("")}</div>
       </div>`
     ).join("") :
-    '<div class="empty">Your history will appear here.</div>';
+    (q ? '<div class="empty">No workouts match your search.</div>' : '<div class="empty">Your history will appear here.</div>');
   document.getElementById("totalWorkoutsLabel").textContent = workouts.length + " total";
+}
+
+// ============================================
+// REST DAY
+// ============================================
+function toggleRestDay() {
+  const k = todayKey();
+  let rest = getRestDays();
+  if (rest.includes(k)) {
+    rest = rest.filter(d => d !== k);
+    showToast('Rest day removed');
+  } else {
+    rest.push(k);
+    showToast('🛌 Rest day set — your streak is safe');
+  }
+  saveRestDays(rest);
+  haptic('medium');
+  playSound('click');
+  render();
+}
+
+function renderRestDayBtn() {
+  const btn = document.getElementById('restDayBtn');
+  if (!btn) return;
+  const isRest = getRestDays().includes(todayKey());
+  btn.classList.toggle('active', isRest);
+  btn.textContent = isRest ? '🛌 Rest day active (tap to undo)' : '🛌 Mark today as a rest day';
+}
+
+// ============================================
+// ROUTINES
+// ============================================
+function renderRoutines() {
+  const container = document.getElementById('routineList');
+  if (!container) return;
+  const routines = getRoutines();
+  if (routines.length === 0) {
+    container.innerHTML = '<div class="empty">No routines yet. Log some exercises, then tap “＋ Save today” to turn today into a reusable routine.</div>';
+    return;
+  }
+  container.innerHTML = routines.map((r, i) => `
+    <div class="routine-item">
+      <div class="rmain">
+        <div class="rname">${esc(r.name)}</div>
+        <div class="rdesc">${r.items.map(it => `${esc(it.exercise)} ${it.amount}${it.unit === 'reps' ? '' : ' ' + it.unit}`).join(' · ')}</div>
+      </div>
+      <button class="rlog" onclick="logRoutine(${i})">Log</button>
+      <button class="rdel" onclick="deleteRoutine(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function saveTodayAsRoutine() {
+  const td = workouts.filter(w => w.date === todayKey());
+  if (td.length === 0) { alert('Log some exercises today first, then save them as a routine.'); return; }
+  const name = prompt('Name this routine:', 'My routine');
+  if (!name) return;
+  const routines = getRoutines();
+  routines.push({
+    name: name.trim(),
+    items: td.map(w => ({ exercise: w.exercise, amount: w.amount, unit: w.unit, weight: w.weight || null, category: w.category || null }))
+  });
+  saveRoutines(routines);
+  render();
+  haptic('success');
+  playSound('click');
+  showToast('⚡ Routine saved');
+}
+
+function logRoutine(i) {
+  const routines = getRoutines();
+  const r = routines[i];
+  if (!r) return;
+  if (!confirm(`Log all ${r.items.length} exercises from “${r.name}” for today?`)) return;
+  const now = new Date();
+  const date = todayKey();
+  const time = now.toTimeString().slice(0, 5);
+  r.items.forEach((it, idx) => {
+    workouts.push({
+      id: Date.now() + idx,
+      exercise: it.exercise, amount: it.amount, unit: it.unit,
+      date, time, isPR: false, feeling: '😊', notes: '',
+      weight: it.weight || null, category: it.category || null
+    });
+  });
+  persist();
+  haptic('success');
+  playSound('levelup');
+  showToast(`✅ Logged ${r.items.length} exercises`);
+  setTimeout(checkAchievementsAndLevels, 150);
+}
+
+function deleteRoutine(i) {
+  const routines = getRoutines();
+  if (!routines[i]) return;
+  if (!confirm(`Delete routine “${routines[i].name}”?`)) return;
+  routines.splice(i, 1);
+  saveRoutines(routines);
+  render();
+  haptic('error');
+}
+
+// ============================================
+// PER-EXERCISE PROGRESS CHART
+// ============================================
+function renderProgressChart() {
+  const sel = document.getElementById('progressExSelect');
+  const container = document.getElementById('progressChart');
+  if (!sel || !container) return;
+  const exNames = [...new Set(workouts.map(w => w.exercise))].sort();
+
+  // (Re)build the dropdown, preserving the current selection when possible.
+  const prev = sel.value;
+  if (exNames.length === 0) {
+    sel.innerHTML = '';
+    container.innerHTML = '<div class="empty">Log workouts to see per-exercise progress.</div>';
+    return;
+  }
+  sel.innerHTML = exNames.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  sel.value = exNames.includes(prev) ? prev : exNames[0];
+
+  const ex = sel.value;
+  const entries = workouts.filter(w => w.exercise === ex)
+    .slice()
+    .sort((a, b) => ((a.date || '') + (a.time || '')).localeCompare((b.date || '') + (b.time || '')));
+  // Show the most recent 14 data points.
+  const pts = entries.slice(-14);
+  const unit = pts.length ? pts[pts.length - 1].unit : '';
+  const max = Math.max(...pts.map(p => p.amount), 1);
+  const best = Math.max(...entries.map(e => e.amount), 0);
+  container.innerHTML = `
+    <div class="pchart">
+      ${pts.map(p => `
+        <div class="pchart-col">
+          <div class="v">${p.amount}${p.isPR ? '🏆' : ''}</div>
+          <div class="bar" style="height:${Math.max((p.amount / max) * 100, 3)}px"></div>
+          <div class="l">${p.date.slice(5)}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--muted)">
+      <span>${entries.length} log${entries.length > 1 ? 's' : ''}</span>
+      <span>Best: <strong style="color:var(--gold)">${best} ${unit}</strong></span>
+    </div>
+  `;
+}
+
+// ============================================
+// CALENDAR (History tab)
+// ============================================
+function calShift(n) {
+  calOffset += n;
+  renderCalendar();
+  haptic('light');
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calGrid');
+  const titleEl = document.getElementById('calTitle');
+  if (!grid || !titleEl) return;
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth() + calOffset);
+  const year = base.getFullYear();
+  const month = base.getMonth();
+  const monthName = base.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  titleEl.textContent = monthName;
+
+  const first = new Date(year, month, 1);
+  const startDow = (first.getDay() + 6) % 7; // Monday-first
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const rest = new Set(getRestDays());
+  const tKey = todayKey();
+
+  const dow = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  let html = dow.map(d => `<div class="cal-dow">${d}</div>`).join('');
+  for (let i = 0; i < startDow; i++) html += `<div class="cal-day empty"></div>`;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const k = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const count = workouts.filter(w => w.date === k).length;
+    const isRest = rest.has(k) && count === 0;
+    const cls = ['cal-day'];
+    if (count > 0) cls.push('has');
+    else if (isRest) cls.push('rest');
+    if (k === tKey) cls.push('today');
+    html += `<div class="${cls.join(' ')}">${day}${count > 0 ? `<span class="cnt">${count}</span>` : ''}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+// ============================================
+// INSTALL HINT
+// ============================================
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  renderInstallHint();
+});
+
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function renderInstallHint() {
+  const el = document.getElementById('installHint');
+  if (!el) return;
+  if (isStandalone() || localStorage.getItem('pulse-install-dismissed')) { el.innerHTML = ''; return; }
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (deferredInstallPrompt) {
+    el.innerHTML = `<span>📲 Install Pulse for full-screen, offline access.</span>
+      <button class="go" onclick="doInstall()">Install</button>
+      <button class="x" onclick="dismissInstall()">✕</button>`;
+  } else if (isIOS) {
+    el.innerHTML = `<span>📲 Install: tap <strong>Share</strong> then <strong>“Add to Home Screen”</strong>.</span>
+      <button class="x" onclick="dismissInstall()">✕</button>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+async function doInstall() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  try { await deferredInstallPrompt.userChoice; } catch (e) {}
+  deferredInstallPrompt = null;
+  document.getElementById('installHint').innerHTML = '';
+}
+
+function dismissInstall() {
+  localStorage.setItem('pulse-install-dismissed', '1');
+  document.getElementById('installHint').innerHTML = '';
 }
 
 // ============================================
@@ -2244,6 +2809,8 @@ function renderHistory() {
 // ============================================
 function showSettings() {
   document.getElementById("settingsModal").classList.add("open");
+  renderSettingsToggles();
+  updateBackupStatus();
   haptic('medium');
 }
 
@@ -2252,13 +2819,71 @@ function closeSettings() {
   haptic('light');
 }
 
+function renderSettingsToggles() {
+  const s = document.getElementById('toggleSound');
+  const h = document.getElementById('toggleHaptics');
+  if (s) { s.textContent = settings.sound ? '🔔' : '🔕'; s.className = 'set-toggle ' + (settings.sound ? 'on' : 'off'); }
+  if (h) { h.textContent = settings.haptics ? '📳' : '📴'; h.className = 'set-toggle ' + (settings.haptics ? 'on' : 'off'); }
+}
+
+function toggleSetting(key) {
+  settings[key] = !settings[key];
+  saveSettings();
+  renderSettingsToggles();
+  if (settings.sound) playSound('click');
+  haptic('light');
+}
+
+function markBackedUp() {
+  localStorage.setItem(BACKUP_KEY, String(Date.now()));
+  updateBackupStatus();
+}
+
+function updateBackupStatus() {
+  const el = document.getElementById('backupStatus');
+  if (!el) return;
+  const last = Number(localStorage.getItem(BACKUP_KEY) || 0);
+  if (!last || workouts.length === 0) {
+    el.textContent = 'Back up your data so you can restore it anytime.';
+    el.style.color = 'var(--muted)';
+    return;
+  }
+  const days = Math.floor((Date.now() - last) / 86400000);
+  if (days <= 0) { el.textContent = '✅ Backed up today.'; el.style.color = 'var(--green)'; }
+  else if (days <= 7) { el.textContent = `Last backup ${days} day${days > 1 ? 's' : ''} ago.`; el.style.color = 'var(--muted)'; }
+  else { el.textContent = `⚠️ Last backup was ${days} days ago — export a fresh one.`; el.style.color = 'var(--orange)'; }
+}
+
 function exportData() {
   let blob = new Blob([JSON.stringify(workouts, null, 2)], { type: "application/json" });
   let a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "pulse-workouts-backup.json";
+  a.download = "pulse-workouts-backup-" + todayKey() + ".json";
   a.click();
   URL.revokeObjectURL(a.href);
+  markBackedUp();
+  haptic('success');
+  playSound('click');
+}
+
+function exportCSV() {
+  const headers = ['date', 'time', 'exercise', 'amount', 'unit', 'weight_kg', 'isPR', 'feeling', 'notes'];
+  const q = v => {
+    const s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const rows = workouts
+    .slice()
+    .sort((a, b) => ((a.date || '') + (a.time || '')).localeCompare((b.date || '') + (b.time || '')))
+    .map(w => [w.date, w.time || '', w.exercise, w.amount, w.unit, w.weight != null ? w.weight : '', w.isPR ? 'yes' : '', w.feeling || '', w.notes || ''].map(q).join(','));
+  const csv = headers.join(',') + '\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pulse-workouts-' + todayKey() + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  markBackedUp();
   haptic('success');
   playSound('click');
 }
@@ -2270,17 +2895,37 @@ function importData(event) {
   reader.onload = function(e) {
     try {
       let imported = JSON.parse(e.target.result);
-      if (Array.isArray(imported)) {
-        workouts = imported;
-        persist();
-        closeSettings();
-        haptic('success');
-        alert("✅ Data imported successfully!");
-      } else {
-        alert("Invalid backup file format.");
+      if (!Array.isArray(imported)) { alert("Invalid backup file: expected a list of workouts."); return; }
+      const clean = [];
+      for (const it of imported) {
+        if (!it || typeof it !== 'object') continue;
+        const amount = Number(it.amount);
+        if (!it.exercise || isNaN(amount) || !it.unit || !it.date) continue;
+        clean.push({
+          id: Number(it.id) || (Date.now() + Math.floor(Math.random() * 100000)),
+          exercise: String(it.exercise),
+          amount: amount,
+          unit: String(it.unit),
+          date: String(it.date),
+          time: it.time ? String(it.time) : '',
+          isPR: !!it.isPR,
+          feeling: it.feeling || '',
+          notes: it.notes ? String(it.notes) : '',
+          weight: (it.weight != null && !isNaN(it.weight)) ? Number(it.weight) : null,
+          category: it.category || null
+        });
       }
+      if (clean.length === 0) { alert("No valid workouts found in that file."); return; }
+      if (!confirm(`Import ${clean.length} workouts?\nThis replaces your current ${workouts.length} logged workouts.`)) return;
+      workouts = clean;
+      persist();
+      closeSettings();
+      haptic('success');
+      alert(`✅ Imported ${clean.length} workouts.`);
     } catch (err) {
       alert("Error reading backup file.");
+    } finally {
+      event.target.value = "";
     }
   };
   reader.readAsText(file);
@@ -2298,6 +2943,13 @@ function clearData() {
 // ============================================
 // INIT
 // ============================================
+// Register service worker for real offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
 updateWeather();
 setInterval(updateWeather, 1800000);
 generateWarmup();
