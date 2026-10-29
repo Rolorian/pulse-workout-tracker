@@ -13,23 +13,23 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Pulse — Workout Tracker</title>
 <style>
-:root{--bg:#090d12;--panel:#111720;--panel2:#171f2a;--line:#27313d;--text:#f6f8fb;--muted:#8e99a8;--green:#6ee7a5;--blue:#71b7ff;--orange:#ffb86b;--red:#ff6b7a;--gold:#fbbf24;--purple:#a78bfa}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}body{min-height:100vh}button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
+:root{--bg:#070a0e;--panel:#10161e;--panel2:#18212c;--line:#242e3a;--text:#f3f6fa;--muted:#8793a3;--green:#5fe3a1;--blue:#71b7ff;--orange:#ffb86b;--red:#ff6b7a;--gold:#fbbf24;--purple:#a78bfa;--radius:20px;--shadow:0 6px 24px rgba(0,0,0,.35);--accent-grad:linear-gradient(135deg,#5fe3a1,#71b7ff)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:radial-gradient(1100px 560px at 50% -12%, #0f1925 0%, var(--bg) 58%) fixed;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}body{min-height:100vh}button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 .app{max-width:620px;margin:auto;padding:calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 92px)}
-.top{display:flex;justify-content:space-between;align-items:center;padding:14px 2px 16px}.brand{font-size:28px;font-weight:800;letter-spacing:-0.5px;color:var(--text)}.sub{color:var(--muted);font-size:12px;margin-top:2px}.gear{width:40px;height:40px;border:1px solid var(--line);background:var(--panel);border-radius:12px;color:white;font-size:18px;cursor:pointer;transition:all .15s}.gear:active{transform:scale(.92)}
-.hero{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px 20px;margin-bottom:12px}.hero .eyebrow{text-transform:uppercase;color:var(--green);font-size:10px;font-weight:700;letter-spacing:1px}.hero h1{font-size:24px;margin:4px 0 2px;letter-spacing:-0.5px;font-weight:700}.hero p{margin:0;color:var(--muted);font-size:14px}.hero .weather{font-size:12px;color:var(--muted);margin-top:6px;padding:6px 10px;background:var(--panel2);border-radius:10px;display:inline-block}
+.top{display:flex;justify-content:space-between;align-items:center;padding:14px 2px 16px}.brand{font-size:28px;font-weight:800;letter-spacing:-0.5px;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}.sub{color:var(--muted);font-size:12px;margin-top:2px}.gear{width:40px;height:40px;border:1px solid var(--line);background:var(--panel);border-radius:12px;color:white;font-size:18px;cursor:pointer;transition:all .15s}.gear:active{transform:scale(.92)}
+.hero{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(95,227,161,.07),transparent 42%),var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:12px;box-shadow:var(--shadow)}.hero .eyebrow{text-transform:uppercase;color:var(--green);font-size:10px;font-weight:700;letter-spacing:1px}.hero h1{font-size:24px;margin:4px 0 2px;letter-spacing:-0.5px;font-weight:700}.hero p{margin:0;color:var(--muted);font-size:14px}.hero .weather{font-size:12px;color:var(--muted);margin-top:6px;padding:6px 10px;background:var(--panel2);border-radius:10px;display:inline-block}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 10px;transition:all .15s;cursor:default}.stat:active{transform:scale(.95)}.stat strong{display:block;font-size:18px;font-weight:800}.stat span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}.cardhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.card h2{font-size:15px;margin:0;font-weight:700}.muted{color:var(--muted);font-size:11px;font-weight:500}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 60%),var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}.cardhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.card h2{font-size:15px;margin:0;font-weight:700}.muted{color:var(--muted);font-size:11px;font-weight:500}
 .workout{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.workout:last-child{border-bottom:0}.ico{width:38px;height:38px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font-size:18px;flex-shrink:0}.wmain{flex:1;min-width:0}.wname{font-weight:700;font-size:14px}.wtime{font-size:10px;color:var(--muted);margin-top:1px}.wvalue{font-weight:800;color:var(--green);font-size:14px;white-space:nowrap;flex-shrink:0}.del{background:none;border:0;color:var(--muted);font-size:18px;padding:6px;cursor:pointer;transition:all .15s}.del:active{transform:scale(.8);color:var(--red)}
 .empty{text-align:center;color:var(--muted);padding:18px 8px;font-size:13px}
-.bottom{position:fixed;bottom:0;left:0;right:0;padding:10px max(16px,calc((100vw - 620px)/2 + 16px)) calc(env(safe-area-inset-bottom) + 10px);background:linear-gradient(transparent,rgba(9,13,18,.96) 25%);pointer-events:none}.bottom button{pointer-events:auto;width:100%;padding:14px;border:0;border-radius:16px;background:var(--green);font-weight:800;color:#07130d;font-size:15px;cursor:pointer;transition:all .15s}.bottom button:active{transform:scale(.96)}
+.bottom{position:fixed;bottom:0;left:0;right:0;padding:10px max(16px,calc((100vw - 620px)/2 + 16px)) calc(env(safe-area-inset-bottom) + 10px);background:linear-gradient(transparent,rgba(9,13,18,.96) 25%);pointer-events:none}.bottom button{pointer-events:auto;width:100%;padding:15px;border:0;border-radius:16px;background:var(--accent-grad);font-weight:800;color:#06130d;font-size:15px;cursor:pointer;transition:all .15s;box-shadow:0 8px 24px rgba(95,227,161,.25)}.bottom button:active{transform:scale(.96)}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:5;align-items:flex-end}.modal.open{display:flex}.sheet{width:100%;max-width:620px;margin:auto auto 0;background:var(--panel);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:85vh;overflow:auto}.sheet h2{margin:0 0 14px;font-size:19px;font-weight:700}.close{float:right;background:var(--panel2);border:1px solid var(--line);color:white;width:34px;height:34px;border-radius:10px;font-size:16px;cursor:pointer}.exgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ex{background:var(--panel2);border:1px solid var(--line);color:white;border-radius:14px;padding:12px;text-align:left;font-weight:600;cursor:pointer;transition:all .15s}.ex:active{transform:scale(.95)}.ex.selected{border-color:var(--green);background:#183025}.ex b{display:block;margin-top:3px;font-size:13px;font-weight:400}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}label{font-size:10px;color:var(--muted);display:block;margin:0 0 4px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}input,select{width:100%;background:var(--bg);border:1px solid var(--line);color:white;border-radius:12px;padding:12px;outline:none;font-size:14px;transition:border .15s}input:focus,select:focus{border-color:var(--green)}
-.save{width:100%;background:var(--green);color:#07130d;border:0;border-radius:14px;padding:14px;font-weight:800;margin-top:12px;font-size:15px;cursor:pointer;transition:all .15s}.save:active{transform:scale(.97)}.save.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.save{width:100%;background:var(--accent-grad);color:#06130d;border:0;border-radius:14px;padding:14px;font-weight:800;margin-top:12px;font-size:15px;cursor:pointer;transition:all .15s;box-shadow:0 6px 18px rgba(95,227,161,.22)}.save:active{transform:scale(.97)}.save.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
 .historyRow{padding:12px 0;border-bottom:1px solid var(--line)}.historyRow:last-child{border:0}.hdate{font-weight:700;font-size:14px}.hitems{color:var(--muted);font-size:12px;line-height:1.6;margin-top:2px}.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);padding:4px 8px;border-radius:8px;margin:2px 3px 0 0;font-size:11px}
 .section{display:none}.section.active{display:block;animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);padding:4px;border-radius:14px;margin-bottom:12px}.tab{flex:1;border:0;background:none;color:var(--muted);padding:8px;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s}.tab:active{transform:scale(.95)}.tab.active{background:var(--panel2);color:white}
+.tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);padding:5px;border-radius:16px;margin-bottom:12px;box-shadow:var(--shadow)}.tab{flex:1;border:0;background:none;color:var(--muted);padding:9px 6px;border-radius:11px;font-weight:700;font-size:12px;cursor:pointer;transition:all .18s}.tab:active{transform:scale(.95)}.tab.active{background:var(--panel2);color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.35)}
 .heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}.heatbox{aspect-ratio:1;background:var(--panel2);border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font-size:9px;color:var(--muted);font-weight:600;transition:all .15s}.heatbox.active{background:var(--green);border-color:var(--green);color:#07130d;font-weight:800}.heatbox.today{background:var(--gold);border-color:var(--gold);color:#07130d;font-weight:800}
 .note{font-size:12px;color:var(--muted);line-height:1.5}
 .badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;margin:2px}.badge-gold{background:var(--gold);color:#07130d}.badge-green{background:var(--green);color:#07130d}.badge-blue{background:var(--blue);color:#07130d}.badge-purple{background:var(--purple);color:#fff}.badge-red{background:var(--red);color:#fff}.badge-muted{background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
@@ -255,6 +255,17 @@
 .skill-row .sk-lvl{width:26px;text-align:right;font-weight:800;font-size:12px;color:var(--muted)}
 .skill-row .sk-lvl.max{color:var(--gold)}
 .skill-row .prestige{color:var(--gold);font-size:10px;letter-spacing:-1px}
+
+/* Exercise grid category headers */
+.exgrid-head{grid-column:1/-1;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:6px 2px 0}
+.exgrid-head:first-child{margin-top:0}
+
+/* Manage customs list */
+.manage-custom{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.manage-custom:last-child{border-bottom:0}
+.manage-custom .mc-name{flex:1;font-weight:600}
+.manage-custom .mc-cat{font-size:10px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px 8px}
+.manage-custom button{background:none;border:0;color:var(--muted);font-size:15px;padding:4px 6px;cursor:pointer}
 
 /* Sound style chooser */
 .sound-style{display:flex;gap:6px;margin-top:6px}
@@ -503,6 +514,7 @@
 <button onclick="quickReLogWithIncrement()">⬆️ +1 More</button>
 </div>
 
+<input class="search-box" id="exSearch" type="text" placeholder="🔍 Search exercises…" oninput="renderExercises()" style="margin-bottom:8px">
 <div class="exgrid" id="exerciseGrid"></div>
 <div id="customNameContainer" style="display:none;margin-top:10px;"><label>Custom Workout Name</label><input id="customNameInput" type="text" placeholder="e.g., Pull-ups, Yoga, Swimming"></div>
 <div class="fields">
@@ -566,6 +578,8 @@
 </div>
 </div>
 
+<div id="manageCustomsSection" style="margin-top:14px"></div>
+
 <p class="note" id="backupStatus" style="margin-top:14px">Back up your data so you can restore it anytime.</p>
 <button class="save secondary" onclick="exportData()">📤 Export backup (JSON)</button>
 <button class="save secondary" style="margin-top:8px" onclick="exportCSV()">📊 Export as CSV (spreadsheet)</button>
@@ -589,34 +603,52 @@ const BACKUP_KEY = "pulse-last-backup-v1";
 // grouped under one of the 7 categories. These are what Max/Comp capes are based on.
 const EXERCISES = [
   // Legs
-  { icon: '🦵', name: 'Squats',        unit: 'reps',    cat: 'legs' },
-  { icon: '🦵', name: 'Lunges',        unit: 'reps',    cat: 'legs' },
-  { icon: '🦵', name: 'Calf raises',   unit: 'reps',    cat: 'legs' },
-  { icon: '🦵', name: 'Wall sit',      unit: 'seconds', cat: 'legs' },
+  { icon: '🦵', name: 'Squats',                unit: 'reps',    cat: 'legs' },
+  { icon: '🦵', name: 'Lunges',                unit: 'reps',    cat: 'legs' },
+  { icon: '🦵', name: 'Calf raises',           unit: 'reps',    cat: 'legs' },
+  { icon: '🧱', name: 'Wall sit',              unit: 'seconds', cat: 'legs' },
+  { icon: '🦘', name: 'Jump squats',           unit: 'reps',    cat: 'legs' },
+  { icon: '🍑', name: 'Glute bridges',         unit: 'reps',    cat: 'legs' },
+  { icon: '🪜', name: 'Step-ups',              unit: 'reps',    cat: 'legs' },
+  { icon: '🦵', name: 'Bulgarian split squats',unit: 'reps',    cat: 'legs' },
   // Chest
-  { icon: '💪', name: 'Press-ups',     unit: 'reps',    cat: 'chest' },
-  { icon: '🏋️', name: 'Bench press',   unit: 'reps',    cat: 'chest' },
-  { icon: '💪', name: 'Dips',          unit: 'reps',    cat: 'chest' },
-  { icon: '🏋️', name: 'Incline press', unit: 'reps',    cat: 'chest' },
+  { icon: '💪', name: 'Press-ups',             unit: 'reps',    cat: 'chest' },
+  { icon: '🏋️', name: 'Bench press',           unit: 'reps',    cat: 'chest' },
+  { icon: '💪', name: 'Dips',                  unit: 'reps',    cat: 'chest' },
+  { icon: '🏋️', name: 'Incline press',         unit: 'reps',    cat: 'chest' },
+  { icon: '🦅', name: 'Chest fly',             unit: 'reps',    cat: 'chest' },
+  { icon: '💎', name: 'Diamond push-ups',      unit: 'reps',    cat: 'chest' },
   // Core
-  { icon: '🔥', name: 'Sit-ups',       unit: 'reps',    cat: 'core' },
-  { icon: '🧘', name: 'Plank',         unit: 'minutes', cat: 'core' },
-  { icon: '🔥', name: 'Crunches',      unit: 'reps',    cat: 'core' },
-  { icon: '🔥', name: 'Leg raises',    unit: 'reps',    cat: 'core' },
+  { icon: '🔥', name: 'Sit-ups',               unit: 'reps',    cat: 'core' },
+  { icon: '🧘', name: 'Plank',                 unit: 'minutes', cat: 'core' },
+  { icon: '🔥', name: 'Crunches',              unit: 'reps',    cat: 'core' },
+  { icon: '🔥', name: 'Leg raises',            unit: 'reps',    cat: 'core' },
+  { icon: '🌀', name: 'Russian twists',        unit: 'reps',    cat: 'core' },
+  { icon: '⛰️', name: 'Mountain climbers',     unit: 'reps',    cat: 'core' },
+  { icon: '🚲', name: 'Bicycle crunches',      unit: 'reps',    cat: 'core' },
   // Cardio
-  { icon: '🏃', name: 'Jogging',       unit: 'km',      cat: 'cardio' },
-  { icon: '🚴', name: 'Cycling',       unit: 'km',      cat: 'cardio' },
-  { icon: '🚣', name: 'Rowing',        unit: 'minutes', cat: 'cardio' },
-  { icon: '🙌', name: 'Skipping',      unit: 'minutes', cat: 'cardio' },
+  { icon: '🏃', name: 'Jogging',               unit: 'km',      cat: 'cardio' },
+  { icon: '🚴', name: 'Cycling',               unit: 'km',      cat: 'cardio' },
+  { icon: '🚣', name: 'Rowing',                unit: 'minutes', cat: 'cardio' },
+  { icon: '🪢', name: 'Skipping',              unit: 'minutes', cat: 'cardio' },
+  { icon: '🏊', name: 'Swimming',              unit: 'minutes', cat: 'cardio' },
+  { icon: '🪜', name: 'Stair climb',           unit: 'minutes', cat: 'cardio' },
+  { icon: '⚡', name: 'Sprints',               unit: 'reps',    cat: 'cardio' },
   // Arms
-  { icon: '💪', name: 'Bicep curls',   unit: 'reps',    cat: 'arms' },
-  { icon: '💪', name: 'Tricep dips',   unit: 'reps',    cat: 'arms' },
-  { icon: '💪', name: 'Hammer curls',  unit: 'reps',    cat: 'arms' },
+  { icon: '💪', name: 'Bicep curls',           unit: 'reps',    cat: 'arms' },
+  { icon: '💪', name: 'Tricep dips',           unit: 'reps',    cat: 'arms' },
+  { icon: '💪', name: 'Hammer curls',          unit: 'reps',    cat: 'arms' },
+  { icon: '💪', name: 'Tricep extensions',     unit: 'reps',    cat: 'arms' },
+  { icon: '🙆', name: 'Shoulder press',        unit: 'reps',    cat: 'arms' },
+  { icon: '🙌', name: 'Lateral raises',        unit: 'reps',    cat: 'arms' },
   // Back
-  { icon: '🏋️', name: 'Pull-ups',      unit: 'reps',    cat: 'back' },
-  { icon: '🏋️', name: 'Rows',          unit: 'reps',    cat: 'back' },
-  { icon: '🏋️', name: 'Deadlift',      unit: 'reps',    cat: 'back' },
-  { icon: '🏋️', name: 'Lat pulldown',  unit: 'reps',    cat: 'back' }
+  { icon: '🏋️', name: 'Pull-ups',              unit: 'reps',    cat: 'back' },
+  { icon: '🏋️', name: 'Rows',                  unit: 'reps',    cat: 'back' },
+  { icon: '🏋️', name: 'Deadlift',              unit: 'reps',    cat: 'back' },
+  { icon: '🏋️', name: 'Lat pulldown',          unit: 'reps',    cat: 'back' },
+  { icon: '🧲', name: 'Face pulls',            unit: 'reps',    cat: 'back' },
+  { icon: '🦸', name: 'Superman',              unit: 'reps',    cat: 'back' },
+  { icon: '🏋️', name: 'Shrugs',                unit: 'reps',    cat: 'back' }
 ];
 const CORE_SKILL_COUNT = EXERCISES.length;
 
@@ -862,13 +894,13 @@ function haptic(type = 'light') {
   if (!settings.haptics) return;
   if (!navigator.vibrate) return;
   const patterns = {
-    light: 10,
-    medium: 20,
-    heavy: 50,
-    success: [10, 30, 10, 30, 10],
-    error: [50, 100, 50],
-    selection: [5],
-    levelup: [10, 20, 10, 30, 20]
+    light: 12,
+    medium: 22,
+    heavy: 45,
+    success: [14, 40, 22],
+    error: [40, 80, 40],
+    selection: [6],
+    levelup: [12, 28, 12, 28, 45]
   };
   const pattern = patterns[type] || patterns.light;
   navigator.vibrate(pattern);
@@ -1297,6 +1329,7 @@ function editWorkout(id) {
   document.getElementById("modalTitle").textContent = "Edit Workout";
   document.getElementById("saveBtn").textContent = "💾 Update Workout";
   document.getElementById("modal").classList.add("open");
+  const es = document.getElementById("exSearch"); if (es) es.value = "";
   selected = exMeta(w.exercise) ? w.exercise : "Custom";
   renderExercises();
   document.getElementById("unit").value = w.unit;
@@ -1322,6 +1355,8 @@ function clearModalFields() {
   document.getElementById("customNameInput").value = "";
   document.getElementById("notes").value = "";
   document.getElementById("weight").value = "";
+  const s = document.getElementById("exSearch");
+  if (s) s.value = "";
 }
 
 function closeModal() {
@@ -1331,12 +1366,23 @@ function closeModal() {
 }
 
 function renderExercises() {
-  const picks = pickableExercises();
-  const grid = picks.map(e =>
-    `<button class="ex ${selected === e.name ? "selected" : ""}" onclick="selectEx('${escAttr(e.name)}','${e.unit}')">${e.icon}<b>${esc(e.name)}</b></button>`
-  ).join("");
-  const newBtn = `<button class="ex ${selected === "Custom" ? "selected" : ""}" onclick="selectNewCustom()">➕<b>New custom</b></button>`;
-  document.getElementById("exerciseGrid").innerHTML = grid + newBtn;
+  const q = (document.getElementById("exSearch")?.value || "").trim().toLowerCase();
+  let picks = pickableExercises();
+  if (q) picks = picks.filter(e => e.name.toLowerCase().includes(q));
+  const catName = {};
+  CATEGORIES.forEach(c => catName[c.id] = c.name);
+  let html = "";
+  CATEGORIES.map(c => c.id).forEach(cid => {
+    const items = picks.filter(e => (e.cat || 'custom') === cid);
+    if (!items.length) return;
+    html += `<div class="exgrid-head">${catName[cid]}</div>`;
+    html += items.map(e =>
+      `<button class="ex ${selected === e.name ? "selected" : ""}" onclick="selectEx('${escAttr(e.name)}','${e.unit}')">${e.icon}<b>${esc(e.name)}</b></button>`
+    ).join("");
+  });
+  if (!html && q) html = `<div class="exgrid-head">No matches for “${esc(q)}”</div>`;
+  html += `<button class="ex ${selected === "Custom" ? "selected" : ""}" onclick="selectNewCustom()" style="grid-column:1/-1">➕ <b>New custom exercise</b></button>`;
+  document.getElementById("exerciseGrid").innerHTML = html;
   const customBox = document.getElementById("customNameContainer");
   const categorySelector = document.getElementById("categorySelector");
   if (selected === "Custom") {
@@ -3032,8 +3078,71 @@ function dismissInstall() {
 function showSettings() {
   document.getElementById("settingsModal").classList.add("open");
   renderSettingsToggles();
+  renderManageCustoms();
   updateBackupStatus();
   haptic('medium');
+}
+
+function renderManageCustoms() {
+  const el = document.getElementById('manageCustomsSection');
+  if (!el) return;
+  const customs = getCustoms();
+  if (!customs.length) { el.innerHTML = ''; return; }
+  const catLabels = {};
+  CATEGORIES.forEach(c => catLabels[c.id] = c.name);
+  el.innerHTML = `<div class="set-name" style="margin-bottom:4px">⭐ Saved custom exercises</div>` +
+    customs.map(c => `
+      <div class="manage-custom">
+        <span class="mc-name">${c.icon || '⭐'} ${esc(c.name)}</span>
+        <span class="mc-cat">${catLabels[c.cat] || c.cat || 'custom'}</span>
+        <button onclick="recategoriseCustom('${escAttr(c.name)}')" title="Change category">🏷️</button>
+        <button onclick="renameCustomUI('${escAttr(c.name)}')" title="Rename">✏️</button>
+        <button onclick="deleteCustomUI('${escAttr(c.name)}')" title="Delete">🗑️</button>
+      </div>`).join('');
+}
+
+function renameCustomUI(name) {
+  const nn = prompt('Rename “' + name + '” to:', name);
+  if (!nn || !nn.trim()) return;
+  const newName = nn.trim();
+  const customs = getCustoms();
+  const c = customs.find(x => x.name === name);
+  if (!c) return;
+  if (customs.some(x => x.name.toLowerCase() === newName.toLowerCase() && x.name !== name)) { alert('You already have a custom exercise with that name.'); return; }
+  c.name = newName;
+  saveCustoms(customs);
+  workouts.forEach(w => { if (w.exercise === name) w.exercise = newName; }); // keep history/skill in sync
+  persist();
+  renderManageCustoms();
+  haptic('medium');
+  showToast('✏️ Renamed to ' + newName);
+}
+
+function recategoriseCustom(name) {
+  const cats = CATEGORIES.map(c => c.id);
+  const cur = (getCustoms().find(x => x.name === name) || {}).cat || 'custom';
+  const nc = prompt('Category for “' + name + '” — one of: ' + cats.join(', '), cur);
+  if (!nc) return;
+  if (!cats.includes(nc.trim())) { alert('Unknown category.'); return; }
+  const customs = getCustoms();
+  const c = customs.find(x => x.name === name);
+  if (!c) return;
+  c.cat = nc.trim();
+  saveCustoms(customs);
+  workouts.forEach(w => { if (w.exercise === name) w.category = nc.trim(); });
+  persist();
+  renderManageCustoms();
+  haptic('light');
+  showToast('🏷️ Category updated');
+}
+
+function deleteCustomUI(name) {
+  if (!confirm('Remove “' + name + '” from your saved exercises?\nYour logged history for it stays.')) return;
+  removeCustom(name);
+  renderManageCustoms();
+  renderExercises();
+  haptic('error');
+  showToast('🗑️ Removed ' + name);
 }
 
 function closeSettings() {
