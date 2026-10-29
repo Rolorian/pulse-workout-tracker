@@ -303,6 +303,7 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 <button class="tab" onclick="switchTab('history',this)" data-tab="2">History</button>
 <button class="tab" onclick="switchTab('warmup',this)" data-tab="3">Warmup</button>
 <button class="tab" onclick="switchTab('minimum',this)" data-tab="4">Minimum</button>
+<button class="tab" onclick="switchTab('battle',this)" data-tab="5">⚔️ Battle</button>
 </div>
 
 <!-- TAB 1: TODAY -->
@@ -527,6 +528,78 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 <!-- Progress rendered by JS -->
 </div>
 <div class="minimum-overall" id="minimumOverall">🔥 0% Complete</div>
+</div>
+</section>
+
+<!-- TAB 6: BATTLE -->
+<section id="battle" class="section">
+<!-- Daily Quests -->
+<div class="card">
+<div class="cardhead"><h2>📜 Daily Quests</h2><span class="muted" id="questRefresh"></span></div>
+<div id="questList"></div>
+</div>
+
+<!-- Live Battle -->
+<div class="card">
+<div class="cardhead"><h2>⚔️ Live Battle</h2></div>
+<div id="battleArena">
+<div class="muted" style="font-size:12px;margin-bottom:10px">Do reps to deal damage and defeat monsters!</div>
+<div id="battleMonster" style="display:none">
+  <div style="text-align:center;margin-bottom:10px">
+    <div id="monsterEmoji" style="font-size:60px"></div>
+    <div id="monsterName" style="font-weight:800;font-size:16px;margin-top:4px"></div>
+    <div id="monsterLevel" style="font-size:11px;color:var(--muted)"></div>
+  </div>
+  <div class="xp-bar" style="height:12px;margin-bottom:4px"><div class="fill" id="monsterHP" style="width:100%;background:var(--red)"></div></div>
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:12px">
+    <span id="monsterHPText">100/100 HP</span>
+    <span id="monsterDmgText">0 damage dealt</span>
+  </div>
+  <div class="fields">
+    <div><label>Exercise</label><select id="battleExercise" style="width:100%"></select></div>
+    <div><label>Reps done</label><input id="battleReps" type="number" inputmode="numeric" min="1" placeholder="10"></div>
+  </div>
+  <button class="save" onclick="battleAttack()" style="margin-top:8px">⚔️ Attack!</button>
+  <div id="battleLog" style="margin-top:10px;max-height:120px;overflow-y:auto"></div>
+</div>
+<div id="battleStart">
+  <button class="save" onclick="startBattle()">🐉 Start Battle</button>
+</div>
+<div id="battleVictory" style="display:none;text-align:center;padding:16px">
+  <div style="font-size:40px" id="victoryEmoji">🏆</div>
+  <div style="font-weight:800;font-size:18px;color:var(--gold);margin:8px 0" id="victoryText">Victory!</div>
+  <div style="font-size:12px;color:var(--muted)" id="victoryReward"></div>
+  <button class="save secondary" onclick="startBattle()" style="margin-top:10px">⚔️ Next Battle</button>
+</div>
+</div>
+</div>
+
+<!-- Boss Fights -->
+<div class="card">
+<div class="cardhead"><h2>🐉 Boss Fights</h2></div>
+<div class="muted" style="font-size:11px;margin-bottom:8px">Epic multi-session fights — chip away at the boss over days!</div>
+<div id="bossList"></div>
+</div>
+
+<!-- Supersets -->
+<div class="card">
+<div class="cardhead"><h2>🔄 Supersets & Circuits</h2></div>
+<div class="muted" style="font-size:11px;margin-bottom:8px">Chain exercises together for bonus XP</div>
+<div id="supersetArea">
+  <button class="save secondary" onclick="startSuperset()">🔄 Start Superset</button>
+</div>
+<div id="supersetActive" style="display:none">
+  <div id="supersetExList"></div>
+  <div class="fields" style="margin-top:8px">
+    <div><select id="supersetExercise" style="width:100%"></select></div>
+    <div><input id="supersetReps" type="number" inputmode="numeric" min="1" placeholder="Reps"></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button class="save secondary" onclick="addSupersetExercise()" style="flex:1">+ Add</button>
+    <button class="save" onclick="completeSupersetRound()" style="flex:1">✅ Round Done</button>
+  </div>
+  <div style="margin-top:6px;font-size:11px;color:var(--muted)" id="supersetInfo"></div>
+</div>
 </div>
 </section>
 </div>
@@ -2263,6 +2336,9 @@ function render() {
   // Minimum
   renderMinimumTab();
 
+  // Battle
+  renderBattleTab();
+
   // Install hint
   renderInstallHint();
 }
@@ -3057,6 +3133,342 @@ function getXPLevel(xp) {
     if (xp >= getXPForLevel(l)) return l;
   }
   return 1;
+}
+
+// ============================================
+// GAMEPLAY: BATTLES, QUESTS, BOSSES, SUPERSETS
+// ============================================
+const QUEST_KEY = 'pulse-quests-v1';
+const BOSS_KEY = 'pulse-bosses-v1';
+const BATTLE_KEY = 'pulse-battle-v1';
+
+const MONSTERS = [
+  { name: 'Slime', emoji: '🟢', hp: 30, xp: 15 },
+  { name: 'Goblin', emoji: '👺', hp: 50, xp: 25 },
+  { name: 'Skeleton', emoji: '💀', hp: 80, xp: 40 },
+  { name: 'Wolf', emoji: '🐺', hp: 100, xp: 50 },
+  { name: 'Troll', emoji: '🧌', hp: 150, xp: 75 },
+  { name: 'Dragon Whelp', emoji: '🐲', hp: 200, xp: 100 },
+  { name: 'Dark Knight', emoji: '🗡️', hp: 300, xp: 150 },
+  { name: 'Demon', emoji: '👿', hp: 400, xp: 200 },
+  { name: 'Elder Dragon', emoji: '🐉', hp: 600, xp: 300 },
+  { name: 'Ancient Titan', emoji: '⚡', hp: 1000, xp: 500 }
+];
+
+const BOSSES = [
+  { name: 'King Slime', emoji: '👑🟢', hp: 2000, xp: 1000, desc: 'A colossal slime king' },
+  { name: 'Lich Lord', emoji: '☠️', hp: 5000, xp: 2500, desc: 'Undead sorcerer supreme' },
+  { name: 'World Dragon', emoji: '🌍🐉', hp: 10000, xp: 5000, desc: 'The ultimate challenge' }
+];
+
+const QUEST_TEMPLATES = [
+  { type: 'reps', desc: 'Do {n} {exercise}', exercises: ['Press-ups', 'Squats', 'Sit-ups', 'Lunges', 'Burpees'], amounts: [20, 30, 50, 40, 25] },
+  { type: 'sessions', desc: 'Log {n} workouts today', amounts: [2, 3, 4] },
+  { type: 'variety', desc: 'Train {n} different exercises', amounts: [3, 4, 5] },
+  { type: 'volume', desc: 'Reach {n} total reps today', amounts: [50, 100, 150, 200] },
+  { type: 'weight', desc: 'Lift with weight in {n} exercises', amounts: [1, 2, 3] }
+];
+
+function getDailyQuests() {
+  const saved = JSON.parse(localStorage.getItem(QUEST_KEY) || '{}');
+  const today = dateKey(new Date());
+  if (saved.date === today) return saved;
+  // Generate new quests
+  const quests = [];
+  const used = new Set();
+  for (let i = 0; i < 3; i++) {
+    let tmpl;
+    do { tmpl = QUEST_TEMPLATES[Math.floor(Math.random() * QUEST_TEMPLATES.length)]; } while (used.has(tmpl.type) && used.size < QUEST_TEMPLATES.length);
+    used.add(tmpl.type);
+    const amt = tmpl.amounts[Math.floor(Math.random() * tmpl.amounts.length)];
+    let desc = tmpl.desc.replace('{n}', amt);
+    let exercise = '';
+    if (tmpl.exercises) {
+      exercise = tmpl.exercises[Math.floor(Math.random() * tmpl.exercises.length)];
+      desc = desc.replace('{exercise}', exercise);
+    }
+    quests.push({ type: tmpl.type, desc, target: amt, exercise, done: false, xpReward: amt * 2 });
+  }
+  const data = { date: today, quests };
+  localStorage.setItem(QUEST_KEY, JSON.stringify(data));
+  return data;
+}
+
+function checkQuestProgress(quests) {
+  const today = dateKey(new Date());
+  const td = workouts.filter(w => w.date === today);
+  quests.forEach(q => {
+    if (q.done) return;
+    switch(q.type) {
+      case 'reps':
+        q.progress = td.filter(w => w.exercise === q.exercise && w.unit === 'reps').reduce((s, w) => s + w.amount * (w.sets||1), 0);
+        if (q.progress >= q.target) q.done = true;
+        break;
+      case 'sessions':
+        q.progress = td.length;
+        if (q.progress >= q.target) q.done = true;
+        break;
+      case 'variety':
+        q.progress = new Set(td.map(w => w.exercise)).size;
+        if (q.progress >= q.target) q.done = true;
+        break;
+      case 'volume':
+        q.progress = td.filter(w => w.unit === 'reps').reduce((s, w) => s + w.amount * (w.sets||1), 0);
+        if (q.progress >= q.target) q.done = true;
+        break;
+      case 'weight':
+        q.progress = new Set(td.filter(w => w.weight).map(w => w.exercise)).size;
+        if (q.progress >= q.target) q.done = true;
+        break;
+    }
+  });
+}
+
+function renderQuests() {
+  const el = document.getElementById('questList');
+  const refresh = document.getElementById('questRefresh');
+  if (!el) return;
+  const data = getDailyQuests();
+  checkQuestProgress(data.quests);
+  localStorage.setItem(QUEST_KEY, JSON.stringify(data));
+
+  const done = data.quests.filter(q => q.done).length;
+  if (refresh) refresh.textContent = `${done}/3 complete`;
+
+  el.innerHTML = data.quests.map((q, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)">
+      <div style="font-size:22px">${q.done ? '✅' : '⬜'}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px;${q.done ? 'text-decoration:line-through;opacity:.6' : ''}">${esc(q.desc)}</div>
+        <div style="font-size:10px;color:var(--muted)">+${q.xpReward} XP${q.progress != null ? ' · ' + (q.progress||0) + '/' + q.target : ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Battle system
+let currentBattle = null;
+
+function startBattle() {
+  const totalLvl = getTotalLevel();
+  const tier = Math.min(Math.floor(totalLvl / 50), MONSTERS.length - 1);
+  const idx = Math.max(0, tier - 1 + Math.floor(Math.random() * 3));
+  const monster = {...MONSTERS[Math.min(idx, MONSTERS.length - 1)]};
+  // Scale HP with player level
+  const scale = 1 + totalLvl * 0.02;
+  monster.hp = Math.round(monster.hp * scale);
+  monster.maxHP = monster.hp;
+  monster.xp = Math.round(monster.xp * scale);
+  currentBattle = { monster, log: [], totalDmg: 0 };
+
+  // Populate exercise dropdown
+  const sel = document.getElementById('battleExercise');
+  const allEx = pickableExercises();
+  sel.innerHTML = allEx.map(e => `<option value="${escAttr(e.name)}">${e.icon} ${esc(e.name)}</option>`).join('');
+
+  document.getElementById('battleStart').style.display = 'none';
+  document.getElementById('battleVictory').style.display = 'none';
+  document.getElementById('battleMonster').style.display = 'block';
+  updateBattleUI();
+  haptic('medium'); playSound('click');
+}
+
+function updateBattleUI() {
+  if (!currentBattle) return;
+  const m = currentBattle.monster;
+  document.getElementById('monsterEmoji').textContent = m.emoji;
+  document.getElementById('monsterName').textContent = m.name;
+  document.getElementById('monsterLevel').textContent = `HP: ${Math.max(0, m.hp)}/${m.maxHP} · ${m.xp} XP reward`;
+  const pct = Math.max(0, (m.hp / m.maxHP) * 100);
+  const hpFill = document.getElementById('monsterHP');
+  hpFill.style.width = pct + '%';
+  hpFill.style.background = pct > 50 ? 'var(--green)' : pct > 25 ? 'var(--orange)' : 'var(--red)';
+  document.getElementById('monsterHPText').textContent = `${Math.max(0, m.hp)}/${m.maxHP} HP`;
+  document.getElementById('monsterDmgText').textContent = `${currentBattle.totalDmg} damage dealt`;
+  document.getElementById('battleLog').innerHTML = currentBattle.log.slice(-5).map(l =>
+    `<div style="font-size:11px;color:var(--muted);padding:2px 0">${l}</div>`
+  ).join('');
+}
+
+function battleAttack() {
+  if (!currentBattle) return;
+  const reps = Number(document.getElementById('battleReps').value);
+  if (!reps || reps < 1) return;
+  const exercise = document.getElementById('battleExercise').value;
+
+  // Damage = reps * multiplier (weighted exercises do more)
+  let dmg = reps;
+  // Log the workout too
+  const today = dateKey(new Date());
+  const time = new Date().toTimeString().slice(0, 5);
+  workouts.push({
+    id: Date.now(), exercise, amount: reps, sets: 1, unit: 'reps',
+    date: today, time, isPR: false, feeling: '💪', notes: `Battle vs ${currentBattle.monster.name}`, weight: null, category: null
+  });
+  persist();
+
+  currentBattle.monster.hp -= dmg;
+  currentBattle.totalDmg += dmg;
+  currentBattle.log.push(`⚔️ ${reps} ${exercise} → ${dmg} damage!`);
+
+  haptic('heavy'); playSound('click');
+  document.getElementById('battleReps').value = '';
+
+  if (currentBattle.monster.hp <= 0) {
+    // Victory!
+    const reward = currentBattle.monster.xp;
+    currentBattle.log.push(`🏆 ${currentBattle.monster.name} defeated! +${reward} XP`);
+    document.getElementById('battleMonster').style.display = 'none';
+    document.getElementById('battleVictory').style.display = 'block';
+    document.getElementById('victoryEmoji').textContent = currentBattle.monster.emoji;
+    document.getElementById('victoryText').textContent = `${currentBattle.monster.name} Defeated!`;
+    document.getElementById('victoryReward').textContent = `+${reward} bonus XP · ${currentBattle.totalDmg} total damage dealt`;
+    haptic('success'); playSound('levelup');
+    // Save battle record
+    const battles = JSON.parse(localStorage.getItem(BATTLE_KEY) || '[]');
+    battles.push({ monster: currentBattle.monster.name, date: today, dmg: currentBattle.totalDmg });
+    localStorage.setItem(BATTLE_KEY, JSON.stringify(battles.slice(-50)));
+    currentBattle = null;
+    setTimeout(checkAchievementsAndLevels, 200);
+  } else {
+    updateBattleUI();
+  }
+}
+
+// Boss fights (persistent multi-session)
+function getBosses() {
+  return JSON.parse(localStorage.getItem(BOSS_KEY) || '[]');
+}
+
+function renderBosses() {
+  const el = document.getElementById('bossList');
+  if (!el) return;
+  const saved = getBosses();
+
+  el.innerHTML = BOSSES.map((boss, i) => {
+    const active = saved.find(b => b.name === boss.name && !b.defeated);
+    const defeated = saved.find(b => b.name === boss.name && b.defeated);
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)">
+        <div style="font-size:28px">${boss.emoji}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:13px">${esc(boss.name)}</div>
+          <div style="font-size:10px;color:var(--muted)">${boss.desc} · ${boss.hp} HP</div>
+          ${active ? `
+            <div class="xp-bar" style="height:6px;margin-top:4px"><div class="fill" style="width:${((boss.hp - active.remaining) / boss.hp * 100)}%;background:var(--red)"></div></div>
+            <div style="font-size:9px;color:var(--muted)">${active.remaining}/${boss.hp} HP left · ${active.hits} hits</div>
+          ` : ''}
+        </div>
+        <div>
+          ${defeated ? '<span style="color:var(--gold);font-weight:800">✅ Slain</span>' :
+            active ? `<button class="save secondary" style="padding:6px 12px;font-size:11px" onclick="hitBoss(${i})">⚔️ Hit</button>` :
+            `<button class="save secondary" style="padding:6px 12px;font-size:11px" onclick="challengeBoss(${i})">🐉 Challenge</button>`}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function challengeBoss(idx) {
+  const boss = BOSSES[idx];
+  const saved = getBosses();
+  saved.push({ name: boss.name, remaining: boss.hp, hits: 0, defeated: false, started: dateKey(new Date()) });
+  localStorage.setItem(BOSS_KEY, JSON.stringify(saved));
+  renderBosses();
+  haptic('medium'); playSound('click');
+  showToast(`🐉 ${boss.name} challenged!`);
+}
+
+function hitBoss(idx) {
+  const boss = BOSSES[idx];
+  const saved = getBosses();
+  const active = saved.find(b => b.name === boss.name && !b.defeated);
+  if (!active) return;
+  // Damage = today's total reps
+  const today = dateKey(new Date());
+  const todayReps = workouts.filter(w => w.date === today && w.unit === 'reps').reduce((s, w) => s + w.amount * (w.sets||1), 0);
+  if (todayReps < 1) { showToast('⚠️ Log some reps first to deal damage!'); return; }
+  active.remaining = Math.max(0, active.remaining - todayReps);
+  active.hits++;
+  if (active.remaining <= 0) {
+    active.defeated = true;
+    active.defeatedDate = today;
+    showToast(`🏆 ${boss.name} DEFEATED! +${boss.xp} XP`);
+    haptic('success'); playSound('pr');
+  } else {
+    showToast(`⚔️ ${todayReps} damage to ${boss.name}! ${active.remaining} HP left`);
+    haptic('heavy'); playSound('click');
+  }
+  localStorage.setItem(BOSS_KEY, JSON.stringify(saved));
+  renderBosses();
+}
+
+// Supersets
+let supersetExercises = [];
+let supersetRounds = 0;
+
+function startSuperset() {
+  supersetExercises = [];
+  supersetRounds = 0;
+  document.getElementById('supersetArea').querySelector('button').style.display = 'none';
+  document.getElementById('supersetActive').style.display = 'block';
+  const sel = document.getElementById('supersetExercise');
+  const allEx = pickableExercises();
+  sel.innerHTML = allEx.map(e => `<option value="${escAttr(e.name)}">${e.icon} ${esc(e.name)}</option>`).join('');
+  updateSupersetUI();
+  haptic('medium');
+}
+
+function addSupersetExercise() {
+  const name = document.getElementById('supersetExercise').value;
+  const reps = Number(document.getElementById('supersetReps').value);
+  if (!reps || reps < 1) return;
+  supersetExercises.push({ name, reps });
+  document.getElementById('supersetReps').value = '';
+  updateSupersetUI();
+  haptic('light'); playSound('click');
+}
+
+function updateSupersetUI() {
+  const list = document.getElementById('supersetExList');
+  const info = document.getElementById('supersetInfo');
+  list.innerHTML = supersetExercises.map((e, i) =>
+    `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span>${esc(e.name)}</span><span style="color:var(--accent);font-weight:700">${e.reps} reps</span></div>`
+  ).join('');
+  info.textContent = supersetExercises.length > 0
+    ? `${supersetExercises.length} exercises · Round ${supersetRounds + 1} · +${Math.round(supersetExercises.length * 1.5)}x XP bonus`
+    : 'Add exercises to your superset';
+}
+
+function completeSupersetRound() {
+  if (supersetExercises.length < 2) { showToast('Add at least 2 exercises!'); return; }
+  const today = dateKey(new Date());
+  const time = new Date().toTimeString().slice(0, 5);
+  supersetExercises.forEach(e => {
+    workouts.push({
+      id: Date.now() + Math.random() * 1000,
+      exercise: e.name, amount: e.reps, sets: 1, unit: 'reps',
+      date: today, time, isPR: false, feeling: '💪',
+      notes: `Superset round ${supersetRounds + 1}`, weight: null, category: null
+    });
+  });
+  supersetRounds++;
+  persist();
+  haptic('success'); playSound('levelup');
+  showToast(`🔄 Round ${supersetRounds} complete! ${supersetExercises.length} exercises logged`);
+  updateSupersetUI();
+  setTimeout(checkAchievementsAndLevels, 200);
+}
+
+function renderBattleTab() {
+  renderQuests();
+  renderBosses();
+  // Populate battle exercise dropdown if battle not active
+  const sel = document.getElementById('battleExercise');
+  if (sel && !sel.options.length) {
+    const allEx = pickableExercises();
+    sel.innerHTML = allEx.map(e => `<option value="${escAttr(e.name)}">${e.icon} ${esc(e.name)}</option>`).join('');
+  }
 }
 
 // ============================================
