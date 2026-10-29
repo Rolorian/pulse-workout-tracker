@@ -21,9 +21,13 @@ Includes:
 - Streaks (with rest-day "freeze"), weekly stats, personal bests
 - Per-exercise progress chart
 - Routines: save a day's workout and re-log it in one tap
-- Levels / XP, achievements, capes (RPG-style)
+- RPG system: every exercise is its own 1-99 skill, grouped under 7
+  categories, rolling up into a total level with unlockable titles
+- Skill capes (per 99), Max/Comp/Trimmed capes, auto prestige past 99
+- Reusable saved custom exercises (assign to a category, remembered)
+- Level-up / cape-unlock popups with confetti
 - Keyless weather (Open-Meteo, uses device location, optional)
-- Sound + haptic toggles, richer sound effects
+- Sound + haptic toggles, retro/modern sound styles
 - Export backup as JSON or CSV, import, delete-all
 - No account / server / database — fully private & offline
 

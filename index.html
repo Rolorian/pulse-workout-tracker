@@ -237,6 +237,29 @@
 .rest-day-btn{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:14px;padding:11px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:12px;transition:all .15s}
 .rest-day-btn:active{transform:scale(.97)}
 .rest-day-btn.active{background:rgba(113,183,255,.12);border-color:var(--blue);color:var(--blue)}
+
+/* Skill tree (Progress → Levels) */
+.cat-block{border-bottom:1px solid var(--line)}
+.cat-block:last-child{border-bottom:0}
+.cat-header{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;cursor:pointer}
+.cat-header:active{opacity:.7}
+.cat-header .cat-name{font-weight:700;font-size:13px}
+.cat-header .cat-sum{font-weight:800;color:var(--green);font-size:13px;display:flex;align-items:center;gap:6px}
+.cat-header .chev{color:var(--muted);font-size:9px}
+.skill-list{padding:2px 0 10px 6px}
+.skill-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.skill-row .sk-name{flex:1;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skill-row .sk-bar{width:70px;flex-shrink:0;height:5px;background:var(--line);border-radius:99px;overflow:hidden}
+.skill-row .sk-bar .fill{height:100%;background:var(--green);border-radius:99px;transition:width .5s}
+.skill-row .sk-bar .fill.max{background:linear-gradient(90deg,var(--gold),var(--green))}
+.skill-row .sk-lvl{width:26px;text-align:right;font-weight:800;font-size:12px;color:var(--muted)}
+.skill-row .sk-lvl.max{color:var(--gold)}
+.skill-row .prestige{color:var(--gold);font-size:10px;letter-spacing:-1px}
+
+/* Sound style chooser */
+.sound-style{display:flex;gap:6px;margin-top:6px}
+.sound-style button{flex:1;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--muted);font-weight:700;font-size:12px;cursor:pointer}
+.sound-style button.active{background:var(--green);color:#07130d;border-color:var(--green)}
 </style>
 </head>
 <body>
@@ -336,11 +359,11 @@
 <section id="progress" class="section">
 <!-- Level System -->
 <div class="level-display" id="levelDisplay">
-<div class="level-title" id="levelTitle">🪓 Level 1 — Bronze Warrior</div>
-<div class="level-number">Total Level: <span id="totalLevel">1</span> · Next: <span id="nextLevelName">Silver Spartan</span></div>
+<div class="level-title" id="levelTitle">🥉 Bronze Warrior</div>
+<div class="level-number">Total Level <span id="totalLevel">0</span> · Next: <span id="nextLevelName">—</span></div>
 <div class="xp-bar"><div class="fill" id="xpFill" style="width:0%"></div></div>
-<div class="xp-text"><span id="xpCurrent">0</span> / <span id="xpNext">100</span> XP</div>
-<div id="levelCategories" style="margin-top:8px"></div>
+<div class="xp-text" id="levelProgressText"></div>
+<div id="levelCategories" style="margin-top:10px"></div>
 </div>
 
 <!-- Capes -->
@@ -535,6 +558,13 @@
 <div><div class="set-name">📳 Haptics</div><div class="set-sub">Vibration feedback</div></div>
 <span class="set-toggle" id="toggleHaptics" onclick="toggleSetting('haptics')"></span>
 </div>
+<div class="set-row" style="display:block">
+<div class="set-name">🎚️ Sound style <span class="set-sub">— tap to preview</span></div>
+<div class="sound-style">
+<button id="ssRetro" onclick="setSoundStyle('retro')">🎮 Retro</button>
+<button id="ssModern" onclick="setSoundStyle('modern')">✨ Modern</button>
+</div>
+</div>
 
 <p class="note" id="backupStatus" style="margin-top:14px">Back up your data so you can restore it anytime.</p>
 <button class="save secondary" onclick="exportData()">📤 Export backup (JSON)</button>
@@ -555,7 +585,71 @@ const ROUTINE_KEY = "pulse-routines-v1";
 const RESTDAY_KEY = "pulse-restdays-v1";
 const SETTINGS_KEY = "pulse-settings-v1";
 const BACKUP_KEY = "pulse-last-backup-v1";
-const EX = [["🏃","Jogging","km"],["💪","Press-ups","reps"],["🧘","Plank","minutes"],["🔥","Sit-ups","reps"],["🦵","Squats","reps"],["🚴","Cycling","km"],["⭐","Custom","reps"]];
+// Core exercise library — each exercise is its own trainable "skill",
+// grouped under one of the 7 categories. These are what Max/Comp capes are based on.
+const EXERCISES = [
+  // Legs
+  { icon: '🦵', name: 'Squats',        unit: 'reps',    cat: 'legs' },
+  { icon: '🦵', name: 'Lunges',        unit: 'reps',    cat: 'legs' },
+  { icon: '🦵', name: 'Calf raises',   unit: 'reps',    cat: 'legs' },
+  { icon: '🦵', name: 'Wall sit',      unit: 'seconds', cat: 'legs' },
+  // Chest
+  { icon: '💪', name: 'Press-ups',     unit: 'reps',    cat: 'chest' },
+  { icon: '🏋️', name: 'Bench press',   unit: 'reps',    cat: 'chest' },
+  { icon: '💪', name: 'Dips',          unit: 'reps',    cat: 'chest' },
+  { icon: '🏋️', name: 'Incline press', unit: 'reps',    cat: 'chest' },
+  // Core
+  { icon: '🔥', name: 'Sit-ups',       unit: 'reps',    cat: 'core' },
+  { icon: '🧘', name: 'Plank',         unit: 'minutes', cat: 'core' },
+  { icon: '🔥', name: 'Crunches',      unit: 'reps',    cat: 'core' },
+  { icon: '🔥', name: 'Leg raises',    unit: 'reps',    cat: 'core' },
+  // Cardio
+  { icon: '🏃', name: 'Jogging',       unit: 'km',      cat: 'cardio' },
+  { icon: '🚴', name: 'Cycling',       unit: 'km',      cat: 'cardio' },
+  { icon: '🚣', name: 'Rowing',        unit: 'minutes', cat: 'cardio' },
+  { icon: '🙌', name: 'Skipping',      unit: 'minutes', cat: 'cardio' },
+  // Arms
+  { icon: '💪', name: 'Bicep curls',   unit: 'reps',    cat: 'arms' },
+  { icon: '💪', name: 'Tricep dips',   unit: 'reps',    cat: 'arms' },
+  { icon: '💪', name: 'Hammer curls',  unit: 'reps',    cat: 'arms' },
+  // Back
+  { icon: '🏋️', name: 'Pull-ups',      unit: 'reps',    cat: 'back' },
+  { icon: '🏋️', name: 'Rows',          unit: 'reps',    cat: 'back' },
+  { icon: '🏋️', name: 'Deadlift',      unit: 'reps',    cat: 'back' },
+  { icon: '🏋️', name: 'Lat pulldown',  unit: 'reps',    cat: 'back' }
+];
+const CORE_SKILL_COUNT = EXERCISES.length;
+
+// Saved custom exercises (reusable, remembered with their category/unit/icon)
+const CUSTOM_KEY = "pulse-customs-v1";
+function getCustoms() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY) || "[]"); } catch (e) { return []; }
+}
+function saveCustoms(arr) { localStorage.setItem(CUSTOM_KEY, JSON.stringify(arr)); }
+function addCustom(name, unit, cat) {
+  const customs = getCustoms();
+  if (!customs.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+    customs.push({ icon: '⭐', name: name, unit: unit, cat: cat || 'custom' });
+    saveCustoms(customs);
+  }
+}
+function removeCustom(name) {
+  saveCustoms(getCustoms().filter(c => c.name.toLowerCase() !== name.toLowerCase()));
+}
+
+// Everything pickable in the log sheet = core library + saved customs
+function pickableExercises() { return EXERCISES.concat(getCustoms()); }
+
+// Metadata for any exercise name (core, custom, or legacy-logged)
+function exMeta(name) {
+  return pickableExercises().find(e => e.name === name) || null;
+}
+
+// Prestige (derived automatically past 99 — see getPrestige)
+const PRESTIGE_KEY = "pulse-prestige-seen-v1";
+
+// Legacy EX shape kept for the quick-pick helpers that still use it
+const EX = EXERCISES.map(e => [e.icon, e.name, e.unit]).concat([["⭐", "Custom", "reps"]]);
 let workouts = JSON.parse(localStorage.getItem(KEY) || "[]");
 let selected = "Jogging";
 let selectedFeeling = "😊";
@@ -564,11 +658,18 @@ let editingId = null;            // when editing an existing workout
 let lastDeleted = null;          // for undo
 let toastTimer = null;
 let calOffset = 0;               // month offset for calendar (0 = current)
+let expandedCats = new Set();    // which category skill-lists are open on Progress
+function toggleCat(id) {
+  if (expandedCats.has(id)) expandedCats.delete(id); else expandedCats.add(id);
+  renderLevels();
+  haptic('light');
+  playSound('click');
+}
 
 // Settings (sounds / haptics on by default)
 function getSettings() {
-  try { return Object.assign({ sound: true, haptics: true }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); }
-  catch (e) { return { sound: true, haptics: true }; }
+  try { return Object.assign({ sound: true, haptics: true, soundStyle: 'modern' }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); }
+  catch (e) { return { sound: true, haptics: true, soundStyle: 'modern' }; }
 }
 let settings = getSettings();
 function saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
@@ -582,6 +683,10 @@ function dateKey(d) {
 // Escape user-entered text before putting it in innerHTML.
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+// Escape for use inside a single-quoted inline handler argument.
+function escAttr(s) {
+  return String(s == null ? "" : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
 // Rest days (planned days that don't break your streak)
@@ -706,6 +811,20 @@ function playNote(freq, duration, startTime, opts) {
   if (!audioCtx) return;
   try {
     opts = opts || {};
+    // Retro: single square-wave voice, like classic RuneScape chiptune jingles.
+    if (settings.soundStyle === 'retro') {
+      const g = audioCtx.createGain();
+      g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.09, startTime);
+      g.gain.exponentialRampToValueAtTime(0.0008, startTime + duration);
+      const osc = audioCtx.createOscillator();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, startTime);
+      osc.connect(g);
+      osc.start(startTime);
+      osc.stop(startTime + duration + 0.02);
+      return;
+    }
     const type = opts.type || 'triangle';
     const peak = opts.gain != null ? opts.gain : 0.12;
 
@@ -867,19 +986,36 @@ function getLevelName(lvl) {
   return 'Bronze Warrior';
 }
 
+// --- XP curve: fast early levels, long grind to 99 (RuneScape-ish feel) ---
 function getXPForLevel(lvl) {
-  return Math.floor(Math.pow(lvl, 2) * 10);
+  if (lvl <= 1) return 0;
+  if (lvl > 99) lvl = 99;
+  return Math.floor(10 * Math.pow(lvl - 1, 2.1));
 }
+const XP_99 = getXPForLevel(99);
 
 function getLevelFromXP(xp) {
   let lvl = 1;
-  while (getXPForLevel(lvl + 1) <= xp && lvl < 99) lvl++;
+  while (lvl < 99 && getXPForLevel(lvl + 1) <= xp) lvl++;
   return lvl;
+}
+
+// XP earned from one logged workout (weighted reps are worth more).
+function xpForWorkout(w) {
+  let mult = 1;
+  if (w.unit === 'km') mult = 5;
+  else if (w.unit === 'minutes') mult = 3;
+  else if (w.unit === 'seconds') mult = 0.1;
+  let xp = w.amount * mult;
+  if (w.weight && w.unit === 'reps') xp *= (1 + Math.min(w.weight, 300) / 100);
+  return xp;
 }
 
 function getCategoryForExercise(exercise, customCategory) {
   if (customCategory) return customCategory;
-  const lower = exercise.toLowerCase();
+  const m = exMeta(exercise);
+  if (m) return m.cat;
+  const lower = (exercise || '').toLowerCase();
   if (lower.includes('squat') || lower.includes('lunge') || lower.includes('leg') || lower.includes('calf')) return 'legs';
   if (lower.includes('press') || lower.includes('bench') || lower.includes('push') || lower.includes('chest') || lower.includes('dip')) return 'chest';
   if (lower.includes('plank') || lower.includes('sit') || lower.includes('crunch') || lower.includes('core') || lower.includes('ab')) return 'core';
@@ -889,30 +1025,67 @@ function getCategoryForExercise(exercise, customCategory) {
   return 'custom';
 }
 
+// --- SKILLS: each exercise is its own skill with its own XP/level ---
+// The skill roster = core library + saved customs + anything ever logged.
+function getSkillRoster() {
+  const seen = new Set();
+  const roster = [];
+  EXERCISES.forEach(e => { seen.add(e.name); roster.push({ name: e.name, cat: e.cat, icon: e.icon, core: true }); });
+  getCustoms().forEach(c => { if (!seen.has(c.name)) { seen.add(c.name); roster.push({ name: c.name, cat: c.cat || 'custom', icon: c.icon || '⭐', core: false }); } });
+  workouts.forEach(w => { if (!seen.has(w.exercise)) { seen.add(w.exercise); roster.push({ name: w.exercise, cat: w.category || getCategoryForExercise(w.exercise), icon: icon(w.exercise), core: false }); } });
+  return roster;
+}
+
+function getSkillXPMap() {
+  const map = {};
+  workouts.forEach(w => { map[w.exercise] = (map[w.exercise] || 0) + xpForWorkout(w); });
+  return map;
+}
+
+// Prestige = full multiples of a 99's worth of XP earned beyond level 99.
+function getPrestige(xp) {
+  if (xp < XP_99) return 0;
+  return Math.floor(xp / XP_99);
+}
+
 function getCategoryXP() {
   const catXP = {};
   CATEGORIES.forEach(c => catXP[c.id] = 0);
   workouts.forEach(w => {
     const cat = w.category || getCategoryForExercise(w.exercise);
-    if (catXP[cat] !== undefined) {
-      let multiplier = 1;
-      if (w.unit === 'km') multiplier = 5;
-      else if (w.unit === 'minutes') multiplier = 3;
-      else if (w.unit === 'seconds') multiplier = 0.1;
-      catXP[cat] += w.amount * multiplier;
-    }
+    if (catXP[cat] !== undefined) catXP[cat] += xpForWorkout(w);
   });
   return catXP;
 }
 
+// Total level = sum of every skill's level (RuneScape-style).
 function getTotalLevel() {
-  const catXP = getCategoryXP();
+  const xpMap = getSkillXPMap();
   let total = 0;
-  CATEGORIES.forEach(c => {
-    const lvl = getLevelFromXP(catXP[c.id] || 0);
-    total += lvl;
-  });
+  getSkillRoster().forEach(s => { total += getLevelFromXP(xpMap[s.name] || 0); });
   return total;
+}
+
+// --- Titles, scaled to total skill level ---
+const TITLE_TIERS = [
+  { min: 0,    name: 'Bronze Warrior',    icon: '🥉' },
+  { min: 80,   name: 'Iron Trainee',      icon: '⚙️' },
+  { min: 180,  name: 'Steel Soldier',     icon: '🛡️' },
+  { min: 320,  name: 'Silver Spartan',    icon: '🥈' },
+  { min: 550,  name: 'Gold Gladiator',    icon: '🥇' },
+  { min: 850,  name: 'Platinum Champion', icon: '💠' },
+  { min: 1200, name: 'Diamond Legend',    icon: '💎' },
+  { min: 1700, name: 'Mythic God',        icon: '🔱' },
+  { min: 2277, name: 'Pulse Immortal',    icon: '👑' }
+];
+function getTitle(total) {
+  let t = TITLE_TIERS[0];
+  for (const tier of TITLE_TIERS) { if (total >= tier.min) t = tier; }
+  return t;
+}
+function getNextTitle(total) {
+  for (const tier of TITLE_TIERS) { if (total < tier.min) return tier; }
+  return null;
 }
 
 // ============================================
@@ -1020,6 +1193,8 @@ const fmtDate = (k) => {
 };
 
 const icon = (n) => {
+  const m = exMeta(n);
+  if (m) return m.icon;
   const found = EX.find(x => x[1] === n);
   return found ? found[0] : "⭐";
 };
@@ -1122,7 +1297,7 @@ function editWorkout(id) {
   document.getElementById("modalTitle").textContent = "Edit Workout";
   document.getElementById("saveBtn").textContent = "💾 Update Workout";
   document.getElementById("modal").classList.add("open");
-  selected = EX.find(x => x[1] === w.exercise) ? w.exercise : "Custom";
+  selected = exMeta(w.exercise) ? w.exercise : "Custom";
   renderExercises();
   document.getElementById("unit").value = w.unit;
   document.getElementById("amount").value = w.amount;
@@ -1156,18 +1331,20 @@ function closeModal() {
 }
 
 function renderExercises() {
-  document.getElementById("exerciseGrid").innerHTML = EX.map(x =>
-    `<button class="ex ${selected === x[1] ? "selected" : ""}" onclick="selectEx('${x[1]}','${x[2]}')">${x[0]}<b>${x[1]}</b></button>`
+  const picks = pickableExercises();
+  const grid = picks.map(e =>
+    `<button class="ex ${selected === e.name ? "selected" : ""}" onclick="selectEx('${escAttr(e.name)}','${e.unit}')">${e.icon}<b>${esc(e.name)}</b></button>`
   ).join("");
-  let customBox = document.getElementById("customNameContainer");
-  let categorySelector = document.getElementById("categorySelector");
+  const newBtn = `<button class="ex ${selected === "Custom" ? "selected" : ""}" onclick="selectNewCustom()">➕<b>New custom</b></button>`;
+  document.getElementById("exerciseGrid").innerHTML = grid + newBtn;
+  const customBox = document.getElementById("customNameContainer");
+  const categorySelector = document.getElementById("categorySelector");
   if (selected === "Custom") {
     customBox.style.display = "block";
     categorySelector.style.display = "block";
   } else {
     customBox.style.display = "none";
     categorySelector.style.display = "none";
-    document.getElementById("customNameInput").value = "";
   }
 }
 
@@ -1175,6 +1352,16 @@ function selectEx(n, u) {
   selected = n;
   document.getElementById("unit").value = u;
   renderExercises();
+  haptic('selection');
+  playSound('click');
+}
+
+function selectNewCustom() {
+  selected = "Custom";
+  renderExercises();
+  const inp = document.getElementById("customNameInput");
+  inp.value = "";
+  setTimeout(() => inp.focus(), 50);
   haptic('selection');
   playSound('click');
 }
@@ -1195,7 +1382,7 @@ function quickReLog() {
     return;
   }
   const last = workouts[workouts.length - 1];
-  const found = EX.find(x => x[1] === last.exercise);
+  const found = exMeta(last.exercise);
   if (found) {
     selected = last.exercise;
     document.getElementById("unit").value = last.unit;
@@ -1221,7 +1408,7 @@ function quickReLogWithIncrement() {
     return;
   }
   const last = workouts[workouts.length - 1];
-  const found = EX.find(x => x[1] === last.exercise);
+  const found = exMeta(last.exercise);
   if (found) {
     selected = last.exercise;
     document.getElementById("unit").value = last.unit;
@@ -1264,6 +1451,11 @@ function saveWorkout() {
   let feeling = selectedFeeling;
   let weightRaw = document.getElementById("weight").value;
   let weight = (weightRaw !== '' && !isNaN(weightRaw) && Number(weightRaw) > 0) ? Number(weightRaw) : null;
+
+  // Remember any non-core exercise so it becomes a reusable button next time
+  if (name && !EXERCISES.some(e => e.name === name)) {
+    addCustom(name, unit, assignedCategory || getCategoryForExercise(name));
+  }
 
   // --- EDIT MODE: update the existing entry ---
   if (editingId !== null) {
@@ -1343,7 +1535,7 @@ let shownAchievements = JSON.parse(localStorage.getItem('pulse-shown-achievement
 let previousLevels = JSON.parse(localStorage.getItem('pulse-previous-levels') || '{}');
 
 function checkAchievementsAndLevels() {
-  // Check achievements
+  // Achievements
   ACHIEVEMENTS.forEach(a => {
     if (!shownAchievements.includes(a.id) && a.check()) {
       shownAchievements.push(a.id);
@@ -1352,37 +1544,59 @@ function checkAchievementsAndLevels() {
     }
   });
 
-  // Check levels
-  const catXP = getCategoryXP();
-  const totalLevel = getTotalLevel();
-  const xp = workouts.reduce((s, w) => {
-    let mult = 1;
-    if (w.unit === 'km') mult = 5;
-    else if (w.unit === 'minutes') mult = 3;
-    else if (w.unit === 'seconds') mult = 0.1;
-    return s + (w.amount * mult);
-  }, 0);
-  const currentLevel = getLevelFromXP(xp);
-  
-  // Check global level up
-  const prevGlobal = previousLevels.global || 1;
-  if (currentLevel > prevGlobal) {
-    previousLevels.global = currentLevel;
-    localStorage.setItem('pulse-previous-levels', JSON.stringify(previousLevels));
-    showLevelUpPopup('global', currentLevel);
-  }
-
-  // Check body part levels
-  CATEGORIES.forEach(c => {
-    const cXP = catXP[c.id] || 0;
-    const cLevel = getLevelFromXP(cXP);
-    const prev = previousLevels[c.id] || 1;
-    if (cLevel > prev) {
-      previousLevels[c.id] = cLevel;
-      localStorage.setItem('pulse-previous-levels', JSON.stringify(previousLevels));
-      showLevelUpPopup(c.id, cLevel, c.name);
+  // Per-skill level-ups, skill capes (99), and title changes
+  const xpMap = getSkillXPMap();
+  const roster = getSkillRoster();
+  const firstRun = !previousLevels.__init;
+  const queue = [];
+  roster.forEach(s => {
+    const lvl = getLevelFromXP(xpMap[s.name] || 0);
+    const prev = previousLevels[s.name] || 1;
+    if (!firstRun && lvl > prev) {
+      if (lvl >= 99 && prev < 99) queue.push({ type: 'cape', name: s.name, icon: s.icon });
+      else queue.push({ type: 'skill', name: s.name, level: lvl, icon: s.icon });
     }
+    previousLevels[s.name] = lvl;
   });
+  const total = getTotalLevel();
+  const prevTotal = previousLevels.__total || 0;
+  if (!firstRun && getTitle(total).name !== getTitle(prevTotal).name && total > prevTotal) {
+    queue.push({ type: 'title', title: getTitle(total).name, icon: getTitle(total).icon, total });
+  }
+  previousLevels.__total = total;
+  previousLevels.__init = true;
+  localStorage.setItem('pulse-previous-levels', JSON.stringify(previousLevels));
+
+  // Show the single most significant unlock (cape > title > highest skill) to avoid flooding
+  if (!firstRun && queue.length) {
+    const cape = queue.find(q => q.type === 'cape');
+    const title = queue.find(q => q.type === 'title');
+    const skill = queue.filter(q => q.type === 'skill').sort((a, b) => b.level - a.level)[0];
+    showUnlock(cape || title || skill);
+  }
+}
+
+// Unified level-up / cape / title popup
+function showUnlock(item) {
+  if (!item) return;
+  let bigIcon, kicker, name, sub;
+  if (item.type === 'cape') { bigIcon = '🎖️'; kicker = '⬆️ SKILL CAPE UNLOCKED!'; name = `${item.icon} ${item.name} — Lv.99`; sub = 'Mastery achieved.'; }
+  else if (item.type === 'title') { bigIcon = item.icon || '👑'; kicker = '⬆️ NEW TITLE!'; name = item.title; sub = `Total Level ${item.total}`; }
+  else { bigIcon = item.icon || '💪'; kicker = '⬆️ LEVEL UP!'; name = `${item.name} — Level ${item.level}`; sub = ''; }
+  haptic('levelup');
+  playSound(item.type === 'cape' ? 'achievement' : 'levelup');
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease;backdrop-filter:blur(8px);`;
+  overlay.innerHTML = `
+    <div style="background:linear-gradient(135deg,#1a2a1f,#0d1520);border:2px solid var(--gold);border-radius:24px;padding:40px 32px 32px;max-width:400px;width:90%;text-align:center;box-shadow:0 0 60px rgba(251,191,36,.25)">
+      <div style="font-size:60px;margin-bottom:6px">${bigIcon}</div>
+      <div style="font-size:14px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:2px">${kicker}</div>
+      <div style="font-size:22px;font-weight:900;color:var(--text);margin-top:8px">${esc(name)}</div>
+      ${sub ? `<div style="font-size:14px;color:var(--muted);margin-top:4px">${esc(sub)}</div>` : ''}
+      <button onclick="this.closest('div[style]').parentElement.remove()" style="margin-top:16px;padding:10px 32px;border:0;border-radius:12px;background:var(--green);color:#07130d;font-weight:700;font-size:14px;cursor:pointer">Continue</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  triggerConfetti();
 }
 
 function showAchievementPopup(achievement) {
@@ -2284,42 +2498,49 @@ function renderSmartTags() {
 // LEVELS
 // ============================================
 function renderLevels() {
-  const catXP = getCategoryXP();
-  const totalLevel = getTotalLevel();
-  const xp = workouts.reduce((s, w) => {
-    let mult = 1;
-    if (w.unit === 'km') mult = 5;
-    else if (w.unit === 'minutes') mult = 3;
-    else if (w.unit === 'seconds') mult = 0.1;
-    return s + (w.amount * mult);
-  }, 0);
-  const level = getLevelFromXP(xp);
-  const nextLevel = level + 1;
-  const xpForNext = getXPForLevel(nextLevel);
-  const xpForCurrent = getXPForLevel(level);
-  const xpInLevel = xp - xpForCurrent;
-  const xpNeeded = xpForNext - xpForCurrent;
-  const pct = Math.min((xpInLevel / xpNeeded) * 100, 100);
-  document.getElementById('levelTitle').textContent = `🪓 Level ${level} — ${getLevelName(level)}`;
-  document.getElementById('totalLevel').textContent = totalLevel;
-  document.getElementById('nextLevelName').textContent = getLevelName(nextLevel) || 'Max Level';
+  const total = getTotalLevel();
+  const title = getTitle(total);
+  const next = getNextTitle(total);
+  document.getElementById('levelTitle').textContent = `${title.icon} ${title.name}`;
+  document.getElementById('totalLevel').textContent = total;
+  document.getElementById('nextLevelName').textContent = next ? next.name : 'Maxed 👑';
+  let pct = 100;
+  if (next) pct = Math.min(((total - title.min) / (next.min - title.min)) * 100, 100);
   document.getElementById('xpFill').style.width = pct + '%';
-  document.getElementById('xpCurrent').textContent = Math.floor(xpInLevel);
-  document.getElementById('xpNext').textContent = xpNeeded;
+  document.getElementById('levelProgressText').textContent = next ? `${total} / ${next.min} total level to ${next.name}` : 'Maximum total level reached!';
+
+  // Skills grouped under each category (tap a category to expand its skills)
+  const xpMap = getSkillXPMap();
+  const byCat = {};
+  CATEGORIES.forEach(c => byCat[c.id] = []);
+  getSkillRoster().forEach(s => { (byCat[s.cat] = byCat[s.cat] || []).push(s); });
+
   const container = document.getElementById('levelCategories');
   container.innerHTML = CATEGORIES.map(c => {
-    const cXP = catXP[c.id] || 0;
-    const cLevel = getLevelFromXP(cXP);
-    const nextLvl = cLevel + 1;
-    const xpForNextC = getXPForLevel(nextLvl);
-    const xpForCurrentC = getXPForLevel(cLevel);
-    const xpInC = cXP - xpForCurrentC;
-    const xpNeededC = xpForNextC - xpForCurrentC;
-    const pctC = Math.min((xpInC / xpNeededC) * 100, 100);
-    return `<div class="level-category">
-      <span class="cat-name">${c.name}</span>
-      <span class="cat-bar"><span class="fill" style="width:${pctC}%"></span></span>
-      <span class="cat-level">Lv.${cLevel}</span>
+    const skills = (byCat[c.id] || []).slice().sort((a, b) => (xpMap[b.name] || 0) - (xpMap[a.name] || 0));
+    const catLvlSum = skills.reduce((s, sk) => s + getLevelFromXP(xpMap[sk.name] || 0), 0);
+    const maxed = skills.length > 0 && skills.every(sk => getLevelFromXP(xpMap[sk.name] || 0) >= 99);
+    const open = expandedCats.has(c.id);
+    const rows = skills.map(sk => {
+      const xp = xpMap[sk.name] || 0;
+      const lvl = getLevelFromXP(xp);
+      const prest = getPrestige(xp);
+      const xpCur = getXPForLevel(lvl), xpNxt = getXPForLevel(lvl + 1);
+      const p = lvl >= 99 ? 100 : Math.min(((xp - xpCur) / (xpNxt - xpCur)) * 100, 100);
+      const cape = lvl >= 99 ? ' 🎖️' : '';
+      const stars = prest > 0 ? ' <span class="prestige">' + '★'.repeat(Math.min(prest, 5)) + (prest > 5 ? '+' : '') + '</span>' : '';
+      return `<div class="skill-row">
+        <span class="sk-name">${sk.icon} ${esc(sk.name)}${cape}${stars}</span>
+        <span class="sk-bar"><span class="fill ${lvl >= 99 ? 'max' : ''}" style="width:${p}%"></span></span>
+        <span class="sk-lvl ${lvl >= 99 ? 'max' : ''}">${lvl}</span>
+      </div>`;
+    }).join('');
+    return `<div class="cat-block">
+      <div class="cat-header" onclick="toggleCat('${c.id}')">
+        <span class="cat-name">${c.name}${maxed ? ' 🏆' : ''}</span>
+        <span class="cat-sum">Lv.${catLvlSum} <span class="chev">${open ? '▲' : '▼'}</span></span>
+      </div>
+      ${open ? `<div class="skill-list">${rows || '<div class="muted" style="padding:6px 0">No skills in this category yet.</div>'}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -2328,24 +2549,25 @@ function renderLevels() {
 // CAPES
 // ============================================
 function renderCapes() {
-  const totalLevel = getTotalLevel();
-  const maxLevel = 7 * 99;
-  const allLevel99 = totalLevel >= maxLevel;
-  const unlockedAchievements = ACHIEVEMENTS.filter(a => a.check()).length;
-  const totalAchievements = ACHIEVEMENTS.length;
-  const allBronzeSilverGold = unlockedAchievements >= totalAchievements * 0.7;
-  const allAchievements = unlockedAchievements >= totalAchievements;
+  const xpMap = getSkillXPMap();
+  const skill99 = EXERCISES.filter(e => getLevelFromXP(xpMap[e.name] || 0) >= 99);
+  const allMax = skill99.length === EXERCISES.length;
+  const unlockedAch = ACHIEVEMENTS.filter(a => a.check()).length;
+  const totalAch = ACHIEVEMENTS.length;
+  const comp = unlockedAch >= totalAch;
+  const trim = allMax && comp;
   const capes = [
-    { id: 'max', name: 'Max Cape', icon: '🎓', unlocked: allLevel99, desc: 'All skills Level 99' },
-    { id: 'comp', name: 'Comp Cape', icon: '🏆', unlocked: allBronzeSilverGold, desc: '70%+ achievements' },
-    { id: 'trim', name: 'Trimmed Comp', icon: '✨', unlocked: allAchievements, desc: '100% achievements' }
+    { icon: '🎖️', name: 'Skill Capes', unlocked: skill99.length > 0, status: `${skill99.length}/${EXERCISES.length}`, desc: 'Skills at Level 99' },
+    { icon: '🎓', name: 'Max Cape', unlocked: allMax, status: allMax ? '✅' : '🔒', desc: 'Every skill Level 99' },
+    { icon: '🏆', name: 'Comp Cape', unlocked: comp, status: `${unlockedAch}/${totalAch}`, desc: 'All achievements' },
+    { icon: '✨', name: 'Trimmed Comp', unlocked: trim, status: trim ? '✅' : '🔒', desc: 'Max + all achievements' }
   ];
   const container = document.getElementById('capeContainer');
   container.innerHTML = capes.map(c =>
     `<div class="cape-item ${c.unlocked ? 'unlocked' : 'locked'}">
       <span class="icon">${c.icon}</span>
       <div class="name">${c.name}</div>
-      <div style="font-size:8px;color:var(--muted);margin-top:2px">${c.unlocked ? '✅ Unlocked' : '🔒 Locked'}</div>
+      <div style="font-size:9px;color:${c.unlocked ? 'var(--gold)' : 'var(--muted)'};margin-top:2px;font-weight:700">${c.status}</div>
       <div style="font-size:7px;color:var(--muted)">${c.desc}</div>
     </div>`
   ).join('');
@@ -2824,6 +3046,11 @@ function renderSettingsToggles() {
   const h = document.getElementById('toggleHaptics');
   if (s) { s.textContent = settings.sound ? '🔔' : '🔕'; s.className = 'set-toggle ' + (settings.sound ? 'on' : 'off'); }
   if (h) { h.textContent = settings.haptics ? '📳' : '📴'; h.className = 'set-toggle ' + (settings.haptics ? 'on' : 'off'); }
+  const retro = document.getElementById('ssRetro'), modern = document.getElementById('ssModern');
+  if (retro && modern) {
+    retro.classList.toggle('active', settings.soundStyle === 'retro');
+    modern.classList.toggle('active', settings.soundStyle !== 'retro');
+  }
 }
 
 function toggleSetting(key) {
@@ -2831,6 +3058,15 @@ function toggleSetting(key) {
   saveSettings();
   renderSettingsToggles();
   if (settings.sound) playSound('click');
+  haptic('light');
+}
+
+function setSoundStyle(s) {
+  settings.soundStyle = s;
+  saveSettings();
+  renderSettingsToggles();
+  if (!settings.sound) { settings.sound = true; saveSettings(); renderSettingsToggles(); }
+  playSound('levelup'); // preview the chosen style
   haptic('light');
 }
 
