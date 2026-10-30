@@ -251,12 +251,13 @@
   function stageDef(ri, si) {
     const rnd = G.seeded('stage' + ri + '-' + si);
     if (si === 4) return { t: 'boss', n: 150 + ri * 120, text: `Defeat ${REGIONS[ri].boss[1]} ${REGIONS[ri].boss[0]}`, sub: 'Every rep deals damage (boosted by your gear)' };
-    const types = ri >= 2 ? ['cat', 'cat', 'ex', 'variety', 'sets', 'weighted', 'cardio'] : ['cat', 'cat', 'ex', 'variety', 'sets', 'cardio'];
+    const types = ri >= 2 && trainStyle() !== 'bodyweight' ? ['cat', 'cat', 'ex', 'variety', 'sets', 'weighted', 'cardio'] : ['cat', 'cat', 'ex', 'variety', 'sets', 'hold', 'cardio'];
     const t = types[Math.floor(rnd() * types.length)];
-    if (t === 'cat') { const c = pickR(CATS, rnd); const n = 30 + ri * 20 + si * 10; return { t, cat: c[0], n, text: `${n} ${c[1]} reps`, sub: `Any ${c[1].toLowerCase()} exercise counts` }; }
-    if (t === 'ex') { const pool = EXERCISES.filter((e) => e.unit === 'reps'); const e = pickR(pool, rnd); const n = 20 + ri * 12 + si * 6; return { t, ex: e.name, n, text: `${n} ${e.name}`, sub: `${e.icon} Specific exercise` }; }
+    if (t === 'cat') { const c = pickR(trainStyle() === 'bodyweight' ? CATS.filter((x) => x[0] !== 'arms' && x[0] !== 'back') : CATS, rnd); const n = 30 + ri * 20 + si * 10; return { t, cat: c[0], n, text: `${n} ${c[1]} reps`, sub: `Any ${c[1].toLowerCase()} exercise counts` }; }
+    if (t === 'ex') { const pool = EXERCISES.filter((e) => e.unit === 'reps' && (trainStyle() !== 'bodyweight' || isBodyweight(e.name))); const e = pickR(pool, rnd); const n = Math.round((20 + ri * 12 + si * 6) * (HARD_BODYWEIGHT.has(e.name) ? 0.5 : 1)); return { t, ex: e.name, n, text: `${n} ${e.name}`, sub: `${e.icon} Specific exercise` }; }
     if (t === 'variety') { const n = 3 + Math.floor(ri / 3); return { t, n, text: `Train ${n} different exercises`, sub: 'Variety is strength' }; }
     if (t === 'sets') { const n = 5 + ri * 2; return { t, n, text: `Log ${n} sets`, sub: 'Sets × entries all count' }; }
+    if (t === 'hold') { const n = 60 + ri * 30; return { t, n, text: `Hold for ${n}s total`, sub: 'Plank, wall sit, side plank or hollow hold' }; }
     if (t === 'weighted') { const n = 3 + ri; return { t, n, text: `Log ${n} weighted sets`, sub: 'Add a kg value to an entry' }; }
     const n = 10 + ri * 5; return { t: 'cardio', n, text: `${n} minutes of cardio`, sub: 'Any cardio logged in minutes' };
   }
@@ -271,15 +272,17 @@
       case 'sets': return ws.reduce((a, w) => a + (w.sets || 1), 0);
       case 'weighted': return ws.filter((w) => w.weight).reduce((a, w) => a + (w.sets || 1), 0);
       case 'cardio': return ws.filter((w) => w.unit === 'minutes').reduce((a, w) => a + w.amount * (w.sets || 1), 0);
+      case 'hold': return holdSeconds(ws);
     }
     return 0;
   }
   function regionState(ri) { W.region[ri] = W.region[ri] || { stage: 0, start: null, done: false }; return W.region[ri]; }
   function regionUnlocked(ri) { return ri === 0 || (regionState(ri - 1).done && advLevel() >= REGIONS[ri].need); }
 
-  function startStage(ri) { const rs = regionState(ri); rs.start = Date.now(); W.activeRegion = ri; save(); if (typeof haptic === 'function') haptic('medium'); G.sfx && G.sfx('win'); render(); }
+  function curDef(ri) { const rs = regionState(ri); return rs.start && rs.def && rs.defStage === rs.stage ? rs.def : stageDef(ri, rs.stage); }
+  function startStage(ri) { const rs = regionState(ri); rs.start = Date.now(); rs.def = stageDef(ri, rs.stage); rs.defStage = rs.stage; W.activeRegion = ri; save(); if (typeof haptic === 'function') haptic('medium'); G.sfx && G.sfx('win'); render(); }
   function claimStage(ri) {
-    const rs = regionState(ri); const def = stageDef(ri, rs.stage);
+    const rs = regionState(ri); const def = curDef(ri);
     if (stageProgress(def, rs.start) < def.n) return;
     const coins = 80 * (ri + 1) * (rs.stage === 4 ? 3 : 1);
     if (rs.stage === 4) {
@@ -290,7 +293,7 @@
       G.fireworks && G.fireworks(5);
       showToast(`🏰 ${DUNGEONS[ri].name} dungeon unlocked!`, null, null, 4000);
     } else {
-      rs.stage++; rs.start = Date.now(); save();
+      rs.stage++; rs.start = Date.now(); rs.def = stageDef(ri, rs.stage); rs.defStage = rs.stage; save();
       G.reward({ coins }, { label: `⭐ Stage cleared!` }); G.confetti && G.confetti(70);
     }
     render();
@@ -301,7 +304,7 @@
     const act = W.activeRegion != null && regionState(W.activeRegion).start ? W.activeRegion : null;
     let cur = '';
     if (act != null) {
-      const rs = regionState(act); const def = stageDef(act, rs.stage); const p = stageProgress(def, rs.start); const done = p >= def.n;
+      const rs = regionState(act); const def = curDef(act); const p = stageProgress(def, rs.start); const done = p >= def.n;
       cur = `<div class="card cur-quest" style="--rc:${REGIONS[act].c}"><div class="muted">${REGIONS[act].icon} ${REGIONS[act].name} · Stage ${rs.stage + 1}/5</div>
         <div class="cq-text">${esc(def.text)}</div><div class="muted">${esc(def.sub)}</div>
         <div class="xp-bar"><div class="fill" style="width:${Math.min(100, p / def.n * 100)}%"></div></div>
@@ -387,7 +390,7 @@
     const rnd = G.seeded(run.seed + ':room' + run.floor + type);
     const dg = DUNGEONS[run.d]; const d = run.d;
     if (type === 'monster' || type === 'elite' || type === 'boss') {
-      const ex = pickR(pickableExercises().filter((e) => e.unit === 'reps'), rnd);
+      const ex = pickR(questExercisePool('reps'), rnd);
       const mob = type === 'boss' ? dg.boss : pickR(dg.mobs, rnd);
       let hp = (12 + 4 * d + 2 * run.floor) * (type === 'elite' ? 1.8 * relicMod(run, 'elite', 1) : type === 'boss' ? 3 : 1);
       hp = Math.round(hp * relicMod(run, 'hp', 1) * run.curse);

@@ -1,7 +1,7 @@
 /* Pulse Workout Tracker — service worker
    Cache-first for the app shell so it loads instantly and fully offline.
    Bump CACHE on every release so clients pick up the new files. */
-const CACHE = 'pulse-v5';
+const CACHE = 'pulse-v6';
 const SHELL = [
   './',
   './index.html',
@@ -39,17 +39,36 @@ self.addEventListener('fetch', (e) => {
   // Never cache cross-origin calls (e.g. weather API) — just pass through.
   if (url.origin !== self.location.origin) return;
 
-  // App shell / same-origin: cache-first, fall back to network, then cache update.
-  e.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req).then((res) => {
-        if (res && res.status === 200 && res.type === 'basic') {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
-        }
-        return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
-  );
+  const putInCache = (res) => {
+    if (res && res.status === 200 && res.type === 'basic') {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(req, copy));
+    }
+    return res;
+  };
+
+  // Images/icons rarely change: cache-first.
+  if (/\.(png|jpg|jpeg|svg|ico|webp)$/i.test(url.pathname)) {
+    e.respondWith(caches.match(req).then((cached) => cached || fetch(req).then(putInCache)));
+    return;
+  }
+
+  // App code (HTML/JS/CSS/JSON): network-first so updates show up on the next open,
+  // falling back to the offline copy if there's no signal or the network is slow (>3.5s).
+  e.respondWith(new Promise((resolve) => {
+    let settled = false;
+    const fallback = () => caches.match(req, { ignoreSearch: req.mode === 'navigate' })
+      .then((c) => c || caches.match('./index.html'));
+    const timer = setTimeout(() => {
+      fallback().then((c) => { if (c && !settled) { settled = true; resolve(c); } });
+    }, 3500);
+    fetch(req, { cache: 'no-cache' }).then((res) => {
+      clearTimeout(timer);
+      putInCache(res);
+      if (!settled) { settled = true; resolve(res); }
+    }).catch(() => {
+      clearTimeout(timer);
+      fallback().then((c) => { if (!settled) { settled = true; resolve(c || Response.error()); } });
+    });
+  }));
 });

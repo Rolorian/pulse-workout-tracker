@@ -118,7 +118,7 @@
   }
 
   function openDuelPicker() {
-    const exs = pickableExercises().filter((e) => e.unit === 'reps');
+    const exs = sortForStyle(pickableExercises().filter((e) => e.unit === 'reps'));
     const html = `<div class="casino"><div class="cz-title">⚔️ Weekly 1v1 Duel</div>
       <div class="muted">Pick a rival and an exercise. Most reps of it by Sunday night wins. Beat them to win their signature item.</div>
       <div class="duel-pick">${RIVALS.map((rv, i) => `<button class="chip ${i === 0 ? 'on' : ''}" data-rv="${rv.id}">${rv.emoji} ${rv.name.split(' ').slice(-1)[0]}${R.nemesis === rv.id ? ' 👹' : ''}</button>`).join('')}</div>

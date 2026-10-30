@@ -696,6 +696,14 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 <button id="ssModern" onclick="setSoundStyle('modern')">✨ Modern</button>
 </div>
 </div>
+<div class="set-row" style="display:block">
+<div class="set-name">🏠 Training style <span class="set-sub">— shapes quests, map stages & dungeons</span></div>
+<div class="sound-style">
+<button id="tsBody" onclick="setTrainStyle('bodyweight')">🤸 Bodyweight</button>
+<button id="tsMixed" onclick="setTrainStyle('mixed')">🔀 Mixed</button>
+<button id="tsGym" onclick="setTrainStyle('gym')">🏋️ Gym</button>
+</div>
+</div>
 
 <div id="manageCustomsSection" style="margin-top:14px"></div>
 
@@ -767,7 +775,25 @@ const EXERCISES = [
   { icon: '🏋️', name: 'Lat pulldown',          unit: 'reps',    cat: 'back' },
   { icon: '🧲', name: 'Face pulls',            unit: 'reps',    cat: 'back' },
   { icon: '🦸', name: 'Superman',              unit: 'reps',    cat: 'back' },
-  { icon: '🏋️', name: 'Shrugs',                unit: 'reps',    cat: 'back' }
+  { icon: '🏋️', name: 'Shrugs',                unit: 'reps',    cat: 'back' },
+  // --- bodyweight / no-equipment ---
+  { icon: '🔥', name: 'Burpees',               unit: 'reps',    cat: 'cardio' },
+  { icon: '⭐', name: 'Jumping jacks',         unit: 'reps',    cat: 'cardio' },
+  { icon: '🏃', name: 'High knees',            unit: 'reps',    cat: 'cardio' },
+  { icon: '⛸️', name: 'Skater jumps',          unit: 'reps',    cat: 'cardio' },
+  { icon: '🐻', name: 'Bear crawl',            unit: 'seconds', cat: 'cardio' },
+  { icon: '🦵', name: 'Pistol squats',         unit: 'reps',    cat: 'legs' },
+  { icon: '🦵', name: 'Sumo squats',           unit: 'reps',    cat: 'legs' },
+  { icon: '💪', name: 'Wide push-ups',         unit: 'reps',    cat: 'chest' },
+  { icon: '💪', name: 'Decline push-ups',      unit: 'reps',    cat: 'chest' },
+  { icon: '🔺', name: 'Pike push-ups',         unit: 'reps',    cat: 'arms' },
+  { icon: '🦵', name: 'Flutter kicks',         unit: 'reps',    cat: 'core' },
+  { icon: '🧱', name: 'Side plank',            unit: 'seconds', cat: 'core' },
+  { icon: '🥚', name: 'Hollow hold',           unit: 'seconds', cat: 'core' },
+  { icon: '🐛', name: 'Inchworms',             unit: 'reps',    cat: 'core' },
+  { icon: '👼', name: 'Reverse snow angels',   unit: 'reps',    cat: 'back' },
+  { icon: '🐕', name: 'Bird dogs',             unit: 'reps',    cat: 'back' },
+  { icon: '🚪', name: 'Door frame rows',       unit: 'reps',    cat: 'back' }
 ];
 const CORE_SKILL_COUNT = EXERCISES.length;
 
@@ -789,7 +815,23 @@ function removeCustom(name) {
 }
 
 // Everything pickable in the log sheet = core library + saved customs
-function pickableExercises() { return EXERCISES.concat(getCustoms()); }
+function pickableExercises() { const core = new Set(EXERCISES.map(e => e.name)); return EXERCISES.concat(getCustoms().filter(c => !core.has(c.name))); }
+
+// Exercises that need gym kit (bars, dumbbells, machines, a pool). Everything else counts as bodyweight.
+const GYM_EXERCISES = new Set(['Bench press', 'Incline press', 'Chest fly', 'Dips', 'Bicep curls', 'Hammer curls', 'Tricep extensions',
+  'Shoulder press', 'Lateral raises', 'Pull-ups', 'Rows', 'Deadlift', 'Lat pulldown', 'Face pulls', 'Shrugs', 'Rowing', 'Swimming']);
+const HARD_BODYWEIGHT = new Set(['Pistol squats', 'Pike push-ups', 'Decline push-ups', 'Diamond push-ups', 'Burpees', 'Bulgarian split squats', 'Inchworms']);
+function isBodyweight(name) { return !GYM_EXERCISES.has(name); }
+function trainStyle() { return (typeof settings !== 'undefined' && settings.trainStyle) || 'bodyweight'; }
+// Exercises quests/dungeons should ask for, based on the training-style setting
+function questExercisePool(unit) {
+  unit = unit || 'reps';
+  const all = pickableExercises().filter(e => e.unit === unit);
+  if (trainStyle() === 'bodyweight') return all.filter(e => isBodyweight(e.name));
+  return all;
+}
+// Bodyweight moves first in pickers when training at home
+function sortForStyle(list) { return trainStyle() === 'bodyweight' ? list.slice().sort((a, b) => isBodyweight(b.name) - isBodyweight(a.name)) : list; }
 
 // Metadata for any exercise name (core, custom, or legacy-logged)
 function exMeta(name) {
@@ -819,7 +861,7 @@ function toggleCat(id) {
 
 // Settings (sounds / haptics on by default)
 function getSettings() {
-  try { return Object.assign({ sound: true, haptics: true, soundStyle: 'modern' }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); }
+  try { return Object.assign({ sound: true, haptics: true, soundStyle: 'modern', trainStyle: 'bodyweight' }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); }
   catch (e) { return { sound: true, haptics: true, soundStyle: 'modern' }; }
 }
 let settings = getSettings();
@@ -3173,35 +3215,72 @@ const BOSSES = [
   { name: 'World Dragon', emoji: '🌍🐉', hp: 10000, xp: 5000, desc: 'The ultimate challenge' }
 ];
 
-const QUEST_TEMPLATES = [
-  { type: 'reps', desc: 'Do {n} {exercise}', exercises: ['Press-ups', 'Squats', 'Sit-ups', 'Lunges', 'Burpees'], amounts: [20, 30, 50, 40, 25] },
-  { type: 'sessions', desc: 'Log {n} workouts today', amounts: [2, 3, 4] },
-  { type: 'variety', desc: 'Train {n} different exercises', amounts: [3, 4, 5] },
-  { type: 'volume', desc: 'Reach {n} total reps today', amounts: [50, 100, 150, 200] },
-  { type: 'weight', desc: 'Lift with weight in {n} exercises', amounts: [1, 2, 3] }
-];
+// Quest types and how often they come up. Weighted-lifting quests stay in but are rare at home.
+const QUEST_TYPES = {
+  reps:     { w: 30 },
+  cat:      { w: 20 },
+  variety:  { w: 14 },
+  volume:   { w: 14 },
+  sessions: { w: 8 },
+  sets:     { w: 10 },
+  hold:     { w: 8 },
+  cardio:   { w: 6 },
+  weight:   { w: 3, wGym: 16 }
+};
+const HOLD_EXERCISES = ['Plank', 'Wall sit', 'Side plank', 'Hollow hold'];
+const QUEST_CATS = { legs: 'Legs', chest: 'Chest', core: 'Core', arms: 'Arms', back: 'Back', cardio: 'Cardio' };
+
+function holdSeconds(list) {
+  return list.filter(w => HOLD_EXERCISES.includes(w.exercise))
+    .reduce((s, w) => s + (w.unit === 'minutes' ? w.amount * 60 : w.unit === 'seconds' ? w.amount : 0) * (w.sets || 1), 0);
+}
+
+function makeQuest(type) {
+  const rnd = (a) => a[Math.floor(Math.random() * a.length)];
+  const style = trainStyle();
+  switch (type) {
+    case 'reps': {
+      // Prefer moves you've actually done in the last 30 days
+      const pool = questExercisePool('reps');
+      const cutoff = dateKey(new Date(Date.now() - 30 * 86400000));
+      const recent = [...new Set(workouts.filter(w => w.date >= cutoff && w.unit === 'reps').map(w => w.exercise))].filter(n => pool.some(e => e.name === n));
+      const name = recent.length >= 2 && Math.random() < 0.65 ? rnd(recent) : rnd(pool).name;
+      const amt = rnd(HARD_BODYWEIGHT.has(name) ? [10, 15, 20, 25] : [20, 30, 40, 50]);
+      return { type, desc: `Do ${amt} ${name}`, target: amt, exercise: name, xpReward: amt * 2 };
+    }
+    case 'cat': {
+      const cats = style === 'bodyweight' ? ['legs', 'chest', 'core', 'cardio'] : ['legs', 'chest', 'core', 'arms', 'back'];
+      const c = rnd(cats); const amt = rnd([40, 60, 80, 100]);
+      return { type, desc: `Do ${amt} ${QUEST_CATS[c].toLowerCase()} reps (any ${QUEST_CATS[c].toLowerCase()} exercise)`, target: amt, cat: c, xpReward: amt * 2 };
+    }
+    case 'variety': { const n = rnd([3, 4, 5]); return { type, desc: `Train ${n} different exercises`, target: n, xpReward: n * 10 }; }
+    case 'volume': { const n = rnd([50, 100, 150, 200]); return { type, desc: `Reach ${n} total reps today`, target: n, xpReward: n }; }
+    case 'sessions': { const n = rnd([2, 3, 4]); return { type, desc: `Log ${n} workouts today`, target: n, xpReward: n * 10 }; }
+    case 'sets': { const n = rnd([4, 6, 8, 10]); return { type, desc: `Log ${n} sets today`, target: n, xpReward: n * 6 }; }
+    case 'hold': { const n = rnd([60, 90, 120, 180]); return { type, desc: `Hold for ${n}s total (plank, wall sit, side plank or hollow hold)`, target: n, xpReward: Math.round(n / 2) }; }
+    case 'cardio': { const n = rnd([10, 15, 20]); return { type, desc: `${n} minutes of cardio (skipping, stairs, anything timed)`, target: n, xpReward: n * 5 }; }
+    case 'weight': { const n = rnd([1, 2]); return { type, desc: `Add weight to ${n} exercise${n > 1 ? 's' : ''} (a loaded backpack counts!)`, target: n, xpReward: n * 25 }; }
+  }
+}
 
 function getDailyQuests() {
   const saved = JSON.parse(localStorage.getItem(QUEST_KEY) || '{}');
   const today = dateKey(new Date());
-  if (saved.date === today) return saved;
-  // Generate new quests
+  if (saved.date === today && saved.v === 2) return saved;
+  // Old-format quests from earlier today: swap them out only if none are finished
+  if (saved.date === today && (saved.quests || []).some(q => q.done)) { saved.v = 2; localStorage.setItem(QUEST_KEY, JSON.stringify(saved)); return saved; }
+  if (saved.date === today && window.G && G.state) { const st = G.state(); if (st.questPaid) { delete st.questPaid[today]; G.saveLoot(); } }
+  const style = trainStyle();
+  const weights = Object.entries(QUEST_TYPES).map(([t, o]) => [t, style !== 'bodyweight' && o.wGym ? o.wGym : o.w]);
   const quests = [];
-  const used = new Set();
-  for (let i = 0; i < 3; i++) {
-    let tmpl;
-    do { tmpl = QUEST_TEMPLATES[Math.floor(Math.random() * QUEST_TEMPLATES.length)]; } while (used.has(tmpl.type) && used.size < QUEST_TEMPLATES.length);
-    used.add(tmpl.type);
-    const amt = tmpl.amounts[Math.floor(Math.random() * tmpl.amounts.length)];
-    let desc = tmpl.desc.replace('{n}', amt);
-    let exercise = '';
-    if (tmpl.exercises) {
-      exercise = tmpl.exercises[Math.floor(Math.random() * tmpl.exercises.length)];
-      desc = desc.replace('{exercise}', exercise);
-    }
-    quests.push({ type: tmpl.type, desc, target: amt, exercise, done: false, xpReward: amt * 2 });
+  while (quests.length < 3) {
+    const left = weights.filter(([t]) => !quests.some(q => q.type === t));
+    let r = Math.random() * left.reduce((a, x) => a + x[1], 0);
+    let pick = left[0][0];
+    for (const [t, w] of left) { r -= w; if (r <= 0) { pick = t; break; } }
+    const q = makeQuest(pick); q.done = false; quests.push(q);
   }
-  const data = { date: today, quests };
+  const data = { date: today, v: 2, quests };
   localStorage.setItem(QUEST_KEY, JSON.stringify(data));
   return data;
 }
@@ -3209,30 +3288,21 @@ function getDailyQuests() {
 function checkQuestProgress(quests) {
   const today = dateKey(new Date());
   const td = workouts.filter(w => w.date === today);
+  const repsOf = (f) => td.filter(w => w.unit === 'reps' && f(w)).reduce((s, w) => s + w.amount * (w.sets || 1), 0);
   quests.forEach(q => {
     if (q.done) return;
-    switch(q.type) {
-      case 'reps':
-        q.progress = td.filter(w => w.exercise === q.exercise && w.unit === 'reps').reduce((s, w) => s + w.amount * (w.sets||1), 0);
-        if (q.progress >= q.target) q.done = true;
-        break;
-      case 'sessions':
-        q.progress = td.length;
-        if (q.progress >= q.target) q.done = true;
-        break;
-      case 'variety':
-        q.progress = new Set(td.map(w => w.exercise)).size;
-        if (q.progress >= q.target) q.done = true;
-        break;
-      case 'volume':
-        q.progress = td.filter(w => w.unit === 'reps').reduce((s, w) => s + w.amount * (w.sets||1), 0);
-        if (q.progress >= q.target) q.done = true;
-        break;
-      case 'weight':
-        q.progress = new Set(td.filter(w => w.weight).map(w => w.exercise)).size;
-        if (q.progress >= q.target) q.done = true;
-        break;
+    switch (q.type) {
+      case 'reps': q.progress = repsOf(w => w.exercise === q.exercise); break;
+      case 'cat': q.progress = repsOf(w => getCategoryForExercise(w.exercise, w.category) === q.cat); break;
+      case 'sessions': q.progress = td.length; break;
+      case 'variety': q.progress = new Set(td.map(w => w.exercise)).size; break;
+      case 'volume': q.progress = repsOf(() => true); break;
+      case 'sets': q.progress = td.reduce((s, w) => s + (w.sets || 1), 0); break;
+      case 'hold': q.progress = holdSeconds(td); break;
+      case 'cardio': q.progress = Math.round(td.filter(w => w.unit === 'minutes' && getCategoryForExercise(w.exercise, w.category) === 'cardio').reduce((s, w) => s + w.amount * (w.sets || 1), 0)); break;
+      case 'weight': q.progress = new Set(td.filter(w => w.weight).map(w => w.exercise)).size; break;
     }
+    if (q.progress >= q.target) q.done = true;
   });
 }
 
@@ -3275,7 +3345,7 @@ function startBattle() {
 
   // Populate exercise dropdown
   const sel = document.getElementById('battleExercise');
-  const allEx = pickableExercises();
+  const allEx = sortForStyle(pickableExercises());
   sel.innerHTML = allEx.map(e => `<option value="${escAttr(e.name)}">${e.icon} ${esc(e.name)}</option>`).join('');
 
   document.getElementById('battleStart').style.display = 'none';
@@ -3436,7 +3506,7 @@ function startSuperset() {
   document.getElementById('supersetArea').querySelector('button').style.display = 'none';
   document.getElementById('supersetActive').style.display = 'block';
   const sel = document.getElementById('supersetExercise');
-  const allEx = pickableExercises();
+  const allEx = sortForStyle(pickableExercises());
   sel.innerHTML = allEx.map(e => `<option value="${escAttr(e.name)}">${e.icon} ${esc(e.name)}</option>`).join('');
   updateSupersetUI();
   haptic('medium');
@@ -3489,7 +3559,7 @@ function renderBattleTab() {
   // Populate battle exercise dropdown if battle not active
   const sel = document.getElementById('battleExercise');
   if (sel && !sel.options.length) {
-    const allEx = pickableExercises();
+    const allEx = sortForStyle(pickableExercises());
     sel.innerHTML = allEx.map(e => `<option value="${escAttr(e.name)}">${e.icon} ${esc(e.name)}</option>`).join('');
   }
 }
@@ -3835,6 +3905,16 @@ function renderSettingsToggles() {
     retro.classList.toggle('active', settings.soundStyle === 'retro');
     modern.classList.toggle('active', settings.soundStyle !== 'retro');
   }
+  [['tsBody', 'bodyweight'], ['tsMixed', 'mixed'], ['tsGym', 'gym']].forEach(([id, v]) => { const b = document.getElementById(id); if (b) b.classList.toggle('active', trainStyle() === v); });
+}
+
+function setTrainStyle(v) {
+  settings.trainStyle = v; saveSettings(); renderSettingsToggles();
+  haptic('light'); playSound('click');
+  // Re-roll today's quests if none are finished yet, so the change shows up straight away
+  const saved = JSON.parse(localStorage.getItem(QUEST_KEY) || '{}');
+  if (saved.date === dateKey(new Date()) && !(saved.quests || []).some(q => q.done)) { localStorage.removeItem(QUEST_KEY); render(); }
+  showToast(v === 'bodyweight' ? '🤸 Bodyweight mode — quests use no-equipment moves' : v === 'gym' ? '🏋️ Gym mode — weighted quests unlocked' : '🔀 Mixed mode — a bit of everything');
 }
 
 function toggleSetting(key) {
@@ -3966,7 +4046,15 @@ function clearData() {
 // Register service worker for real offline support
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      // Check for a new version whenever the app comes back to the foreground
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+    }).catch(() => {});
+    let hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController) { hadController = true; return; }
+      showToast('✨ Pulse just updated', 'Reload', () => location.reload(), 15000);
+    });
   });
 }
 
