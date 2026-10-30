@@ -230,5 +230,10 @@
     const db = document.getElementById('duelBtn'); if (db) db.onclick = openDuelPicker;
   };
 
+  G.rivalSummary = function () {
+    const rows = standings(wk(new Date()), new Date()); const i = rows.findIndex((x) => x.id === 'you');
+    const above = i > 0 ? rows[i - 1] : null;
+    return { rank: i + 1, league: LEAGUES[R.league].icon + ' ' + LEAGUES[R.league].name, above: above ? { name: above.rv.name, gap: above.xp - rows[i].xp } : null };
+  };
   G.on && G.on('render', () => { try { G.renderRivals(); } catch (e) { console.warn('rivals', e); } });
 })();

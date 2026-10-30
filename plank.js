@@ -80,7 +80,8 @@
       // rewards only for minutes not already paid today (so −1 then +1 can't farm)
       if (after > paid.max) {
         paid.max = after;
-        const r = { coins: after <= TARGET ? 5 : after - TARGET <= BONUS_CAP ? 15 : 0, gems: 0, items: [] };
+        const belly = G.talent && G.talent('ironbelly') ? 2 : 1;
+        const r = { coins: (after <= TARGET ? 5 : after - TARGET <= BONUS_CAP ? 15 : 0) * belly, gems: 0, items: [] };
         let label = '🧱';
         if (after === TARGET) {
           const d = dayNum();
@@ -91,7 +92,7 @@
           if (d >= DAYS) {
             r.gems += 30; r.coins += 1500; r.items.push('title_coresteel', 'iron_core_belt');
             label = '🏆 30-DAY PLANK CHALLENGE COMPLETE!';
-            P.completed++; P.best = Math.max(P.best, DAYS); P.active = false; P.msg = { t: 'done' };
+            P.completed++; P.best = Math.max(P.best, DAYS); P.active = false; P.msg = { t: 'done' }; P.runs = (P.runs || []).concat([{ start: P.start, end: today }]);
             setTimeout(() => { G.fireworks && G.fireworks(8); G.goldenRain && G.goldenRain(); }, 300);
           } else { G.confetti && G.confetti(90); }
         }

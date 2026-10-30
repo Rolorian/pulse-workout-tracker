@@ -4,8 +4,8 @@
 (function () {
   const G = (window.G = window.G || {});
   const LKEY = 'pulse-loot-v1';
-  const DAILY_COIN_CAP = 2000;
-  const DAILY_DROP_CAP = 5;
+  const coinCap = () => 2000 + 500 * (G.talent ? G.talent('grind') : 0);
+  const dropCap = () => 5 + (G.talent ? G.talent('scavenger') : 0);
   const BAG_SIZE = 28;
 
   // ---------------- tiers ----------------
@@ -169,6 +169,8 @@
     Object.values(S.equip).forEach((uid) => { const inst = findInst(uid); if (!inst) return; const st = instStats(inst); Object.keys(st).forEach((k) => (s[k] += st[k])); });
     const sb = setBonus();
     if (sb) { s.power += sb.pct; s.xp += sb.pct; s.coin += sb.pct; }
+    // class perks, traits, talents and weak points from the Hero sheet
+    try { const hb = G.heroBonus ? G.heroBonus() : null; if (hb) Object.keys(s).forEach((k) => { if (hb[k]) s[k] += hb[k]; }); } catch (e) {}
     const now = Date.now(); const e = S.effects;
     let xpMult = 1, coinMult = 1;
     if (e.xp && e.xp.until > now) xpMult *= e.xp.mult;
@@ -177,7 +179,8 @@
     const ev = G.eventMods ? G.eventMods() : null;
     if (ev) { xpMult *= ev.xp || 1; coinMult *= ev.coin || 1; s.luck += ev.luck || 0; }
     Object.keys(s).forEach((k) => (s[k] = r1(s[k])));
-    s.critChance = Math.min(60, 5 + s.crit);
+    s.power = Math.max(-50, s.power);
+    s.critChance = Math.max(0, Math.min(60, 5 + s.crit));
     s.xpMult = r1((1 + s.xp / 100) * xpMult * 100) / 100;
     s.coinMult = r1((1 + s.coin / 100) * coinMult * 100) / 100;
     s.set = sb;
@@ -367,12 +370,13 @@
     fresh.forEach((w) => {
       seen.add(w.id);
       // XP bonus from gear/potions/events is stamped onto the workout itself
-      if (st.xpMult > 1 && !w.bonus) w.bonus = st.xpMult;
+      const mult = Math.round(st.xpMult * (G.workoutBonus ? G.workoutBonus(w) : 1) * 100) / 100;
+      if (mult !== 1 && !w.bonus) w.bonus = Math.max(0.5, mult);
       const raw = xpForWorkout(Object.assign({}, w, { bonus: 1 }));
       let c = Math.max(5, Math.round(raw * 1.5 * st.coinMult));
-      c = Math.min(c, DAILY_COIN_CAP - d.coins);
+      c = Math.min(c, coinCap() - d.coins);
       if (c > 0) { d.coins += c; coinsTotal += c; }
-      if (d.drops < DAILY_DROP_CAP && Math.random() < 0.18 * (1 + st.luck / 200)) {
+      if (d.drops < dropCap() && Math.random() < 0.18 * (1 + st.luck / 200)) {
         d.drops++;
         drops.push(G.rollDrop([55, 28, 11, 4.5, 1.2, 0.25, 0.04, 0.008]).id);
       }
@@ -381,7 +385,7 @@
     S.seen = [...seen].slice(-6000);
     if (coinsTotal || drops.length) G.reward({ coins: coinsTotal, items: drops }, { label: '💪', el: document.querySelector('.bottom button') });
     else save();
-    if (d.coins >= DAILY_COIN_CAP && !d.capWarned) { d.capWarned = true; save(); setTimeout(() => showToast('🪙 Daily training coin cap reached — quests, battles & events still pay out!', null, null, 5000), 3800); }
+    if (d.coins >= coinCap() && !d.capWarned) { d.capWarned = true; save(); setTimeout(() => showToast('🪙 Daily training coin cap reached — quests, battles & events still pay out!', null, null, 5000), 3800); }
   }
   G.processNewWorkouts = processNewWorkouts;
 
@@ -978,8 +982,8 @@
     root.innerHTML = `
       <div class="card wallet-card">
         <div class="wallet-row"><div><b>${S.coins.toLocaleString()}</b><span>🪙 Coins</span></div><div><b>${S.gems}</b><span>💎 Gems</span></div><div><b>${S.dust.toLocaleString()}</b><span>✨ Dust</span></div></div>
-        <div class="capbar"><div style="width:${Math.min(100, d.coins / DAILY_COIN_CAP * 100)}%"></div></div>
-        <div class="muted">Training coins today: ${d.coins}/${DAILY_COIN_CAP} · Drops today: ${d.drops}/${DAILY_DROP_CAP}</div>
+        <div class="capbar"><div style="width:${Math.min(100, d.coins / coinCap() * 100)}%"></div></div>
+        <div class="muted">Training coins today: ${d.coins}/${coinCap()} · Drops today: ${d.drops}/${dropCap()}</div>
         ${effectsHtml()}
       </div>
       <div class="subtabs">${tabs.map(([id, n]) => `<button class="stab ${tab === id ? 'on' : ''}" data-t="${id}">${n}</button>`).join('')}</div>

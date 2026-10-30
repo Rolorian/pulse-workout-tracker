@@ -302,6 +302,7 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 
 <div class="tabs">
 <button class="tab active" onclick="switchTab('today',this)" data-tab="0">Today</button>
+<button class="tab" onclick="switchTab('hero',this)" data-tab="8">🧬 Hero</button>
 <button class="tab" onclick="switchTab('progress',this)" data-tab="1">Progress</button>
 <button class="tab" onclick="switchTab('history',this)" data-tab="2">History</button>
 <button class="tab" onclick="switchTab('warmup',this)" data-tab="3">Warmup</button>
@@ -612,6 +613,9 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 </div>
 </section>
 
+<!-- HERO: character sheet, talents, galaxy -->
+<section id="hero" class="section"><div id="heroRoot"></div></section>
+
 <!-- TAB 7: WORLD -->
 <section id="world" class="section"><div id="eventBanner"></div><div id="worldRoot"></div></section>
 
@@ -698,6 +702,10 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 <button id="ssRetro" onclick="setSoundStyle('retro')">🎮 Retro</button>
 <button id="ssModern" onclick="setSoundStyle('modern')">✨ Modern</button>
 </div>
+</div>
+<div class="set-row">
+<div><div class="set-name">🖥️ Boot-up HUD</div><div class="set-sub">Status readout when you open the app</div></div>
+<span class="set-toggle" id="toggleBoot" onclick="toggleSetting('bootHud')"></span>
 </div>
 <div class="set-row" style="display:block">
 <div class="set-name">🏠 Training style <span class="set-sub">— shapes quests, map stages & dungeons</span></div>
@@ -864,7 +872,7 @@ function toggleCat(id) {
 
 // Settings (sounds / haptics on by default)
 function getSettings() {
-  try { return Object.assign({ sound: true, haptics: true, soundStyle: 'modern', trainStyle: 'bodyweight' }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); }
+  try { return Object.assign({ sound: true, haptics: true, soundStyle: 'modern', trainStyle: 'bodyweight', bootHud: true }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")); }
   catch (e) { return { sound: true, haptics: true, soundStyle: 'modern' }; }
 }
 let settings = getSettings();
@@ -1054,9 +1062,21 @@ function playNote(freq, duration, startTime, opts) {
 // ============================================
 // HAPTIC SYSTEM
 // ============================================
+// iPhone: Safari has no Vibration API, but toggling an <input switch> (iOS 18+) triggers the Taptic Engine
+function iosTap() {
+  try {
+    const label = document.createElement('label'); label.setAttribute('aria-hidden', 'true'); label.style.display = 'none';
+    const input = document.createElement('input'); input.type = 'checkbox'; input.setAttribute('switch', '');
+    label.appendChild(input); document.head.appendChild(label); label.click(); document.head.removeChild(label);
+  } catch (e) {}
+}
+function iosHaptic(type) {
+  const taps = { light: [0], selection: [0], medium: [0], heavy: [0, 60], success: [0, 90], error: [0, 80, 160], levelup: [0, 70, 140, 230] }[type] || [0];
+  taps.forEach((ms) => (ms ? setTimeout(iosTap, ms) : iosTap()));
+}
 function haptic(type = 'light') {
   if (!settings.haptics) return;
-  if (!navigator.vibrate) return;
+  if (!navigator.vibrate) { iosHaptic(type); return; }
   const patterns = {
     light: 12,
     medium: 22,
@@ -3911,6 +3931,8 @@ function renderSettingsToggles() {
     retro.classList.toggle('active', settings.soundStyle === 'retro');
     modern.classList.toggle('active', settings.soundStyle !== 'retro');
   }
+  const bt = document.getElementById('toggleBoot');
+  if (bt) { bt.textContent = settings.bootHud !== false ? '🖥️' : '⬛'; bt.className = 'set-toggle ' + (settings.bootHud !== false ? 'on' : 'off'); }
   [['tsBody', 'bodyweight'], ['tsMixed', 'mixed'], ['tsGym', 'gym']].forEach(([id, v]) => { const b = document.getElementById(id); if (b) b.classList.toggle('active', trainStyle() === v); });
 }
 
@@ -4078,5 +4100,9 @@ setTimeout(checkAchievementsAndLevels, 500);
 <script src="world.js"></script>
 <script src="circuit.js"></script>
 <script src="plank.js"></script>
+<script src="character.js"></script>
+<script src="galaxy.js"></script>
+<script src="encounters.js"></script>
+<script src="boot.js"></script>
 </body>
 </html>

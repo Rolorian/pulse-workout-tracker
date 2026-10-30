@@ -280,7 +280,7 @@
     C.history.unshift(rec); C.history = C.history.slice(0, 60); save();
     closePlayer();
     persist();
-    if (G.reward && roundsDone > 0) G.reward({ coins: 40 * roundsDone, gems: roundsDone >= 5 ? 1 : 0 }, { label: `🔁 Circuit bonus (${roundsDone} rounds):` });
+    if (G.reward && roundsDone > 0) G.reward({ coins: Math.round(40 * roundsDone * (1 + 0.25 * (G.talent ? G.talent('steady') : 0))), gems: roundsDone >= 5 ? 1 : 0 }, { label: `🔁 Circuit bonus (${roundsDone} rounds):` });
     if (roundsDone > prevBest && prevBest > 0) setTimeout(() => { showToast(`🏆 New circuit record: ${roundsDone} rounds!`); G.confetti && G.confetti(140); }, 1200);
     G.emit && G.emit('circuit', rec);
   }

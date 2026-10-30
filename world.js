@@ -107,7 +107,7 @@
     s.earnedToday = { [d]: earned + Math.max(0, amt) };
     if (amt > 0) s.cur += amt;
     if (!s.dead) {
-      const dmg = Math.round(raw * (1 + G.stats().power / 100));
+      const dmg = Math.round(raw * (1 + G.stats().power / 100) * (G.classDmgMult ? G.classDmgMult(w) : 1));
       s.dmg += dmg;
       if (s.dmg >= ev.boss.hp) {
         s.dead = true; save();
@@ -265,7 +265,7 @@
     const ws = workouts.filter((w) => Number(w.id) >= since);
     const reps = (f) => ws.filter((w) => w.unit === 'reps' && f(w)).reduce((a, w) => a + w.amount * (w.sets || 1), 0);
     switch (def.t) {
-      case 'boss': return Math.round(ws.reduce((a, w) => a + xpForWorkout(Object.assign({}, w, { bonus: 1 })), 0) * (1 + G.stats().power / 100));
+      case 'boss': return Math.round(ws.reduce((a, w) => a + xpForWorkout(Object.assign({}, w, { bonus: 1 })) * (G.classDmgMult ? G.classDmgMult(w) : 1), 0) * (1 + G.stats().power / 100));
       case 'cat': return reps((w) => getCategoryForExercise(w.exercise, w.category) === def.cat);
       case 'ex': return reps((w) => w.exercise === def.ex);
       case 'variety': return new Set(ws.map((w) => w.exercise)).size;
@@ -283,7 +283,8 @@
   function startStage(ri) { const rs = regionState(ri); rs.start = Date.now(); rs.def = stageDef(ri, rs.stage); rs.defStage = rs.stage; W.activeRegion = ri; save(); if (typeof haptic === 'function') haptic('medium'); G.sfx && G.sfx('win'); render(); }
   function claimStage(ri) {
     const rs = regionState(ri); const def = curDef(ri);
-    if (stageProgress(def, rs.start) < def.n) return;
+    if (!rs.skipNow && stageProgress(def, rs.start) < def.n) return;
+    rs.skipNow = false;
     const coins = 80 * (ri + 1) * (rs.stage === 4 ? 3 : 1);
     if (rs.stage === 4) {
       rs.done = true; rs.start = null; W.activeRegion = null;
@@ -309,7 +310,9 @@
         <div class="cq-text">${esc(def.text)}</div><div class="muted">${esc(def.sub)}</div>
         <div class="xp-bar"><div class="fill" style="width:${Math.min(100, p / def.n * 100)}%"></div></div>
         <div class="muted">${Math.min(p, def.n)}/${def.n} · only workouts logged after you started count</div>
-        ${done ? `<button class="gbtn" data-claim="${act}">⭐ Claim stage reward</button>` : ''}</div>`;
+        ${done ? `<button class="gbtn" data-claim="${act}">⭐ Claim stage reward</button>` : ''}
+        ${!done && rs.stage < 4 && !rs.shortcut ? (() => { const r = G.seeded('short' + act); const st = GATE_STATS[Math.floor(r() * 6)]; const n = 8 + act * 8; const ok = G.heroStat && G.heroStat(st) >= n;
+          return `<button class="gbtn ghost" data-short="${act}" data-st="${st}" data-n="${n}" ${ok ? '' : 'disabled'}>⚡ Shortcut — skip this stage (${ok ? 'unlocked by' : 'needs'} ${st} ${n}, once per region)</button>`; })() : ''}</div>`;
     }
     return `${cur}<div class="card"><div class="cardhead"><h2>🗺️ World Map</h2><span class="muted">Adventurer Lv ${lvl}</span></div>
       <div class="muted" style="margin-bottom:10px">Adventurer level = skill levels you've gained. Conquer a region (5 stages) + reach its level to unlock the next. Each conquered region unlocks a dungeon.</div>
@@ -362,13 +365,16 @@
     glass: { name: 'Hourglass', icon: '⌛', desc: 'Elites have 30% less HP', elite: 0.7 }
   };
   const DOORS = { monster: ['⚔️', 'Monster', 'Fight for coins & loot'], elite: ['💀', 'Elite', 'Tough fight — win a relic'], treasure: ['💰', 'Treasure', 'Free loot, no fight'],
-    rest: ['🔥', 'Campfire', 'Heal 1 heart'], shrine: ['⛩️', 'Shrine', 'Take a curse for a relic'] };
+    rest: ['🔥', 'Campfire', 'Heal 1 heart'], shrine: ['⛩️', 'Shrine', 'Take a curse for a relic'], vault: ['🔐', 'Sealed Vault', 'Triple treasure'] };
+  const GATE_STATS = ['STR', 'END', 'AGI', 'CORE', 'CON', 'WIL'];
+  function vaultReq(run) { const r = G.seeded(run.seed + ':vault' + run.floor); return { stat: GATE_STATS[Math.floor(r() * 6)], n: 10 + run.d * 6 }; }
 
   function relicMod(run, key, def) { return run.relics.reduce((a, r) => { const v = RELICS[r][key]; return v == null ? a : typeof v === 'number' && typeof a === 'number' ? (key === 'crit' ? a + v : a * v) : v; }, def); }
   function floorsFor(di) { return 5 + Math.floor(di / 2); }
 
   function startRun(di) {
-    W.run = { d: di, floor: 1, hearts: 3, maxHearts: 3, relics: [], loot: { coins: 0, gems: 0, items: [] }, seed: Date.now(), room: null, curse: 1, log: [] };
+    const hearts = 3 + G.talent('secondwind');
+    W.run = { d: di, floor: 1, hearts, maxHearts: hearts, relics: [], loot: { coins: 0, gems: 0, items: [] }, seed: Date.now(), room: null, curse: 1, log: [] };
     save(); G.sfx && G.sfx('boom'); G.shake && G.shake(null, 6);
     if (typeof haptic === 'function') haptic('heavy'); render();
   }
@@ -383,6 +389,7 @@
       for (const p of pool) { r -= p[1]; if (r <= 0) { pick = p[0]; break; } }
       if (!out.includes(pick) || pick === 'monster' && out.filter((x) => x === 'monster').length < 2) out.push(pick);
     }
+    if (rnd() < 0.3) out.push('vault');
     return out;
   }
   function enterDoor(type) {
@@ -393,7 +400,7 @@
       const ex = pickR(questExercisePool('reps'), rnd);
       const mob = type === 'boss' ? dg.boss : pickR(dg.mobs, rnd);
       let hp = (12 + 4 * d + 2 * run.floor) * (type === 'elite' ? 1.8 * relicMod(run, 'elite', 1) : type === 'boss' ? 3 : 1);
-      hp = Math.round(hp * relicMod(run, 'hp', 1) * run.curse);
+      hp = Math.round(hp * relicMod(run, 'hp', 1) * run.curse * (1 - 0.05 * G.talent('overpower')));
       run.room = { type, mob, ex: ex.name, exIcon: ex.icon, hp, max: hp };
     } else if (type === 'treasure') {
       const mult = relicMod(run, 'treasure', 1);
@@ -403,6 +410,14 @@
       if (rnd() < 0.5 * mult) { const it = G.rollItemOfTier(Math.min(7, G.rollTier([40, 30, 18, 8, 3, 0.8, 0.15, 0.03], G.stats().luck) + Math.floor(d / 3))); run.loot.items.push(it.id); got += ` and ${it.icon} ${it.name}`; }
       run.log.unshift(got); nextFloor(); G.sfx && G.sfx('coin'); G.sparks && G.sparks(innerWidth / 2, innerHeight / 2, '#f5c542', 30);
       return;
+    } else if (type === 'vault') {
+      const req = vaultReq(run);
+      if (!G.heroStat || G.heroStat(req.stat) < req.n) { showToast(`🔐 Sealed — needs ${req.stat} ${req.n}`); return; }
+      const c = Math.round((40 + 25 * d) * 3 * relicMod(run, 'treasure', 1));
+      const it = G.rollItemOfTier(Math.min(7, 2 + Math.floor(d / 2) + G.rollTier([60, 30, 8, 2, 0, 0, 0, 0], G.stats().luck)));
+      run.loot.coins += c; run.loot.items.push(it.id);
+      run.log.unshift(`🔐 Your ${req.stat} broke the seal: ${c} coins and ${it.icon} ${it.name}`); nextFloor();
+      G.sfx && G.sfx('rare'); G.confetti && G.confetti(70); return;
     } else if (type === 'rest') {
       run.hearts = Math.min(run.maxHearts, run.hearts + 1); run.log.unshift('🔥 Rested at a campfire (+1 ❤️)'); nextFloor(); G.sfx && G.sfx('win'); return;
     } else if (type === 'shrine') { shrineSheet(); return; }
@@ -451,7 +466,8 @@
     if (!reps || reps < 1) { showToast('Enter how many reps you did'); return; }
     const st = G.stats();
     const crit = Math.random() * 100 < Math.min(80, st.critChance + relicMod(run, 'crit', 0));
-    const dmg = Math.max(1, Math.round(reps * (1 + st.power / 100) * relicMod(run, 'dmg', 1) * (crit ? 2 : 1)));
+    const last = run.hearts === 1 && G.talent('laststand') ? 1.5 : 1;
+    const dmg = Math.max(1, Math.round(reps * (1 + st.power / 100) * relicMod(run, 'dmg', 1) * last * (crit ? 2 : 1)));
     run.room.hp -= dmg;
     const room = run.room;
     run.log.unshift(`${crit ? '💥 CRIT! ' : '⚔️ '}${reps} ${room.ex} → ${dmg} dmg to ${room.mob[0]}`);
@@ -484,7 +500,11 @@
     if (room.type === 'elite') { room.hp = 0; save(); setTimeout(() => offerRelic(() => nextFloor()), 600); return; }
     run.room = null; run.floor++;
   }
-  function flee() { const run = W.run; if (!run || !run.room) return; const room = run.room; run.room = null; loseHeart(`🏃 Fled from ${room.mob[0]}`); if (W.run) nextFloor(); }
+  function flee() {
+    const run = W.run; if (!run || !run.room) return; const room = run.room; run.room = null;
+    if (G.talent('evasion') && !run.evaded) { run.evaded = true; run.log.unshift(`💨 Evasion: slipped away from ${room.mob[0]} for free`); nextFloor(); return; }
+    loseHeart(`🏃 Fled from ${room.mob[0]}`); if (W.run) nextFloor();
+  }
   function retreat() {
     const run = W.run; if (!run) return;
     if (!confirm('Retreat and keep all loot gathered so far?')) return;
@@ -525,6 +545,8 @@
         const ch = doorChoices(run);
         mid = `<div class="muted" style="margin:6px 0">${ch[0] === 'boss' ? 'The boss chamber looms…' : 'Choose your path:'}</div><div class="doors">${ch.map((t) => {
           const d = t === 'boss' ? ['👑', dg.boss[0], 'Final boss — big loot'] : DOORS[t];
+          if (t === 'vault') { const req = vaultReq(run); const ok = G.heroStat && G.heroStat(req.stat) >= req.n;
+            return `<button class="dgdoor vault ${ok ? '' : 'sealed'}" data-door="vault"><span class="dd-ico">${ok ? '🔓' : '🔐'}</span><b>Sealed Vault</b><span class="muted">${ok ? 'Triple treasure' : 'Needs'} ${G.STAT_INFO ? G.STAT_INFO[req.stat].icon : ''} ${req.stat} ${req.n}</span></button>`; }
           return `<button class="dgdoor ${t}" data-door="${t}"><span class="dd-ico">${t === 'boss' ? dg.boss[1] : d[0]}</span><b>${esc(d[1])}</b><span class="muted">${d[2]}</span></button>`;
         }).join('')}</div>
         <button class="gbtn ghost" id="dgRetreat">🚪 Retreat & keep loot</button>`;
@@ -557,6 +579,7 @@
     root.querySelectorAll('[data-wt]').forEach((b) => (b.onclick = () => { wtab = b.dataset.wt; G.renderWorld(); G.sfx && G.sfx('tick'); }));
     root.querySelectorAll('[data-node]').forEach((b) => (b.onclick = () => stageSheet(Number(b.dataset.node))));
     root.querySelectorAll('[data-claim]').forEach((b) => (b.onclick = () => claimStage(Number(b.dataset.claim))));
+    root.querySelectorAll('[data-short]').forEach((b) => (b.onclick = () => { const ri = Number(b.dataset.short); const rs = regionState(ri); if (G.heroStat(b.dataset.st) < Number(b.dataset.n)) return; rs.shortcut = true; rs.skipNow = true; save(); G.sfx && G.sfx('crit'); claimStage(ri); }));
     root.querySelectorAll('[data-run]').forEach((b) => (b.onclick = () => startRun(Number(b.dataset.run))));
     root.querySelectorAll('[data-door]').forEach((b) => (b.onclick = () => enterDoor(b.dataset.door)));
     const hit = document.getElementById('dgHit'); if (hit) hit.onclick = dungeonAttack;
