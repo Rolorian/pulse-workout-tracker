@@ -9,7 +9,12 @@ const SHELL = [
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png',
-  './apple-touch-icon.png'
+  './apple-touch-icon.png',
+  './game.css',
+  './fx.js',
+  './loot.js',
+  './rivals.js',
+  './world.js'
 ];
 
 self.addEventListener('install', (e) => {

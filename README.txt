@@ -38,3 +38,15 @@ fully offline after the first visit.
 
 Note: the service worker caches the app shell. After deploying an update,
 bump the CACHE version string at the top of sw.js so devices fetch the new files.
+
+LOOT / RIVALS / WORLD UPDATE
+- Economy: coins from every workout (daily cap), gems from bosses/quests/streaks/events, dust from salvaging
+- 8 rarity tiers (Common → Celestial), 200+ items: fitness-themed gear, named uniques, sets, consumables, themes, titles
+- Crates with CS:GO-style roller + pity timer, daily spin wheel, double-or-nothing, scratch cards, gym slots
+- Forge: enchant +1..+10 (can shatter from +5), fusion, salvage; daily shop; 28-slot bag + bank; collection log
+- Rivals: 8 AI rivals, weekly leagues Bronze → Grandmaster, trash talk feed, 1v1 duels, nemesis system
+- World map: 10 regions × 5 stages, region bosses; dungeons: roguelike runs with doors, relics, hearts, bosses
+- Seasonal events: Halloween, Bonfire Night, Christmas advent, New Year, Valentine's, Easter egg hunt, Summer,
+  Double XP weekends, Blood Moon nights. Preview any event with ?event=halloween (etc.)
+- Particles: confetti, fireworks, golden rain, rarity light beams, damage numbers, screen shake, ambient seasonal effects
+- Files: fx.js, loot.js, rivals.js, world.js, game.css (all cached offline by sw.js)

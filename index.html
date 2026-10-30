@@ -283,7 +283,10 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 .sound-style{display:flex;gap:6px;margin-top:6px}
 .sound-style button{flex:1;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--muted);font-weight:700;font-size:12px;cursor:pointer}
 .sound-style button.active{background:var(--green);color:#07130d;border-color:var(--green)}
+.tabs{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.tabs::-webkit-scrollbar{display:none}.tab{flex:1 0 auto;min-width:58px;white-space:nowrap}
+.wallet-chip{display:flex;flex-direction:column;align-items:flex-end;gap:1px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:5px 10px;color:var(--text);font-family:var(--mono);font-size:11px;cursor:pointer;line-height:1.25}.wallet-chip b{color:var(--gold)}.wallet-chip span+span b{color:#7fdcff}.wallet-chip.bump{animation:chipBump .5s ease}@keyframes chipBump{40%{transform:scale(1.12);border-color:var(--gold)}}
 </style>
+<link rel="stylesheet" href="game.css">
 </head>
 <body>
 <div class="app">
@@ -292,7 +295,7 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 <div class="brand">Pulse</div>
 <div class="sub" id="greeting">Your personal workout log</div>
 </div>
-<button class="gear" onclick="showSettings()">⚙</button>
+<div style="display:flex;gap:8px;align-items:center"><button class="wallet-chip" id="walletChip" onclick="G.goLoot()"><span>🪙 <b id="coinCount">0</b></span><span>💎 <b id="gemCount">0</b></span></button><button class="gear" onclick="showSettings()">⚙</button></div>
 </header>
 
 <div id="installHint"></div>
@@ -304,6 +307,8 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 <button class="tab" onclick="switchTab('warmup',this)" data-tab="3">Warmup</button>
 <button class="tab" onclick="switchTab('minimum',this)" data-tab="4">Minimum</button>
 <button class="tab" onclick="switchTab('battle',this)" data-tab="5">⚔️ Battle</button>
+<button class="tab" onclick="switchTab('world',this)" data-tab="6">🗺️ World</button>
+<button class="tab" onclick="switchTab('loot',this)" data-tab="7">💰 Loot</button>
 </div>
 
 <!-- TAB 1: TODAY -->
@@ -533,6 +538,7 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 
 <!-- TAB 6: BATTLE -->
 <section id="battle" class="section">
+<div class="card" id="rivalCard"><div class="cardhead"><h2>🏆 League</h2><span class="muted" id="leagueTimer"></span></div><div id="rivalBoard"></div></div>
 <!-- Daily Quests -->
 <div class="card">
 <div class="cardhead"><h2>📜 Daily Quests</h2><span class="muted" id="questRefresh"></span></div>
@@ -602,6 +608,12 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 </div>
 </div>
 </section>
+
+<!-- TAB 7: WORLD -->
+<section id="world" class="section"><div id="eventBanner"></div><div id="worldRoot"></div></section>
+
+<!-- TAB 8: LOOT -->
+<section id="loot" class="section"><div id="lootRoot"></div></section>
 </div>
 
 <div class="bottom"><button onclick="openAdd()">＋ Log Workout</button></div>
@@ -1148,7 +1160,7 @@ function xpForWorkout(w) {
   let sets = w.sets || 1;
   let xp = w.amount * sets * mult;
   if (w.weight && w.unit === 'reps') xp *= (1 + Math.min(w.weight, 300) / 100);
-  return xp;
+  return xp * (w.bonus || 1);
 }
 
 function getCategoryForExercise(exercise, customCategory) {
@@ -3296,8 +3308,10 @@ function battleAttack() {
   if (!reps || reps < 1) return;
   const exercise = document.getElementById('battleExercise').value;
 
-  // Damage = reps * multiplier (weighted exercises do more)
+  // Damage = reps boosted by equipped gear (power %) with a crit chance
+  let crit = false;
   let dmg = reps;
+  if (window.G && G.rollDamage) { const r = G.rollDamage(reps); dmg = r.dmg; crit = r.crit; }
   // Log the workout too
   const today = dateKey(new Date());
   const time = new Date().toTimeString().slice(0, 5);
@@ -3309,7 +3323,8 @@ function battleAttack() {
 
   currentBattle.monster.hp -= dmg;
   currentBattle.totalDmg += dmg;
-  currentBattle.log.push(`⚔️ ${reps} ${exercise} → ${dmg} damage!`);
+  currentBattle.log.push(`${crit ? '💥 CRIT! ' : '⚔️ '}${reps} ${exercise} → ${dmg} damage!`);
+  if (window.G && G.fxHit) G.fxHit(document.getElementById('monsterEmoji'), dmg, crit);
 
   haptic('heavy'); playSound('click');
   document.getElementById('battleReps').value = '';
@@ -3324,6 +3339,7 @@ function battleAttack() {
     document.getElementById('victoryText').textContent = `${currentBattle.monster.name} Defeated!`;
     document.getElementById('victoryReward').textContent = `+${reward} bonus XP · ${currentBattle.totalDmg} total damage dealt`;
     haptic('success'); playSound('levelup');
+    if (window.G && G.onMonsterKill) G.onMonsterKill(currentBattle.monster);
     // Save battle record
     const battles = JSON.parse(localStorage.getItem(BATTLE_KEY) || '[]');
     battles.push({ monster: currentBattle.monster.name, date: today, dmg: currentBattle.totalDmg });
@@ -3387,16 +3403,23 @@ function hitBoss(idx) {
   // Damage = today's total reps
   const today = dateKey(new Date());
   const todayReps = workouts.filter(w => w.date === today && w.unit === 'reps').reduce((s, w) => s + w.amount * (w.sets||1), 0);
-  if (todayReps < 1) { showToast('⚠️ Log some reps first to deal damage!'); return; }
-  active.remaining = Math.max(0, active.remaining - todayReps);
+  // Only reps logged since your last hit today count (no re-hitting with the same reps)
+  const already = active.lastHitDate === today ? (active.lastHitReps || 0) : 0;
+  const fresh = todayReps - already;
+  if (fresh < 1) { showToast(todayReps < 1 ? '⚠️ Log some reps first to deal damage!' : '⚠️ Log more reps since your last hit to deal damage!'); return; }
+  active.lastHitDate = today; active.lastHitReps = todayReps;
+  let bossDmg = fresh;
+  if (window.G && G.rollDamage) bossDmg = G.rollDamage(fresh).dmg;
+  active.remaining = Math.max(0, active.remaining - bossDmg);
   active.hits++;
   if (active.remaining <= 0) {
     active.defeated = true;
     active.defeatedDate = today;
     showToast(`🏆 ${boss.name} DEFEATED! +${boss.xp} XP`);
+    if (window.G && G.onBossKill) G.onBossKill(boss, idx);
     haptic('success'); playSound('pr');
   } else {
-    showToast(`⚔️ ${todayReps} damage to ${boss.name}! ${active.remaining} HP left`);
+    showToast(`⚔️ ${bossDmg} damage to ${boss.name}! ${active.remaining} HP left`);
     haptic('heavy'); playSound('click');
   }
   localStorage.setItem(BOSS_KEY, JSON.stringify(saved));
@@ -3955,5 +3978,9 @@ render();
 // Check achievements and levels on load
 setTimeout(checkAchievementsAndLevels, 500);
 </script>
+<script src="fx.js"></script>
+<script src="loot.js"></script>
+<script src="rivals.js"></script>
+<script src="world.js"></script>
 </body>
 </html>
