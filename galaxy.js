@@ -146,7 +146,8 @@
     if ((!S.shoot || S.shoot.until < now) && (!S.lastRoll || now - S.lastRoll > 3 * 3600000) && workouts.length) {
       S.lastRoll = now;
       const rogue = G.hero && (G.hero().cls.primary === 'AGI' || G.hero().cls.secondary === 'AGI') ? 0.1 : 0;
-      if (Math.random() < 0.3 + rogue && !window.__PULSE_TEST) S.shoot = { until: now + 3600000 };
+      const obs = G.villagePerk && G.villagePerk('observatory') ? 0.25 : 0;
+      if (Math.random() < 0.3 + rogue + obs && !window.__PULSE_TEST) S.shoot = { until: now + 3600000 };
       save();
     }
   }

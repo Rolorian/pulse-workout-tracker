@@ -330,6 +330,9 @@
       ctx.shadowBlur = 0;
       if (weapon.tier >= 5 && Math.floor(t / 250) % 6 === 0) px(28, 5, '#ffffff');
     }
+    // active pet follows you
+    const pet = G.activePet && G.activePet();
+    if (pet) { ctx.font = `${S * 8}px system-ui,"Apple Color Emoji"`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; if (pet.golden) { ctx.shadowColor = '#ffe066'; ctx.shadowBlur = 12; } ctx.fillText(pet.icon, 27.5 * S, (26.5 + (Math.floor(t / 400) % 2 ? 0 : -0.6)) * S); ctx.shadowBlur = 0; }
     // class head flair when no helm
     if (!helm) {
       const k = c.cls.primary || c.cls.id;
@@ -387,7 +390,7 @@
     const sec = document.getElementById('hero');
     try { checkProgress(); } catch (e) { console.warn('hero', e); }
     const c = compute();
-    const subs = `<div class="subtabs"><button class="stab ${sub === 'char' ? 'on' : ''}" data-hs="char">🧬 Character</button><button class="stab ${sub === 'tal' ? 'on' : ''}" data-hs="tal">🌳 Talents${STATS.some((s) => treePoints(s, c.base) > treeSpent(s)) ? ' •' : ''}</button><button class="stab ${sub === 'galaxy' ? 'on' : ''}" data-hs="galaxy">🌌 Galaxy</button></div>`;
+    const subs = `<div class="subtabs"><button class="stab ${sub === 'char' ? 'on' : ''}" data-hs="char">🧬 Character</button><button class="stab ${sub === 'tal' ? 'on' : ''}" data-hs="tal">🌳 Talents${STATS.some((s) => treePoints(s, c.base) > treeSpent(s)) ? ' •' : ''}</button><button class="stab ${sub === 'galaxy' ? 'on' : ''}" data-hs="galaxy">🌌 Galaxy</button><button class="stab ${sub === 'pets' ? 'on' : ''}" data-hs="pets">🐾 Pets</button></div>`;
     let body = '';
     if (sub === 'char') {
       const bonus = G.heroBonus();
@@ -426,6 +429,8 @@
         </div>
         <div class="row2"><button class="gbtn ghost" id="talReset">↺ Reset ${tree} tree (free)</button></div>
         <div class="muted" style="margin-top:8px">Tap a talent to add a rank. Bottom-row talents unlock after 3 points in the tree.</div></div>`;
+    } else if (sub === 'pets') {
+      body = `<div id="petsRoot"></div>`;
     } else {
       body = `<div id="galaxyRoot"></div>`;
     }
@@ -444,6 +449,7 @@
     }));
     const tr = root.querySelector('#talReset'); if (tr) tr.onclick = () => { TALENTS[tree].forEach(([id]) => delete H.talents[id]); save(); render(); };
     if (sub === 'galaxy') { G.renderGalaxy && G.renderGalaxy(document.getElementById('galaxyRoot')); }
+    else if (sub === 'pets') { G.renderPets && G.renderPets(document.getElementById('petsRoot')); }
     else if (sec && sec.classList.contains('active')) { if (sub === 'char' && radarT0 === 0) { radarFrom = H.snap ? H.snap.base : null; radarT0 = performance.now(); } animate(); }
   }
   G.renderHero = render;

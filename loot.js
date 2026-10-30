@@ -170,7 +170,7 @@
     const sb = setBonus();
     if (sb) { s.power += sb.pct; s.xp += sb.pct; s.coin += sb.pct; }
     // class perks, traits, talents and weak points from the Hero sheet
-    try { const hb = G.heroBonus ? G.heroBonus() : null; if (hb) Object.keys(s).forEach((k) => { if (hb[k]) s[k] += hb[k]; }); } catch (e) {}
+    [G.heroBonus, G.petBonus, G.villageBonus].forEach((fn) => { try { const hb = fn ? fn() : null; if (hb) Object.keys(s).forEach((k) => { if (hb[k]) s[k] += hb[k]; }); } catch (e) {} });
     const now = Date.now(); const e = S.effects;
     let xpMult = 1, coinMult = 1;
     if (e.xp && e.xp.until > now) xpMult *= e.xp.mult;
@@ -747,7 +747,9 @@
 
   // ---------------- forge: enchant / fuse / salvage ----------------
   const ENCH_CHANCE = [100, 95, 90, 80, 70, 60, 50, 40, 30, 20];
-  function enchantCost(inst) { const it = BY_ID[inst.id]; const e = inst.ench || 0; return { dust: 15 * (e + 1) * (it.tier + 1), coins: 60 * (e + 1) }; }
+  const smith = () => (G.villagePerk && G.villagePerk('blacksmith'));
+  const enchChance = (e) => Math.min(100, ENCH_CHANCE[e] + (smith() ? 5 : 0));
+  function enchantCost(inst) { const it = BY_ID[inst.id]; const e = inst.ench || 0; const m = smith() ? 0.8 : 1; return { dust: Math.round(15 * (e + 1) * (it.tier + 1) * m), coins: Math.round(60 * (e + 1) * m) }; }
   function enchant(uid, blessed) {
     const inst = findInst(uid); if (!inst) return;
     const it = BY_ID[inst.id]; const e = inst.ench || 0;
@@ -757,7 +759,7 @@
     if (blessed && S.gems < 5) { showToast('A blessing costs 5 💎'); return; }
     S.dust -= cost.dust; S.coins -= cost.coins; if (blessed) S.gems -= 5;
     S.stats.ench = (S.stats.ench || 0) + 1;
-    const ok = Math.random() * 100 < ENCH_CHANCE[e];
+    const ok = Math.random() * 100 < enchChance(e);
     let msg;
     if (ok) {
       inst.ench = e + 1; msg = `✨ SUCCESS! ${it.name} is now +${inst.ench}`;
@@ -808,7 +810,8 @@
     const offers = [];
     const tw = [10, 30, 32, 18, 7, 2.2, 0.6, 0.1];
     const rollT = () => { let tot = tw.reduce((a, b) => a + b, 0), r = rnd() * tot; for (let i = 0; i < tw.length; i++) { r -= tw[i]; if (r <= 0) return i; } return 0; };
-    for (let i = 0; i < 4; i++) { const t = rollT(); let it = rollItemOfTier(t, rnd), g = 0; while (it.type !== 'gear' && g++ < 15) it = rollItemOfTier(t, rnd); offers.push({ id: it.id, price: Math.round(SHOP_PRICE[t] * (0.85 + rnd() * 0.3)), cur: 'coins' }); }
+    const market = G.villagePerk && G.villagePerk('market');
+    for (let i = 0; i < (market ? 6 : 4); i++) { const t = rollT(); let it = rollItemOfTier(t, rnd), g = 0; while (it.type !== 'gear' && g++ < 15) it = rollItemOfTier(t, rnd); offers.push({ id: it.id, price: Math.round(SHOP_PRICE[t] * (0.85 + rnd() * 0.3) * (market ? 0.9 : 1)), cur: 'coins' }); }
     const cons = CATALOG.filter((i) => i.type === 'cons');
     for (let i = 0; i < 2; i++) { const it = cons[Math.floor(rnd() * cons.length)]; offers.push({ id: it.id, price: SHOP_PRICE[it.tier] + 40, cur: 'coins' }); }
     const cos = CATALOG.filter((i) => (i.type === 'theme' || i.type === 'title') && !i.noDrop && !i.event && !i.special && i.tier <= 5);
@@ -844,7 +847,7 @@
           <button class="gbtn ghost" data-a="bank">${inst.bank ? '🎒 To bag' : '🏦 To bank'}</button></div>
         <div class="forge-box">
           <div><b>✨ Enchant +${e} → +${Math.min(10, e + 1)}</b></div>
-          <div class="muted">${e >= 10 ? 'Maxed' : `${ENCH_CHANCE[e]}% success · cost ${cost.dust} dust + ${cost.coins} 🪙${e >= 5 ? ' · <span style="color:var(--red)">30% chance to SHATTER on fail</span>' : e >= 3 ? ' · fail drops 1 level' : ''}`}</div>
+          <div class="muted">${e >= 10 ? 'Maxed' : `${enchChance(e)}% success · cost ${cost.dust} dust + ${cost.coins} 🪙${e >= 5 ? ' · <span style="color:var(--red)">30% chance to SHATTER on fail</span>' : e >= 3 ? ' · fail drops 1 level' : ''}`}</div>
           <div class="muted">Each + adds 12% to all stats</div>
           <div class="row2"><button class="gbtn" data-a="ench" ${e >= 10 ? 'disabled' : ''}>Enchant</button>${e >= 3 ? `<button class="gbtn ghost" data-a="bless" ${e >= 10 ? 'disabled' : ''}>Blessed (5💎, no loss)</button>` : ''}</div>
         </div>

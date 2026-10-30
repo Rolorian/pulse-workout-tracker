@@ -18,6 +18,8 @@
     try { const ev = G.eventMods && G.eventMods(); const strip = document.getElementById('eventStrip'); if (strip && strip.style.display !== 'none') L.push([pad('EVENT'), strip.textContent.replace('›', '').trim(), '#ffb84d']); } catch (e) {}
     try { const e = G.encounterStatus && G.encounterStatus(); if (e) L.push([pad('ENCOUNTER'), `${e.icon} ${e.name} spotted · ${e.mins} min`, '#ffd23f']); } catch (e) {}
     try { const g = G.galaxyStatus && G.galaxyStatus(); if (g) L.push([pad('GALAXY'), g.shooting ? `🌠 shooting star detected · ${g.shooting} min` : g.hole ? `⚫ black hole forming — ${g.away} days away` : `${g.stars} stars charted`, g.shooting ? '#bfe6ff' : g.hole ? '#ff6b7a' : '#b48cff']); } catch (e) {}
+    try { const v = G.villageSummary && G.villageSummary(); if (v) L.push([pad('VILLAGE'), `${v.restored}/10 restored${v.next ? ` · ${v.next.name} ${v.next.pct}%` : ' · fully rebuilt 👑'}`, '#c9a27a']); } catch (e) {}
+    try { const p = G.activePet && G.activePet(); if (p) L.push([pad('PET'), `${p.icon} ${p.nick || p.name} is following you`, '#ffe066']); } catch (e) {}
     try { const s = G.state(); L.push([pad('WALLET'), `🪙 ${s.coins.toLocaleString()} · 💎 ${s.gems}`, '#f5c542']); } catch (e) {}
     return L;
   }

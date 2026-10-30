@@ -352,3 +352,66 @@
 .boot-skip{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 18px);font:600 10px var(--mono);color:var(--muted);letter-spacing:2px}
 .app.power-on{animation:powerOn .5s ease-out}
 @keyframes powerOn{0%{filter:brightness(2.2) saturate(0);transform:scaleY(.985)}40%{filter:brightness(1.3)}100%{filter:none;transform:none}}
+
+/* ---------- skilling pets ---------- */
+.pet-active{display:flex;gap:14px;align-items:center}
+.pa-ic{font-size:64px;width:90px;height:90px;display:grid;place-items:center;border-radius:20px;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%),var(--panel2);border:1px solid var(--line);animation:float 2.2s ease-in-out infinite;flex:none}
+.pa-ic.golden{border-color:#ffe066;box-shadow:0 0 24px rgba(255,224,102,.45);filter:drop-shadow(0 0 10px #ffe066) sepia(.5) saturate(2.2) hue-rotate(-12deg)}
+.pet-stats{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font:600 11px var(--mono);color:var(--muted)}.pet-stats b{color:var(--text)}
+.pet-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pet-slot{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);color:var(--text);cursor:pointer;opacity:.55}
+.pet-slot.own{opacity:1}.pet-slot.active{border-color:var(--accent);box-shadow:var(--glow)}
+.pet-slot.golden .ps-ic{filter:drop-shadow(0 0 8px #ffe066) sepia(.5) saturate(2.2) hue-rotate(-12deg)}
+.ps-ic{font-size:30px}.ps-name{font-weight:800;font-size:11px;text-align:center}.ps-how{font:600 8.5px var(--mono);color:var(--muted);text-align:center;line-height:1.3}
+.pet-drop{position:fixed;inset:0;z-index:126;background:rgba(2,3,6,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;opacity:0;transition:opacity .5s}
+.pet-drop.show{opacity:1}
+.pd-msg{font:700 15px var(--mono);color:#ffe066;max-width:320px;line-height:1.5;animation:bootIn .8s both}
+.pd-pet{font-size:110px;margin:24px 0 8px;animation:dropIn 1s .6s cubic-bezier(.2,1.6,.4,1) both}
+.pd-pet.golden{filter:drop-shadow(0 0 22px #ffe066) sepia(.5) saturate(2.2) hue-rotate(-12deg)}
+.pd-name{font-size:26px;font-weight:900;animation:dropIn .7s .9s both}
+.pd-sub{font-size:13px;color:var(--muted);margin:8px 0 18px;max-width:320px;line-height:1.5}
+.pet-drop .gbtn{flex:none;min-width:200px}
+
+/* ---------- village ---------- */
+.vdaily{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.vscene{position:relative;height:500px;border-radius:18px;overflow:hidden;margin-bottom:12px;border:1px solid var(--line);
+  background:radial-gradient(ellipse at 50% 45%,#2f5a33 0%,#24452a 45%,#18301d 100%);box-shadow:inset 0 0 60px rgba(0,0,0,.5)}
+.vscene.night{background:radial-gradient(ellipse at 50% 45%,#1b2f2a 0%,#13221f 50%,#0b1412 100%)}
+.vscene.night::after{content:"";position:absolute;inset:0;background:rgba(10,20,60,.28);pointer-events:none}
+.vpaths{position:absolute;inset:0;width:100%;height:100%}
+.vpath{fill:none;stroke:#8b7355;stroke-width:2.2;opacity:.55;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.river{fill:none;stroke:#3f86c9;stroke-width:5;opacity:.45;vector-effect:non-scaling-stroke}
+.vtree{position:absolute;font-size:18px;opacity:.75;transform:translate(-50%,-50%);pointer-events:none}
+.vdecor{position:absolute;font-size:16px;transform:translate(-50%,-50%);pointer-events:none;animation:float 3s ease-in-out infinite}
+.vb{position:absolute;transform:translate(-50%,-50%);background:none;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;padding:0;z-index:2}
+.vb-ic{font-size:40px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5));transition:transform .2s}
+.vb:active .vb-ic{transform:scale(.9)}
+.vb.locked .vb-ic{filter:grayscale(1) brightness(.45)}
+.vb.build .vb-ic{filter:grayscale(.75) brightness(.75)}
+.vb.done .vb-ic{animation:float 3.5s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(245,197,66,.45)) drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+.vb-scaf{position:absolute;top:-6px;right:-14px;font-size:18px}
+.vb-pct{position:absolute;top:-10px;left:-16px;font:800 9px var(--mono);background:var(--gold);color:#1b1203;border-radius:6px;padding:1px 4px}
+.vb-fog{position:absolute;inset:-6px -12px;background:radial-gradient(circle,rgba(200,210,220,.35),transparent 70%);border-radius:50%;pointer-events:none}
+.vb-glow{position:absolute;top:6px;font-size:14px;animation:float 1.6s infinite}
+.vb-name{margin-top:1px;font:800 9px var(--mono);color:#fff;background:rgba(0,0,0,.55);border-radius:6px;padding:1px 5px;white-space:nowrap}
+.vb.locked .vb-name{opacity:.5}
+.villager{position:absolute;left:0;font-size:18px;z-index:3;pointer-events:none;animation:walk linear infinite}
+.villager.pet{font-size:16px}
+@keyframes walk{0%{left:4%;transform:scaleX(-1)}49%{transform:scaleX(-1)}50%{left:92%;transform:scaleX(1)}100%{left:4%;transform:scaleX(1)}}
+.vsun,.vmoon{position:absolute;top:10px;right:14px;font-size:24px;pointer-events:none}
+.vb-head{display:flex;gap:12px;align-items:center;margin:0 34px 12px 0}
+.vb-big{font-size:52px}.vb-big.ruin{filter:grayscale(.6)}
+.vb-perk{font-size:12px;color:var(--gold);margin-top:4px}
+.bundle{padding:12px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);margin-top:10px}
+.bundle.done{border-color:rgba(73,227,154,.5);background:rgba(73,227,154,.06)}
+.bun-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}.bun-h .muted{font-size:10px;text-align:right}
+.slot{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-top:1px solid var(--line)}
+.slot>span{flex:1}.slot>b{font:800 11px var(--mono);min-width:54px;text-align:right}.slot.full>b{color:var(--green)}
+.slot-bar{width:70px;height:6px;border-radius:4px;background:var(--line);overflow:hidden}.slot-bar div{height:100%;background:var(--accent-grad)}
+.vc-stage{position:relative;width:140px;height:140px;margin:18px 0}
+.vc-rubble{position:absolute;inset:0;display:grid;place-items:center;font-size:96px;animation:vcShake .35s 3,vcGone .4s 1.1s forwards;filter:grayscale(.7)}
+@keyframes vcShake{25%{transform:translateX(-6px) rotate(-3deg)}75%{transform:translateX(6px) rotate(3deg)}}
+@keyframes vcGone{to{opacity:0;transform:scale(.3) translateY(30px)}}
+.vc-new{position:absolute;inset:0;display:grid;place-items:center;font-size:104px;opacity:0;animation:vcPop .9s 1.3s cubic-bezier(.2,1.6,.4,1) forwards;filter:drop-shadow(0 0 24px #f5c542)}
+@keyframes vcPop{from{opacity:0;transform:scale(.2) rotate(-20deg)}to{opacity:1;transform:none}}
+.vcer .cer-name{animation-delay:1.6s}

@@ -373,7 +373,7 @@
   function floorsFor(di) { return 5 + Math.floor(di / 2); }
 
   function startRun(di) {
-    const hearts = 3 + G.talent('secondwind');
+    const hearts = 3 + G.talent('secondwind') + (G.villagePerk && G.villagePerk('temple') ? 1 : 0);
     W.run = { d: di, floor: 1, hearts, maxHearts: hearts, relics: [], loot: { coins: 0, gems: 0, items: [] }, seed: Date.now(), room: null, curse: 1, log: [] };
     save(); G.sfx && G.sfx('boom'); G.shake && G.shake(null, 6);
     if (typeof haptic === 'function') haptic('heavy'); render();
@@ -574,8 +574,9 @@
     renderEventStrip();
     const banner = document.getElementById('eventBanner'); if (banner) banner.innerHTML = eventCardHtml();
     const root = document.getElementById('worldRoot'); if (!root) return;
-    root.innerHTML = `<div class="subtabs"><button class="stab ${wtab === 'map' ? 'on' : ''}" data-wt="map">🗺️ Map</button><button class="stab ${wtab === 'dg' ? 'on' : ''}" data-wt="dg">🏰 Dungeons${W.run ? ' •' : ''}</button></div>
-      ${wtab === 'map' ? mapHtml() : dungeonsHtml()}`;
+    root.innerHTML = `<div class="subtabs"><button class="stab ${wtab === 'map' ? 'on' : ''}" data-wt="map">🗺️ Map</button><button class="stab ${wtab === 'dg' ? 'on' : ''}" data-wt="dg">🏰 Dungeons${W.run ? ' •' : ''}</button><button class="stab ${wtab === 'village' ? 'on' : ''}" data-wt="village">🏘️ Village</button></div>
+      ${wtab === 'map' ? mapHtml() : wtab === 'village' ? '<div id="villageRoot"></div>' : dungeonsHtml()}`;
+    if (wtab === 'village' && G.renderVillage) G.renderVillage(document.getElementById('villageRoot'));
     root.querySelectorAll('[data-wt]').forEach((b) => (b.onclick = () => { wtab = b.dataset.wt; G.renderWorld(); G.sfx && G.sfx('tick'); }));
     root.querySelectorAll('[data-node]').forEach((b) => (b.onclick = () => stageSheet(Number(b.dataset.node))));
     root.querySelectorAll('[data-claim]').forEach((b) => (b.onclick = () => claimStage(Number(b.dataset.claim))));
