@@ -1,7 +1,7 @@
 /* Pulse Workout Tracker — service worker
    Cache-first for the app shell so it loads instantly and fully offline.
    Bump CACHE on every release so clients pick up the new files. */
-const CACHE = 'pulse-v7';
+const CACHE = 'pulse-v8';
 const SHELL = [
   './',
   './index.html',
@@ -15,7 +15,8 @@ const SHELL = [
   './loot.js',
   './rivals.js',
   './world.js',
-  './circuit.js'
+  './circuit.js',
+  './plank.js'
 ];
 
 self.addEventListener('install', (e) => {

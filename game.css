@@ -225,3 +225,25 @@
 .cp-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-weight:700;font-size:14px}
 .cp-row b{font-family:var(--mono);color:var(--accent)}
 .cp-mini{display:flex;align-items:center;gap:10px}.cp-mini button{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-weight:900;cursor:pointer}
+
+/* ---------- 30-day plank challenge ---------- */
+.plank-card{border-color:color-mix(in srgb,var(--gold) 30%,var(--line))}
+.plank-card.complete{border-color:color-mix(in srgb,var(--gold) 65%,transparent);box-shadow:0 0 22px rgba(245,197,66,.15),var(--shadow)}
+.pk-intro{font-size:13px;color:var(--muted);line-height:1.5}.pk-intro b{color:var(--text)}
+.pk-day{font:900 34px var(--mono);line-height:1;margin:2px 0 10px}.pk-day b{color:var(--gold)}.pk-day span{font-size:18px;color:var(--muted)}
+.pk-bar{position:relative;height:16px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.pk-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));box-shadow:0 0 14px rgba(245,197,66,.4);transition:width .4s cubic-bezier(.3,1.4,.5,1)}
+.pk-bar i{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,.45)}
+.pk-mins{margin-top:8px;font:700 14px var(--mono)}.pk-mins b{font-size:20px;color:var(--text)}
+.pk-extra{color:var(--gold);font-weight:900;margin-left:4px;animation:stripGlow 2s infinite;padding:1px 6px;border-radius:6px}
+.pk-status{font-size:12px;color:var(--muted);margin:4px 0 12px}
+.pk-btns{display:flex;gap:10px}
+.pk-plus{flex:1;padding:18px;border:0;border-radius:16px;background:linear-gradient(135deg,var(--gold),#ff9f43);color:#1b1203;font:900 22px var(--mono);cursor:pointer;box-shadow:0 8px 24px rgba(245,197,66,.3);transition:transform .1s}
+.pk-plus:active{transform:scale(.95)}
+.pk-minus{width:64px;border-radius:16px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);font:900 16px var(--mono);cursor:pointer}.pk-minus:disabled{opacity:.35}
+.pk-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:14px}
+.pk-grid span{aspect-ratio:1;border-radius:7px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font:700 9px var(--mono);color:var(--muted)}
+.pk-grid span.done{background:rgba(245,197,66,.14);border-color:rgba(245,197,66,.45);font-size:12px}
+.pk-grid span.today{border:2px solid var(--gold);color:var(--text)}
+.pk-reset{background:rgba(255,107,122,.1);border:1px solid rgba(255,107,122,.4);border-radius:12px;padding:10px;font-size:12px;margin-bottom:10px}
+.pk-reset button{float:right;background:none;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:2px 10px;cursor:pointer}
