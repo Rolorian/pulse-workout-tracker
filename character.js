@@ -132,7 +132,7 @@
     workouts.forEach((w) => {
       if (since && w.date < since) return;
       if (w.time && (w.time < '07:00' || w.time >= '21:00')) p += 8;
-      if (w.plankChallenge) { if (w.amount >= 10) p += 5; if (w.amount > 10) p += (w.amount - 10) * 6; }
+      if (w.plankChallenge) { const T = G.PLANK_TARGET || 5; if (w.amount >= T) p += 5; if (w.amount > T) p += (w.amount - T) * 6; }
     });
     if (G.circuitState) G.circuitState().history.forEach((h) => { if (!since || h.date >= since) p += h.rounds * 6; });
     if (!since) {

@@ -11,7 +11,7 @@
     try { const s = getStreak(); L.push([pad('STREAK'), s ? `${s} day${s > 1 ? 's' : ''} 🔥` : 'offline — train today to reignite', s ? '#ffb86b' : '#ff6b7a']); } catch (e) {}
     try {
       const P = G._plank && G._plank.state();
-      if (P && P.active) { const m = P.days[dateKey(new Date())] || 0; const day = Math.round((new Date(dateKey(new Date())) - new Date(P.start)) / 86400000) + 1; L.push([pad('PLANK'), m >= 10 ? `Day ${day}/30 ✓ done${m > 10 ? ` (+${m - 10} bonus)` : ''}` : `Day ${day}/30 · ${10 - m} min left today`, m >= 10 ? '#49e39a' : '#f5c542']); }
+      if (P && P.active) { const T = G.PLANK_TARGET || 5; const m = P.days[dateKey(new Date())] || 0; const day = Math.round((new Date(dateKey(new Date())) - new Date(P.start)) / 86400000) + 1; L.push([pad('PLANK'), m >= T ? `Day ${day}/30 ✓ done${m > T ? ` (+${m - T} bonus)` : ''}` : `Day ${day}/30 · ${T - m} min left today`, m >= T ? '#49e39a' : '#f5c542']); }
     } catch (e) {}
     try { const q = getDailyQuests(); checkQuestProgress(q.quests); const d = q.quests.filter((x) => x.done).length; L.push([pad('QUESTS'), `${d}/3 complete${d < 3 ? ' · ' + q.quests.find((x) => !x.done).desc : ''}`, d === 3 ? '#49e39a' : '#5aa8ff']); } catch (e) {}
     try { const r = G.rivalSummary && G.rivalSummary(); if (r) L.push([pad('LEAGUE'), `#${r.rank} ${r.league}${r.above ? ` · ${r.above.name} +${r.above.gap} XP ahead` : ' · leading the pack 👑'}`, r.rank <= 3 ? '#49e39a' : r.rank >= 8 ? '#ff6b7a' : '#c9d3dd']); } catch (e) {}

@@ -1,10 +1,11 @@
 /* Pulse — 30-Day Plank Challenge.
-   10 minutes a day for 30 days in a row. Tap +1 for each minute done.
+   5 minutes a day for 30 days in a row. Tap +1 for each minute done.
    Miss a day and it resets to Day 1. Minutes past 10 earn bonus loot. */
 (function () {
   const G = (window.G = window.G || {});
   const PKEY = 'pulse-plank-v1';
-  const TARGET = 10, DAYS = 30, BONUS_CAP = 20; // bonus pays out for up to 20 extra minutes a day
+  const TARGET = 5, DAYS = 30, BONUS_CAP = 20;
+  G.PLANK_TARGET = TARGET; // bonus pays out for up to 20 extra minutes a day
   let P;
   try { P = JSON.parse(localStorage.getItem(PKEY) || 'null'); } catch (e) { P = null; }
   if (!P) P = { active: false, start: null, days: {}, paid: {}, best: 0, attempts: 0, completed: 0, msg: null };
@@ -17,10 +18,10 @@
 
   G.registerItems && G.registerItems([
     { id: 'title_coresteel', name: 'Core of Steel', icon: '🏷️', tier: 5, type: 'title', special: true, desc: 'Finished the 30-Day Plank Challenge' },
-    { id: 'iron_core_belt', name: 'Iron Core Belt', icon: '🎗️', tier: 5, type: 'gear', slot: 'amulet', stats: { xp: 30, power: 20, luck: 10 }, special: true, desc: '30 days. 300 minutes. Unbreakable.' }
+    { id: 'iron_core_belt', name: 'Iron Core Belt', icon: '🎗️', tier: 5, type: 'gear', slot: 'amulet', stats: { xp: 30, power: 20, luck: 10 }, special: true, desc: '30 days. 150 minutes. Unbreakable.' }
   ]);
 
-  // Reset if any day between the start and yesterday fell short of 10 minutes
+  // Reset if any day between the start and yesterday fell short of the daily target
   function checkReset() {
     if (!P.active || !P.start) return;
     const today = dk(now());
@@ -96,8 +97,8 @@
             setTimeout(() => { G.fireworks && G.fireworks(8); G.goldenRain && G.goldenRain(); }, 300);
           } else { G.confetti && G.confetti(90); }
         }
-        if (after === TARGET + 5) { r.gems += 1; label = '🔥 Overtime: 15 minutes!'; G.confetti && G.confetti(60); }
-        if (after === TARGET + 10) { r.gems += 2; label = '🔥🔥 20 minutes — absolute unit!'; G.fireworks && G.fireworks(3); }
+        if (after === TARGET + 5) { r.gems += 1; label = `🔥 Overtime: ${TARGET + 5} minutes!`; G.confetti && G.confetti(60); }
+        if (after === TARGET + 10) { r.gems += 2; label = `🔥🔥 ${TARGET + 10} minutes — absolute unit!`; G.fireworks && G.fireworks(3); }
         save();
         if (r.coins || r.gems || r.items.length) {
           const quiet = !r.gems && !r.items.length && after !== TARGET;
@@ -117,7 +118,7 @@
     if (!P.active) {
       const done = P.msg && P.msg.t === 'done';
       el.innerHTML = `<div class="card plank-card"><div class="cardhead"><h2>🧱 30-Day Plank Challenge</h2>${P.completed ? `<span class="muted">Completed ${P.completed}×</span>` : ''}</div>
-        <div class="pk-intro">${done ? '🏆 <b>You did it — 30 days straight!</b> Core of Steel is yours. Go again?' : '10 minutes of plank a day for 30 days. Split it up however you like — tap <b>+1</b> for every minute. <b>Miss a day and it resets.</b> Go past 10 for bonus loot.'}</div>
+        <div class="pk-intro">${done ? '🏆 <b>You did it — 30 days straight!</b> Core of Steel is yours. Go again?' : `${TARGET} minutes of plank a day for 30 days. Split it up however you like — tap <b>+1</b> for every minute. <b>Miss a day and it resets.</b> Go past ${TARGET} for bonus loot.`}</div>
         <button class="gbtn" id="plankStart">${done ? '🔁 Start again' : '▶ Start the challenge'}</button></div>`;
       el.querySelector('#plankStart').onclick = startChallenge;
       return;
@@ -133,9 +134,9 @@
     el.innerHTML = `<div class="card plank-card ${m >= TARGET ? 'complete' : ''}"><div class="cardhead"><h2>🧱 30-Day Plank Challenge</h2><span class="muted">Best ${Math.max(P.best, d - (m >= TARGET ? 0 : 1))} days</span></div>
       ${resetMsg}
       <div class="pk-day">Day <b>${d}</b><span>/${DAYS}</span></div>
-      <div class="pk-bar"><div class="pk-fill" style="width:${pct * 100}%"></div>${Array.from({ length: TARGET - 1 }, (_, i) => `<i style="left:${(i + 1) * 10}%"></i>`).join('')}</div>
+      <div class="pk-bar"><div class="pk-fill" style="width:${pct * 100}%"></div>${Array.from({ length: TARGET - 1 }, (_, i) => `<i style="left:${(i + 1) * 100 / TARGET}%"></i>`).join('')}</div>
       <div class="pk-mins"><b>${Math.min(m, TARGET)}</b> / ${TARGET} min today${extra ? ` <span class="pk-extra">+${extra} bonus</span>` : ''}</div>
-      <div class="pk-status">${m >= TARGET ? (extra ? `🔥 Overtime! Every extra minute pays out${extra < 5 ? ' — 15 min = 💎' : extra < 10 ? ' — 20 min = 💎💎' : ''}` : '✅ Today\'s done! Keep going for bonus loot.') : `${TARGET - m} min to go — finish before midnight or it resets`}</div>
+      <div class="pk-status">${m >= TARGET ? (extra ? `🔥 Overtime! Every extra minute pays out${extra < 5 ? ` — ${TARGET + 5} min = 💎` : extra < 10 ? ` — ${TARGET + 10} min = 💎💎` : ''}` : '✅ Today\'s done! Keep going for bonus loot.') : `${TARGET - m} min to go — finish before midnight or it resets`}</div>
       <div class="pk-btns"><button class="pk-minus" id="plankMinus" ${m ? '' : 'disabled'}>−1</button><button class="pk-plus" id="plankPlus">+1 min</button></div>
       <div class="pk-grid">${grid}</div></div>`;
     el.querySelector('#plankPlus').onclick = () => tap(1);
