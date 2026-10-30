@@ -337,6 +337,8 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 <div id="todayChart"></div>
 </div>
 
+<div id="circuitCard"></div>
+
 <!-- Workout Timer -->
 <div class="timer-section">
 <div class="timer-display" id="workoutTimerDisplay">00:00:00</div>
@@ -3225,6 +3227,7 @@ const QUEST_TYPES = {
   sets:     { w: 10 },
   hold:     { w: 8 },
   cardio:   { w: 6 },
+  circuit:  { w: 9 },
   weight:   { w: 3, wGym: 16 }
 };
 const HOLD_EXERCISES = ['Plank', 'Wall sit', 'Side plank', 'Hollow hold'];
@@ -3259,6 +3262,7 @@ function makeQuest(type) {
     case 'sets': { const n = rnd([4, 6, 8, 10]); return { type, desc: `Log ${n} sets today`, target: n, xpReward: n * 6 }; }
     case 'hold': { const n = rnd([60, 90, 120, 180]); return { type, desc: `Hold for ${n}s total (plank, wall sit, side plank or hollow hold)`, target: n, xpReward: Math.round(n / 2) }; }
     case 'cardio': { const n = rnd([10, 15, 20]); return { type, desc: `${n} minutes of cardio (skipping, stairs, anything timed)`, target: n, xpReward: n * 5 }; }
+    case 'circuit': { const n = rnd([2, 3, 4]); return { type, desc: `Complete ${n} circuit rounds (🔁 on Today)`, target: n, xpReward: n * 20 }; }
     case 'weight': { const n = rnd([1, 2]); return { type, desc: `Add weight to ${n} exercise${n > 1 ? 's' : ''} (a loaded backpack counts!)`, target: n, xpReward: n * 25 }; }
   }
 }
@@ -3301,6 +3305,7 @@ function checkQuestProgress(quests) {
       case 'hold': q.progress = holdSeconds(td); break;
       case 'cardio': q.progress = Math.round(td.filter(w => w.unit === 'minutes' && getCategoryForExercise(w.exercise, w.category) === 'cardio').reduce((s, w) => s + w.amount * (w.sets || 1), 0)); break;
       case 'weight': q.progress = new Set(td.filter(w => w.weight).map(w => w.exercise)).size; break;
+      case 'circuit': q.progress = (window.G && G.circuitState ? G.circuitState().history : []).filter(h => h.date === today).reduce((a, h) => a + h.rounds, 0); break;
     }
     if (q.progress >= q.target) q.done = true;
   });
@@ -4070,5 +4075,6 @@ setTimeout(checkAchievementsAndLevels, 500);
 <script src="loot.js"></script>
 <script src="rivals.js"></script>
 <script src="world.js"></script>
+<script src="circuit.js"></script>
 </body>
 </html>
