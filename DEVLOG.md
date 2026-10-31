@@ -90,3 +90,32 @@
   - A music volume slider is included.
   - Files are stored in IndexedDB on the device only. Nothing copyrighted is shipped in the repo.
 - **Tested.** A slime fight played Strike → Flurry → Smash: resist ×0.6 and weak ×1.5 applied, momentum went 0 → 1 → 2, both lore entries were discovered, and there were no errors. The soundtrack menu renders all 18 slots.
+
+## 2026-10-31 · Milestone 5: visual identity overhaul (village benchmark → everywhere)
+- **Baseline audit:**
+  - Hard square tile seams everywhere.
+  - No cast shadows.
+  - A static world.
+  - Night was a flat tint.
+  - Dungeon walls were scattered outline pieces.
+  - CSS-box UI.
+  - The battle backdrop was a generic grass patch.
+- **Shipped (engine-wide, so every region benefits):**
+  - Dithered organic terrain blending.
+  - Baked sun shadows.
+  - Three-band wind sway.
+  - Water with foam, bank shadow, shimmer and ripples.
+  - A quarter-resolution light map with lamps, torches, your lantern, buddy and boss light, and fireflies.
+  - Daylight shafts.
+  - Birds with shadows, and butterflies.
+  - Dungeon architecture: brick faces, rim-lit tops, occlusion, worn floors, flickering torches.
+  - Elite and boss ground auras.
+  - Snow ground tint so white props read.
+  - Generated pixel frames and icons across all Realm UI.
+  - Battles staged on the real location.
+- **Village benchmark:**
+  - A mill pond with lilies and reeds.
+  - Pennants and lived-in doorsteps on rebuilt buildings.
+  - Hana and Ade at work.
+- **Performance:** the world now renders at CSS resolution with integer upscaling, and off-screen props and characters are culled. Measured 61 fps with everything on (it was 30 before the change and 38 before the overhaul) in headless Chromium at iPhone 14 Pro Max size.
+- **New doc:** STYLE_GUIDE.md.
