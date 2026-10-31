@@ -76,7 +76,11 @@
   // ================================================================== AUDIO (WebAudio → volume works on iOS; your own MP3s live in IndexedDB)
   const BUF = {}; let musicNode = null, musicGain = null, musicWant = null, musicName = null;
   const SFX = { sword: 'sword', kill: 'kill', gold: 'gold-1', power: 'power-up', win: 'succes', win2: 'succes-2', menu: 'menu-1', menu3: 'menu-3', alert: 'alert', over: 'game-over', magic: 'magic-1', hit1: '1', hit2: '2', hit3: '3', hit9: '9' };
-  const SLOTS = [['village', 'Village'], ['wilds', 'Wilds'], ['dungeon', 'Dungeons'], ['battle', 'Battles'], ['boss', 'Boss fights']];
+  // music slots: every place and every kind of fight can have its own track; unset slots fall back down the chain
+  const SLOTS = [['village', 'Pulsehaven'], ['wilds', 'All regions (fallback)']].concat(Array.from({ length: 10 }, (_, i) => ['r' + i, null]), [['dungeon', 'Dungeons'], ['battle', 'Battles'], ['elite', 'Elite fights'], ['boss', 'Region & dungeon bosses'], ['worldboss', 'World bosses'], ['victory', 'Victory fanfare']]);
+  const slotName = (s) => { const x = SLOTS.find((q) => q[0] === s); if (x && x[1]) return x[1]; if (/^r\d+$/.test(s)) { try { return (G.worldRegions ? G.worldRegions()[Number(s.slice(1))].name : 'Region ' + s.slice(1)); } catch (e) { return s; } } return s; };
+  const DEFAULT_TRACK = { village: 1, wilds: 1, dungeon: 1, battle: 1, boss: 1 };
+  function chainOf(slot) { const c = [slot]; if (/^r\d+$/.test(slot)) c.push('wilds'); if (slot === 'worldboss') c.push('boss'); if (slot === 'elite') c.push('battle'); return c; }
   function actx() { try { if (typeof initAudio === 'function') initAudio(); return typeof audioCtx !== 'undefined' ? audioCtx : null; } catch (e) { return null; } }
   const soundOn = () => typeof settings === 'undefined' || settings.sound !== false;
   function decode(ab) { const ctx = actx(); return new Promise((res) => { try { ctx.decodeAudioData(ab, res, () => res(null)); } catch (e) { res(null); } }); }
@@ -88,10 +92,13 @@
   function idbPut(k, v) { return db().then((d) => d && new Promise((res) => { const tx = d.transaction('t', 'readwrite'); v == null ? tx.objectStore('t').delete(k) : tx.objectStore('t').put(v, k); tx.oncomplete = () => res(true); tx.onerror = () => res(false); })); }
   const customHas = {};
   SLOTS.forEach(([s]) => idbGet('meta:' + s).then((m) => { if (m) customHas[s] = m; }).catch(() => {}));
+  function customBuf(slot) { const key = 'custom:' + slot; if (!BUF[key]) BUF[key] = idbGet(slot).then((b) => (b ? b.arrayBuffer() : null)).then((ab) => (ab ? decode(ab) : null)).catch(() => null); return BUF[key]; }
   function musicBuf(slot) {
-    const key = 'custom:' + slot;
-    if (customHas[slot]) { if (!BUF[key]) BUF[key] = idbGet(slot).then((b) => (b ? b.arrayBuffer() : null)).then((ab) => (ab ? decode(ab) : null)); return BUF[key].then((b) => b || fetchBuf('music/' + slot + '.mp3')); }
-    return fetchBuf('music/' + slot + '.mp3');
+    const chain = chainOf(slot);
+    const custom = chain.find((s) => customHas[s]);
+    const def = chain.find((s) => DEFAULT_TRACK[s]);
+    const fallback = () => (def ? fetchBuf('music/' + def + '.mp3') : Promise.resolve(null));
+    return custom ? customBuf(custom).then((b) => b || fallback()) : fallback();
   }
   function sfx(name, vol = 0.55, rate = 1) {
     if (!soundOn() || TEST()) return; const ctx = actx(); if (!ctx) return;
@@ -108,8 +115,8 @@
     stopMusic(); if (!slot || !R.music || !soundOn()) return;
     musicBuf(slot).then((buf) => {
       if (!buf || musicWant !== slot || musicNode) return;
-      musicGain = ctx.createGain(); musicGain.gain.setValueAtTime(0, ctx.currentTime); musicGain.gain.linearRampToValueAtTime(slot === 'battle' || slot === 'boss' ? 0.32 : 0.26, ctx.currentTime + 1.2);
-      musicNode = ctx.createBufferSource(); musicNode.buffer = buf; musicNode.loop = true; musicNode.connect(musicGain); musicGain.connect(ctx.destination); musicNode.start(); musicName = slot;
+      musicGain = ctx.createGain(); musicGain.gain.setValueAtTime(0, ctx.currentTime); musicGain.gain.linearRampToValueAtTime((/battle|boss|elite/.test(slot) ? 0.32 : 0.26) * (R.musicVol == null ? 1 : R.musicVol) * 1.6, ctx.currentTime + 1.2);
+      musicNode = ctx.createBufferSource(); musicNode.buffer = buf; musicNode.loop = slot !== 'victory'; musicNode.connect(musicGain); musicGain.connect(ctx.destination); musicNode.start(); musicName = slot;
     });
   }
   function stopMusic() {
@@ -118,7 +125,7 @@
     try { g.gain.cancelScheduledValues(ctx.currentTime); g.gain.setValueAtTime(g.gain.value, ctx.currentTime); g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5); n.stop(ctx.currentTime + 0.55); } catch (e) {}
     musicNode = null; musicGain = null; musicName = null;
   }
-  const zoneMusic = () => (Z ? Z.music : 'village');
+  const zoneMusic = () => (Z ? (Z.ri != null && !Z.dungeon ? 'r' + Z.ri : Z.music) : 'village');
   const buzz = (t) => { try { if (typeof haptic === 'function') haptic(t); } catch (e) {} };
 
   // ================================================================== CONTENT: regions, monsters, bosses
@@ -405,7 +412,16 @@
     if (z.dungeon) return t < (z.enteredAt || 0); // dungeons reset each visit
     return Date.now() - t > RESPAWN;
   }
-  function enemyDef(s, z) {
+  // weaknesses & resistances: which kind of effort each creature fears or shrugs off
+  const FAM = {
+    soft: ['smash', 'quick', 'Squashable — heavy legs work crushes it'], slither: ['quick', 'smash', 'Too quick for big swings — fast footwork wins'],
+    shell: ['smash', 'strike', 'Hard shell — pressing blows glance off'], fighter: ['strike', 'quick', 'Trained fighter — meet it head-on'], spirit: ['quick', 'strike', 'Barely solid — only rapid hits land']
+  };
+  const MOB_FAM = { slime: 'soft', moss: 'soft', fish: 'soft', shroom: 'slither', snake: 'slither', lizard: 'slither', viper: 'slither', beetle: 'shell', crab: 'shell', scarab: 'shell', golem: 'shell', troll: 'shell', goblin: 'fighter', skeleton: 'fighter', knight: 'fighter', viking: 'fighter', imp: 'fighter', bear: 'fighter', wisp: 'spirit', eye: 'spirit', flame: 'spirit', skull: 'spirit', owl: 'spirit', bat: 'spirit' };
+  const BOSS_FAM = ['slither', 'fighter', 'shell', 'spirit', 'slither', 'shell', 'spirit', 'spirit', 'fighter', 'shell'];
+  const WB_FAM = { 0: 'soft', 7: 'fighter', 9: 'slither' };
+  function enemyDef(s, z) { const d = enemyDef0(s, z); const f = s.mob ? MOB_FAM[s.mob] : s.world != null ? WB_FAM[s.world] : BOSS_FAM[s.boss != null ? s.boss : s.dboss != null ? s.dboss : 0]; if (f) { d.weak = FAM[f][0]; d.resist = FAM[f][1]; d.famNote = FAM[f][2]; d.lore = s.mob || (s.world != null ? 'w' + s.world : s.boss != null ? 'b' + s.boss : 'd' + s.dboss); } return d; }
+  function enemyDef0(s, z) {
     if (s.boss != null) { const b = RBOSS[s.boss]; return { name: REG()[s.boss].boss[0], spr: b[0], sc: b[1], tint: b[2], hp: b[3], intents: b[4], boss: true, region: s.boss }; }
     if (s.world != null) { const w = WBOSS[s.world]; return { name: w.name, spr: w.spr, sc: w.sc, tint: w.tint, hp: w.hp, intents: w.intents, boss: true, world: s.world, crown: w.crown }; }
     if (s.dboss != null) { const dg = DUN()[s.dboss] || { boss: ['Guardian'] }; const b = RBOSS[s.dboss]; return { name: dg.boss[0], spr: b[0], sc: 1.8, tint: '#4a148c', hp: Math.round(b[3] * 0.9), intents: b[4], boss: true, dungeonBoss: s.dboss }; }
@@ -826,7 +842,7 @@
 
   // ================================================================== MENUS: travel map, moves, soundtrack, party
   let menuOpen = false;
-  function closeMenu() { menuOpen = false; if (menuEl) { menuEl.classList.remove('on'); menuEl.innerHTML = ''; } }
+  let closeMenu = function () { menuOpen = false; if (menuEl) { menuEl.classList.remove('on'); menuEl.innerHTML = ''; } }
   function showMenu(html, bind) { menuOpen = true; menuEl.innerHTML = `<div class="rm-box">${html}</div>`; menuEl.classList.add('on'); menuEl.onclick = (e) => { if (e.target === menuEl) closeMenu(); }; bind && bind(menuEl); menuEl.querySelectorAll('[data-close]').forEach((b) => (b.onclick = closeMenu)); }
   function openMenu() {
     sfx('menu3', 0.4);
@@ -901,19 +917,30 @@
   }
   // ---------- soundtrack: drop in your own MP3s per mood ----------
   function openSound() {
-    showMenu(`<div class="rm-title">Soundtrack</div><div class="rm-sub">Use your own music for any mood. Files stay on this phone.</div>
-      ${SLOTS.map(([s, n]) => `<div class="snd-row"><div><div class="snd-n">${n}</div><div class="snd-s">${customHas[s] ? esc(customHas[s].name) : 'Default pack track'}</div></div>
-        <label class="rm-mini">Choose<input type="file" accept="audio/*" data-snd="${s}" hidden></label>${customHas[s] ? `<button class="rm-mini ghost" data-rst="${s}">Reset</button>` : ''}<button class="rm-mini ghost" data-play="${s}">▶</button></div>`).join('')}
+    const row = (sl) => `<div class="snd-row"><div><div class="snd-n">${esc(slotName(sl))}</div><div class="snd-s">${customHas[sl] ? '♪ ' + esc(customHas[sl].name) : sl === 'victory' ? 'Default jingle' : DEFAULT_TRACK[sl] ? 'Default track' : `Uses: ${esc(slotName(chainOf(sl).find((x) => x !== sl && (customHas[x] || DEFAULT_TRACK[x])) || chainOf(sl)[1] || sl))}`}</div></div>
+        <label class="rm-mini">${customHas[sl] ? 'Change' : 'Choose'}<input type="file" accept="audio/*,.mp3,.m4a,.ogg,.wav,.aac" data-snd="${sl}" hidden></label>${customHas[sl] ? `<button class="rm-mini ghost" data-rst="${sl}">✕</button>` : ''}<button class="rm-mini ghost" data-play="${sl}">▶</button></div>`;
+    const vol = R.musicVol == null ? 1 : R.musicVol;
+    showMenu(`<div class="rm-title">Soundtrack</div><div class="rm-sub">Give every place and fight its own music. Pick audio files you own from your phone; they're stored on this device only and work offline.</div>
+      <label class="snd-vol">Music volume <input type="range" min="0" max="1" step="0.05" value="${vol}" data-vol></label>
+      <div class="rm-sep">Places</div>${['village', 'wilds', 'r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8', 'r9', 'dungeon'].map(row).join('')}
+      <div class="rm-sep">Fights</div>${['battle', 'elite', 'boss', 'worldboss', 'victory'].map(row).join('')}
       <button class="rm-item ghost" data-close>Done</button>`, (m) => {
+      const keep = m.querySelector('.rm-box').scrollTop;
+      m.querySelector('[data-vol]').oninput = (e) => { R.musicVol = Number(e.target.value); save(); if (musicGain) { const ctx = actx(); musicGain.gain.setTargetAtTime(0.26 * 1.6 * R.musicVol, ctx.currentTime, 0.1); } };
       m.querySelectorAll('[data-snd]').forEach((inp) => (inp.onchange = () => {
-        const f = inp.files && inp.files[0]; if (!f) return; const s = inp.dataset.snd;
-        if (f.size > 25 * 1024 * 1024) { hint('That file is over 25 MB — try a shorter track'); return; }
-        idbPut(s, f).then((ok) => { if (!ok) { hint('Could not save that file'); return; } const meta = { name: f.name.slice(0, 40), size: f.size }; idbPut('meta:' + s, meta); customHas[s] = meta; delete BUF['custom:' + s]; if (musicName === s) { stopMusic(); music(s); } openSound(); hint(`${meta.name} will play for ${SLOTS.find((x) => x[0] === s)[1]}`); });
+        const f = inp.files && inp.files[0]; if (!f) return; const sl = inp.dataset.snd;
+        if (f.size > 40 * 1024 * 1024) { hint('That file is over 40 MB — try a shorter track'); return; }
+        idbPut(sl, f).then((ok) => { if (!ok) { hint('Could not save that file'); return; } const meta = { name: f.name.replace(/\.[^.]+$/, '').slice(0, 40), size: f.size }; idbPut('meta:' + sl, meta); customHas[sl] = meta; Object.keys(BUF).forEach((k) => { if (k.startsWith('custom:')) delete BUF[k]; }); if (musicName && chainOf(musicName).includes(sl)) { stopMusic(); music(musicWant); } reopenSound(); hint(`♪ ${meta.name} → ${slotName(sl)}`); });
       }));
-      m.querySelectorAll('[data-rst]').forEach((b) => (b.onclick = () => { const s = b.dataset.rst; idbPut(s, null); idbPut('meta:' + s, null); delete customHas[s]; delete BUF['custom:' + s]; if (musicName === s) { stopMusic(); music(s); } openSound(); }));
-      m.querySelectorAll('[data-play]').forEach((b) => (b.onclick = () => { actx(); const s = b.dataset.play; const keep = R.music; R.music = true; stopMusic(); music(s); R.music = keep; }));
+      m.querySelectorAll('[data-rst]').forEach((b) => (b.onclick = () => { const sl = b.dataset.rst; idbPut(sl, null); idbPut('meta:' + sl, null); delete customHas[sl]; delete BUF['custom:' + sl]; if (musicName && chainOf(musicName).includes(sl)) { stopMusic(); music(musicWant); } reopenSound(); }));
+      m.querySelectorAll('[data-play]').forEach((b) => (b.onclick = () => { actx(); const sl = b.dataset.play; const k = R.music; R.music = true; stopMusic(); music(sl); R.music = k; }));
+      void keep;
     });
   }
+  function reopenSound() { const box = menuEl.querySelector('.rm-box'); const y = box ? box.scrollTop : 0; openSound(); const nb = menuEl.querySelector('.rm-box'); if (nb) nb.scrollTop = y; }
+  // leaving the soundtrack menu goes back to whatever should be playing
+  const _closeMenu = closeMenu;
+  closeMenu = function () { _closeMenu(); if (open && musicWant && musicWant !== (B ? B.music : zoneMusic())) music(B ? B.music : zoneMusic()); };
 
   // ================================================================== BUDDIES — your league rivals, out in the world and levelling up
   const BUDDY_SPR = { gary: 'c22', kate: 'c17', larry: 'c16', machine: 'c21', yuki: 'c4', brick: 'c14', sofia: 'c12', dave: 'c3' };
@@ -1294,7 +1321,7 @@
     B = { ent, def, ehp: hp, emax: hp, shown: hp, phase: 'intro', intent: null, shield: 0, enrage: 0, logged: {}, turns: 0, fx: [], nums: [], parts: [], tw: [], q: [], clock: 0, stopUntil: 0, slowUntil: 0, slowScale: 1, shake: 0,
       hero: { ox: 0, oy: 0, sx: 1, sy: 1, pose: 'idle', ang: 0.55, trail: [], flash: 0, alpha: 1 }, foe: { ox: 0, oy: 0, sx: 1, sy: 1, flash: 0, alpha: 1, red: 0 },
       allyA: { ox: 0, oy: 0, pose: 'idle' }, cam: { z: 1, fx: 0.5, fy: 0.55 }, dim: 0, flashW: 0, lb: 0, shieldVis: 0,
-      ally: party, music: def.boss ? 'boss' : 'battle', sharp: (R.sharp ? (R.sharp > 1 ? R.sharp : 1.25) : 1) * (R.wellFed ? 1.2 : 1) };
+      ally: party, music: def.world != null ? 'worldboss' : def.boss ? 'boss' : def.elite ? 'elite' : 'battle', sharp: (R.sharp ? (R.sharp > 1 ? R.sharp : 1.25) : 1) * (R.wellFed ? 1.2 : 1) };
     R.sharp = 0; R.wellFed = 0; R.fights++; R.hp = Math.max(R.hp, 4); save();
     pickIntent();
     battleTransition(() => { buildBattle(); music(B.music); if (def.boss && !TEST()) bossIntro(); else { B.phase = 'player'; renderBattleUi(); } });
@@ -1308,7 +1335,7 @@
   function buildBattle() {
     battleEl = document.createElement('div'); battleEl.className = 'rb'; battleEl.id = 'rlBattle';
     battleEl.innerHTML = `<div class="rb-stage"><canvas id="rbCv"></canvas>
-        <div class="rb-bar rb-e"><div class="rb-n">${esc(B.def.name)} <span class="rb-lv">Lv ${B.ent.lvl || 1}</span></div><div class="rb-hp"><i class="trail" id="rbEHpT"></i><i id="rbEHp"></i></div><div class="rb-hpn" id="rbEHpN"></div></div>
+        <div class="rb-bar rb-e"><div class="rb-n">${esc(B.def.name)} <span class="rb-lv">Lv ${B.ent.lvl || 1}</span></div><div class="rb-hp"><i class="trail" id="rbEHpT"></i><i id="rbEHp"></i></div><div class="rb-hpn" id="rbEHpN"></div><div class="rb-aff" id="rbAff"></div></div>
         <div class="rb-bar rb-h"><div class="rb-n">${esc(heroName())}</div><div class="rl-hearts" id="rbHearts"></div>${B.ally ? `<div class="rb-ally">+ ${esc(B.ally.short)} Lv ${B.ally.lvl}</div>` : ''}</div>
         <div class="rb-intent" id="rbIntent"></div><div class="rb-banner" id="rbBanner"></div><div class="rb-boss" id="rbBoss"></div></div>
       <div class="rb-ui" id="rbUi"></div><div class="rb-reps" id="rbReps"></div>`;
@@ -1322,6 +1349,7 @@
     const pct = Math.max(0, B.ehp / B.emax * 100);
     battleEl.querySelector('#rbEHp').style.width = pct + '%';
     clearTimeout(B.trailT); B.trailT = setTimeout(() => { const t = battleEl && battleEl.querySelector('#rbEHpT'); if (t) t.style.width = pct + '%'; }, 420);
+    if (B.def.weak) { const k = lore(B.def); battleEl.querySelector('#rbAff').innerHTML = `<span class="af w">${k.weak ? 'WEAK ' + MOVE_NAME[B.def.weak].toUpperCase() : 'WEAK ?'}</span><span class="af r">${k.resist ? 'RESISTS ' + MOVE_NAME[B.def.resist].toUpperCase() : 'RESISTS ?'}</span>`; }
     battleEl.querySelector('#rbEHpN').textContent = `${Math.max(0, B.ehp)}/${B.emax}${B.def.boss && B.ehp < B.emax / 2 && B.ehp > 0 ? ' · ENRAGED' : ''}`;
     battleEl.querySelector('#rbHearts').innerHTML = heartsHtml(R.hp, maxHp()) + (B.shield ? `<span class="rb-sh">GUARD ${Math.round(B.shield * 100)}%</span>` : '');
     const it = battleEl.querySelector('#rbIntent');
@@ -1346,9 +1374,12 @@
     }
     ui.querySelector('[data-act="potion"]').disabled = !(R.potions && R.hp < maxHp());
     const ex = ui.querySelector('[data-act="elixir"]'); if (ex) ex.disabled = !(R.elixirs && R.hp < maxHp());
+    const kn = B.def.weak ? lore(B.def) : {};
+    ui.querySelectorAll('[data-mv]').forEach((b) => { const id = b.dataset.mv; let tag = ''; if (kn.weak && B.def.weak === id) tag = '<span class="mv-tag weak">WEAK ×1.5</span>'; else if (kn.resist && B.def.resist === id) tag = '<span class="mv-tag res">RESIST ×0.6</span>'; const nextMom = B.last && B.last !== id ? Math.min(3, (B.mom || 0) + 1) : B.last === id ? 0 : B.mom || 0; if (B.last === id && B.mom) tag += '<span class="mv-tag rep">breaks chain</span>'; else if (B.last && nextMom > (B.mom || 0)) tag += `<span class="mv-tag mom">chain +${nextMom * 10}%</span>`; const t = b.querySelector('.mv-tags') || b.appendChild(Object.assign(document.createElement('span'), { className: 'mv-tags' })); t.innerHTML = tag; });
     const rr = ui.querySelector('#rbRest');
     rr.className = 'rb-rest' + (rest ? '' : ' ready');
-    rr.innerHTML = rest ? `Catch your breath · <b>${rest}s</b> <span>(optional)</span>` : 'Your turn — choose a move';
+    const pips = `<span class="mom">${[1, 2, 3].map((i) => `<i class="${(B.mom || 0) >= i ? 'on' : ''}"></i>`).join('')}</span>`;
+    rr.innerHTML = (rest ? `Catch your breath · <b>${rest}s</b> <span>(optional)</span>` : 'Your turn — choose a move') + `<div class="rb-mom">Momentum ${pips}${(B.mom || 0) >= 3 ? ' <b>SURGE +30%</b>' : B.mom ? ` +${B.mom * 10}%` : ' · switch exercises to build it'}</div>`;
     if (rest) { clearTimeout(B.restT); B.restT = setTimeout(renderBattleUi, 1000); }
   }
   // ---------- rep counter ----------
@@ -1402,12 +1433,23 @@
   function spark(x, y, col, n, spd, kind) { for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = spd * (0.4 + Math.random() * 0.8); B.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - spd * 0.3, g: kind === 'dust' ? -20 : 900, life: 0.35 + Math.random() * 0.35, max: 0.7, c: col, kind: kind || 'spark' }); } }
   function healFx(n) { const w = bcv.width, h = bcv.height; for (let i = 0; i < 14; i++) B.parts.push({ x: w * (HX + (Math.random() - 0.5) * 0.12), y: h * GY - Math.random() * h * 0.1, vx: 0, vy: -60 - Math.random() * 60, g: 0, life: 0.9, max: 0.9, c: '#7dff9a', kind: 'plus' }); B.nums.push({ x: HX, y: 0.44, txt: '+' + n, c: '#7dff9a', t: 0, kind: 'heal' }); }
 
+  const MOVE_NAME = { strike: 'Strike', smash: 'Smash', quick: 'Flurry', guard: 'Guard' };
+  function lore(def) { R.lore = R.lore || {}; return (R.lore[def.lore] = R.lore[def.lore] || {}); }
+  function affinity(mv) { const d = B.def; if (!d.weak) return 1; return mv.id === d.weak ? 1.5 : mv.id === d.resist ? 0.6 : 1; }
+  function momentumMult() { return 1 + 0.1 * (B.mom || 0); }
   function playerMove(mv, amt) {
+    // Momentum: switching exercises keeps the chain going (+10% per step, up to +30%); repeating resets it
+    const chained = B.last && B.last !== mv.id; B.mom = chained ? Math.min(3, (B.mom || 0) + 1) : B.last === mv.id ? 0 : (B.mom || 0); B.last = mv.id;
+    const aff = affinity(mv); const kn = lore(B.def);
+    if (aff > 1 && !kn.weak) { kn.weak = 1; save(); at(0.4, () => { B.nums.push({ x: EX, y: 0.24, txt: `WEAK TO ${MOVE_NAME[mv.id].toUpperCase()}`, c: '#7dff9a', t: 0, kind: 'status' }); renderBattleUi(); }); }
+    if (aff < 1 && !kn.resist) { kn.resist = 1; save(); at(0.4, () => { B.nums.push({ x: EX, y: 0.24, txt: `RESISTS ${MOVE_NAME[mv.id].toUpperCase()}`, c: '#ff9b6b', t: 0, kind: 'status' }); renderBattleUi(); }); }
+    B.aff = aff; B.momNow = momentumMult();
+    if (B.mom >= 3) { B.nums.push({ x: HX, y: 0.3, txt: 'SURGE', c: '#ffd23f', t: 0, kind: 'status' }); snd('chime'); }
     B.phase = 'anim'; B.turns++; B.say = mv.timed ? `Guard! ${mv.ex} held for ${amt}s` : `${amt} ${mv.ex.toLowerCase()}!`; renderBattleUi();
     log(mv.ex, amt);
     const H = B.hero; const pw = 1 + Math.max(0, G.stats ? G.stats().power : 0) / 100;
     if (mv.timed) {
-      B.shield = Math.min(1, amt / 30); const counter = Math.round(amt * 0.25 * pw * B.sharp);
+      B.shield = Math.min(1, amt / 30); const counter = Math.round(amt * 0.25 * pw * B.sharp * B.momNow);
       H.pose = 'guard'; tw(H, { sy: 0.88, sx: 1.1 }, 0.12); at(0.12, () => tw(H, { sy: 1, sx: 1 }, 0.3, 'back'));
       tw(B, { shieldVis: B.shield }, 0.4, 'back'); snd('guard'); buzz('medium');
       B.fx.push({ img: 'fxRing', x: HX, y: GY - 0.08, t: 0, n: 5, sc: 1.5 });
@@ -1418,7 +1460,7 @@
       return;
     }
     const hits = mv.hits || 1; const rolls = [];
-    for (let i = 0; i < hits; i++) { const r = G.rollDamage ? G.rollDamage(Math.max(1, Math.round(amt * mv.mult * B.sharp / hits))) : { dmg: Math.round(amt * mv.mult / hits), crit: false }; if (hits > 1 && !r.crit && Math.random() < 0.15) { r.dmg *= 2; r.crit = true; } rolls.push(r); }
+    for (let i = 0; i < hits; i++) { const r = G.rollDamage ? G.rollDamage(Math.max(1, Math.round(amt * mv.mult * B.sharp * B.aff * B.momNow / hits))) : { dmg: Math.round(amt * mv.mult / hits), crit: false }; if (hits > 1 && !r.crit && Math.random() < 0.15) { r.dmg *= 2; r.crit = true; } rolls.push(r); }
     const big = mv.id === 'smash';
     // anticipation: lean back and coil
     H.pose = 'wind'; tw(H, { ox: -0.035, sx: 1.12, sy: 0.84 }, big ? 0.3 : 0.15, 'out'); snd('wind');
@@ -1455,7 +1497,9 @@
     F.ox = kb; tw(F, { ox: 0 }, 0.4, 'out'); F.sx = 0.82; F.sy = 1.14; tw(F, { sx: 1, sy: 1 }, 0.35, 'back');
     B.fx.push({ img: o.fx || 'fxHit', x: EX, y: GY - 0.1, t: 0, n: o.fx === 'fxSlash' || o.fx === 'fxCross' ? 4 : 5, sc: o.big ? 2.1 : crit ? 1.9 : 1.5 });
     spark(w * EX, h * (GY - 0.1), crit ? '#ffd23f' : '#ffffff', crit ? 22 : o.big ? 16 : 9, crit ? 520 : 380);
-    B.nums.push({ x: EX + (o.combo ? 0.05 : 0), y: 0.36 - (o.combo ? 0.05 : 0), txt: String(d), c: crit ? '#ffd23f' : o.ally ? '#9be7ff' : '#ffffff', t: 0, kind: crit ? 'crit' : o.big ? 'big' : 'hit' });
+    const weakHit = !o.ally && B.aff > 1, resHit = !o.ally && B.aff < 1;
+    B.nums.push({ x: EX + (o.combo ? 0.05 : 0), y: 0.36 - (o.combo ? 0.05 : 0), txt: String(d), c: crit ? '#ffd23f' : o.ally ? '#9be7ff' : weakHit ? '#7dff9a' : resHit ? '#c9b6a4' : '#ffffff', t: 0, kind: crit ? 'crit' : o.big || weakHit ? 'big' : 'hit' });
+    if (weakHit && !crit) { hitStop(40); shake(3); }
     if (crit) { hitStop(130); slowmo(0.35, 380); B.flashW = 0.5; tw(B, { flashW: 0 }, 0.3, 'lin'); punch(1.12, 0.62); shake(8); snd('crit'); buzz('heavy'); }
     else if (o.big) { hitStop(110); punch(1.07, 0.6); shake(10); buzz('heavy'); }
     else { hitStop(o.ally ? 40 : 70); shake(o.ally ? 2 : 4); buzz('medium'); }
@@ -1627,7 +1671,7 @@
     save(true);
     const drop = rewards.items[0] || null;
     setTimeout(() => {
-      if (!B) return; sfx('win', 0.55); banner(def.boss ? 'BOSS DEFEATED' : 'VICTORY');
+      if (!B) return; if (customHas.victory) music('victory'); else sfx('win', 0.55); banner(def.boss ? 'BOSS DEFEATED' : 'VICTORY');
       const ui = battleEl.querySelector('#rbUi');
       ui.innerHTML = `<div class="rv"><div class="rv-h">Spoils</div>
         <div class="rv-xp">${xp.map((x) => `<div class="rv-row"><span>${esc(x.ex)} <em>${x.amt}</em></span><b>+${x.xp} XP</b></div>`).join('') || '<div class="rv-row"><span>No sets logged</span></div>'}</div>

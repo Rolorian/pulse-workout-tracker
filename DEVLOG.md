@@ -75,3 +75,18 @@
 - Portal art can take half a second to appear the first time, while sprites load.
 - There are no building interiors yet, so favours happen outdoors.
 - Next up: combat depth, meaning enemy weaknesses and resistances per exercise and a Momentum combo meter. After that, building interiors.
+
+## 2026-10-31 · Milestone 4: tactical combat and a personal soundtrack
+- **Weaknesses and resistances.** Every creature belongs to one of five families: soft, slither, shell, fighter or spirit.
+  - Each family takes ×1.5 damage from one move and ×0.6 from another.
+  - Region bosses, dungeon lords and world bosses have families too.
+  - You discover the matchups by hitting with each move: "WEAK TO SMASH" or "RESISTS FLURRY" pops up and is remembered in `R.lore`.
+  - Once discovered, the enemy plate shows chips and the move buttons get WEAK or RESIST tags.
+- **Momentum.** Switching to a different exercise than last turn adds a step, worth +10% each, up to 3. At 3 you get SURGE (+30%). Repeating the same move resets it. The pips sit above the moves, and each button previews "chain +X%" or "breaks chain". This rewards varied training in a natural way.
+- **Soundtrack slots for every place and fight.** There are 18 slots:
+  - Places: Pulsehaven, an all-regions fallback, each of the 10 regions, and dungeons.
+  - Fights: battles, elite fights, bosses, world bosses, and a victory fanfare.
+  - Unset slots fall back down a chain: region → all regions → default; world boss → boss; elite → battle.
+  - A music volume slider is included.
+  - Files are stored in IndexedDB on the device only. Nothing copyrighted is shipped in the repo.
+- **Tested.** A slime fight played Strike → Flurry → Smash: resist ×0.6 and weak ×1.5 applied, momentum went 0 → 1 → 2, both lore entries were discovered, and there were no errors. The soundtrack menu renders all 18 slots.
