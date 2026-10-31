@@ -131,3 +131,23 @@
 - Every design is original. Only the general style is inspired by OSRS: no Jagex characters or art are copied.
 - ☰ ▸ "Character art: Pulse / Classic" switches back to the pack sprites at any time.
 - Next phases: buildings, trees and ground tiles; then monsters and bosses.
+
+## 2026-10-31 · Art Phases 2 + 3 + extras: the whole world in the Pulse style
+- **`tools/envgen.py`:**
+  - 13 seamless ground tiles: two grasses, meadow and forest trails, sand, flagstones, cobbles, brick, two snows, ice, water and dungeon flags.
+  - 40+ props:
+    - Buildings: a slate-roofed stone hall, a stone manor, a thatched timber cottage and a tiled timber training hall.
+    - Ruins, rubble, a shed, the market stall, the village gateway, the notice board, the field, the cave mouth, the rune waystone, dungeon stairs and an igloo.
+    - Trees and rocks: oak, birch, pine, snowy pine, a big bush, rocks, a boulder and stumps.
+    - Small props: a fence, flowers, tufts, a pot, a crate, a lantern, a signpost, a lily pad and a ladder.
+  - Everything is laid out in one atlas (`env2.png`) and resolved at draw time, so terrain blending, shadows and wind all work with the new art.
+- **`tools/mongen.py`:** 21 original creatures with front, back and side views and 4-frame animation:
+  - slime, shroomling, shellback, grass viper, moss blob, rock crab, cave bear
+  - mud golem, bog lurker, marsh lizard, wisp, sand viper, fire scarab, dust imp
+  - watcher, troll, ember sprite, fire bat, demon skull, sky sentinel
+  - and the scarecrow boss
+  
+  There's also a new dog.
+- **Your gear on your hero:** your equipped body armour recolours the tabard to its rarity colour, and an equipped helm turns the hair into a metal helm. This shows in the overworld and in battle.
+- ☰ ▸ "Art style: Pulse / Classic" now switches the whole world: characters, monsters, terrain and props.
+- **Tested:** village by day, night and dusk; Goblin Woods; a dungeon; Frostpeak; a battle with equipped gear; dialogue. 0 errors.

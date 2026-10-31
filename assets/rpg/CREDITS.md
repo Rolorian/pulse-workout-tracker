@@ -9,3 +9,8 @@
 Also from the Ninja Adventure Godot project (same author, CC0, https://github.com/pixel-boy/NinjaAdventure): `walls.png`, `interior.png`, `ruins.png`.
 
 Files used: all 25 character sheets and portraits (`chars/`, `face/`), all 22 monsters (`mon/`), the main tileset, effects, items, 5 music loops (village, wilds, dungeon, battle, boss) and sound effects.
+
+## Pulse art set (default)
+The default art (`chars2/`, `face2/`, `mon2/`, `env2.png`) is original work generated for Pulse by the scripts in `tools/` (`chargen.py`, `envgen.py`, `mongen.py`).
+Its chunky, earthy look takes stylistic inspiration from classic MMOs; no third-party characters or art are copied.
+The Ninja Adventure art remains available under ☰ ▸ Art style ▸ Classic.

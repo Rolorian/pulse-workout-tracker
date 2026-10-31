@@ -1,7 +1,7 @@
 /* Pulse Workout Tracker — service worker
    Cache-first for the app shell so it loads instantly and fully offline.
    Bump CACHE on every release so clients pick up the new files. */
-const CACHE = 'pulse-v18';
+const CACHE = 'pulse-v19';
 const SHELL = [
   './',
   './index.html',
@@ -79,6 +79,8 @@ const SHELL = [
   './assets/rpg/chars2/c7.png',
   './assets/rpg/chars2/c8.png',
   './assets/rpg/chars2/c9.png',
+  './assets/rpg/chars2/dog.png',
+  './assets/rpg/env2.png',
   './assets/rpg/face/c1.png',
   './assets/rpg/face/c10.png',
   './assets/rpg/face/c11.png',
@@ -173,6 +175,27 @@ const SHELL = [
   './assets/rpg/mon/m7.png',
   './assets/rpg/mon/m8.png',
   './assets/rpg/mon/m9.png',
+  './assets/rpg/mon2/m1.png',
+  './assets/rpg/mon2/m10.png',
+  './assets/rpg/mon2/m11.png',
+  './assets/rpg/mon2/m12.png',
+  './assets/rpg/mon2/m13.png',
+  './assets/rpg/mon2/m14.png',
+  './assets/rpg/mon2/m15.png',
+  './assets/rpg/mon2/m16.png',
+  './assets/rpg/mon2/m17.png',
+  './assets/rpg/mon2/m18.png',
+  './assets/rpg/mon2/m19.png',
+  './assets/rpg/mon2/m2.png',
+  './assets/rpg/mon2/m20.png',
+  './assets/rpg/mon2/m21.png',
+  './assets/rpg/mon2/m22.png',
+  './assets/rpg/mon2/m3.png',
+  './assets/rpg/mon2/m4.png',
+  './assets/rpg/mon2/m6.png',
+  './assets/rpg/mon2/m7.png',
+  './assets/rpg/mon2/m8.png',
+  './assets/rpg/mon2/m9.png',
   './assets/rpg/music/battle.mp3',
   './assets/rpg/music/boss.mp3',
   './assets/rpg/music/dungeon.mp3',
