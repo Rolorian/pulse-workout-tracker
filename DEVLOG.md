@@ -119,3 +119,15 @@
   - Hana and Ade at work.
 - **Performance:** the world now renders at CSS resolution with integer upscaling, and off-screen props and characters are culled. Measured 61 fps with everything on (it was 30 before the change and 38 before the overhaul) in headless Chromium at iPhone 14 Pro Max size.
 - **New doc:** STYLE_GUIDE.md.
+
+## 2026-10-31 · Art Phase 1: Pulse character set (approved style: chunky, earthy, OSRS-inspired originals)
+- `tools/chargen.py` is a character generator in the new house style. All 25 humanoids are generated from one template set:
+  - front, back and side templates
+  - 4-frame walk with arm swing
+  - attack, jump, knocked-down and victory poses
+  - top-left light shading and a 1-pixel ink outline
+- The output keeps the engine's sheet layout (64×112), so it works with no engine changes. Portraits are generated as well.
+- The cast covers: the hero, Oren, Mira, Bo, Pip, Hana, Tomas, Ade, Lin, the townsfolk, all 8 league buddies, the goblin, skeleton, Dark Knight, Titan Guard, Shadow and Frost Giant.
+- Every design is original. Only the general style is inspired by OSRS: no Jagex characters or art are copied.
+- ☰ ▸ "Character art: Pulse / Classic" switches back to the pack sprites at any time.
+- Next phases: buildings, trees and ground tiles; then monsters and bosses.

@@ -58,7 +58,7 @@
     fxRing: 'fx/f1.png', fxSpark: 'fx/f5.png', fxSlash: 'fx/f6.png', fxCross: 'fx/f7.png', fxArc: 'fx/f8.png', fxClaw: 'fx/f11.png', fxSmoke: 'fx/f18.png', fxHit: 'fx/f3.png',
     chest: 'items/big-treasure-chest.png', katana: 'items/katana.png', sword: 'items/sword.png'
   };
-  function srcOf(k) { if (SRC[k]) return A + SRC[k]; if (/^c\d+$/.test(k)) return `${A}chars/${k}.png`; if (/^m\d+$/.test(k)) return `${A}mon/${k}.png`; return null; }
+  function srcOf(k) { if (SRC[k]) return A + SRC[k]; if (/^c\d+$/.test(k)) return `${A}${R.art === 'classic' ? 'chars' : 'chars2'}/${k}.png`; if (/^m\d+$/.test(k)) return `${A}mon/${k}.png`; return null; }
   function img(k) { if (IMG[k]) return IMG[k]; const s = srcOf(k); if (!s) return null; const i = new Image(); i.src = s; IMG[k] = i; return i; }
   const ready = (k) => { const i = img(k); return i && i.complete && i.naturalWidth > 0; };
   const CORE = ['ts', 'ab', 'wl', 'inf', 'c15', 'fxSlash', 'fxCross', 'fxArc', 'fxRing', 'fxClaw', 'fxSmoke', 'fxSpark', 'chest', 'katana', 'sword'];
@@ -71,7 +71,7 @@
     x.drawImage(i, 0, 0); x.globalCompositeOperation = 'source-atop'; x.globalAlpha = a; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height);
     TINT[id] = c; return c;
   }
-  const faceUrl = (k) => (k === 'dog' ? `${A}face/dog.png` : /^c\d+$/.test(k) ? `${A}face/${k}.png` : `${A}face/c1.png`);
+  const faceUrl = (k) => { const f = R.art === 'classic' ? 'face' : 'face2'; return k === 'dog' ? `${A}face/dog.png` : /^c\d+$/.test(k) ? `${A}${f}/${k}.png` : `${A}${f}/c1.png`; };
 
   // ================================================================== AUDIO (WebAudio → volume works on iOS; your own MP3s live in IndexedDB)
   const BUF = {}; let musicNode = null, musicGain = null, musicWant = null, musicName = null;
@@ -1102,6 +1102,7 @@
       <button class="rm-item" data-m="shake">Screen shake <b>${['OFF', 'LOW', 'FULL'][R.shakeLvl == null ? 2 : R.shakeLvl]}</b></button>
       <button class="rm-item" data-m="music">Music <b>${R.music ? 'ON' : 'OFF'}</b></button>
       <button class="rm-item" data-m="joy">Controls <b>${R.joy ? 'STICK' : 'TAP'}</b></button>
+      <button class="rm-item" data-m="art">Character art <b>${R.art === 'classic' ? 'CLASSIC' : 'PULSE'}</b></button>
       <div class="rm-sep">Other screens</div>
       <div class="rm-grid"><button class="rm-item" data-go="map">Map log</button><button class="rm-item" data-go="dungeons">Dungeon runs</button><button class="rm-item" data-go="village">Village bundles</button><button class="rm-item" data-go="league">League</button></div>
       <button class="rm-item ghost" data-close>Back to the realm</button>`, (m) => {
@@ -1109,6 +1110,7 @@
         const k = x.dataset.m;
         if (k === 'music') { R.music = !R.music; save(); if (R.music) music(zoneMusic()); else stopMusic(); openMenu(); }
         else if (k === 'joy') { R.joy = !R.joy; save(); renderHud(); openMenu(); }
+        else if (k === 'art') { R.art = R.art === 'classic' ? 'pulse' : 'classic'; save(true); Object.keys(IMG).forEach((key) => { if (/^c\d+$/.test(key)) delete IMG[key]; }); Object.keys(TINT).forEach((key) => delete TINT[key]); Object.keys(ARTC).forEach((key) => delete ARTC[key]); ents.forEach((e) => img(e.img)); img('c15'); openMenu(); }
         else if (k === 'shake') { R.shakeLvl = ((R.shakeLvl == null ? 2 : R.shakeLvl) + 1) % 3; save(); openMenu(); }
         else if (k === 'bonds') openBonds();
         else if (k === 'travel') openTravel(); else if (k === 'moves') openMoves(); else if (k === 'sound') openSound(); else if (k === 'party') openParty();
