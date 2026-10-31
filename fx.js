@@ -98,7 +98,7 @@
     }
 
     // ambient seasonal particles
-    if (ambient && fxSettings.ambient && !prefersReduced) {
+    if (ambient && fxSettings.ambient && !prefersReduced && !document.body.classList.contains('realm-on')) {
       if (amb.length < ambient.max && Math.random() < ambient.rate * dt * 60) {
         const fromTop = ambient.dir !== 'up';
         amb.push({

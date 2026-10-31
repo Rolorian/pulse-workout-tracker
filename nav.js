@@ -10,7 +10,7 @@
   const TABS = [
     { id: 'today', icon: '🏠', name: 'Home' },
     { id: 'hero', icon: '🧬', name: 'Hero', subs: [['hero', '🧬 Hero'], ['bag', '🎒 Bag'], ['talents', '🌳 Talents'], ['pets', '🐾 Pets']] },
-    { id: 'adventure', icon: '⚔️', name: 'Adventure', subs: [['battle', '⚔️ Battle'], ['map', '🗺️ Map'], ['dungeons', '🏰 Dungeons'], ['village', '🏘️ Village'], ['league', '🏆 League']] },
+    { id: 'adventure', icon: '⚔️', name: 'Adventure', subs: [['realm', '🌲 Realm'], ['map', '🗺️ Map'], ['dungeons', '🏰 Dungeons'], ['village', '🏘️ Village'], ['league', '🏆 Battle']] },
     { id: 'loot', icon: '💰', name: 'Loot', subs: [['crates', '📦 Crates'], ['casino', '🎰 Casino'], ['shop', '🛒 Shop'], ['forge', '⚒️ Forge']] },
     { id: 'stats', icon: '📊', name: 'Stats', subs: [['progress', '📈 Progress'], ['history', '📅 History'], ['galaxy', '🌌 Galaxy'], ['future', '🔮 Future']] }
   ];
@@ -62,13 +62,13 @@
     const adv = el('section', 'section'); adv.id = 'adventure';
     adv.appendChild(subnav('adventure'));
     const banner = $('eventBanner'); if (banner) adv.appendChild(banner);
-    const pBattle = el('div', 'pane'); pBattle.dataset.pane = 'battle';
+    const pRealm = el('div', 'pane'); pRealm.dataset.pane = 'realm'; pRealm.innerHTML = '<div class="realm-ph"></div>';
     const pLeague = el('div', 'pane'); pLeague.dataset.pane = 'league';
     const pWorld = el('div', 'pane'); pWorld.dataset.pane = 'world';
     const rival = $('rivalCard'); if (rival) pLeague.appendChild(rival);
-    const battle = $('battle'); [...battle.children].forEach((c) => pBattle.appendChild(c));
+    const battle = $('battle'); [...battle.children].forEach((c) => pLeague.appendChild(c));
     const wr = $('worldRoot'); if (wr) pWorld.appendChild(wr);
-    adv.append(pBattle, pWorld, pLeague);
+    adv.append(pRealm, pWorld, pLeague);
     hero.after(adv);
     // ---------- LOOT ----------
     const loot = $('loot'); loot.prepend(subnav('loot'));
@@ -92,6 +92,8 @@
   function applyPanes(tab) {
     const sub = G.navSub(tab);
     document.querySelectorAll(`.navsub[data-tab="${tab}"] [data-sub]`).forEach((b) => b.classList.toggle('on', b.dataset.sub === sub));
+    const realm = tab === 'adventure' && sub === 'realm' && N.tab === 'adventure';
+    if (realm) { G.rpgOpen && G.rpgOpen(); } else if (G.rpgClose) G.rpgClose();
     if (tab === 'adventure') document.querySelectorAll('#adventure .pane').forEach((p) => (p.style.display = p.dataset.pane === (['map', 'dungeons', 'village'].includes(sub) ? 'world' : sub) ? '' : 'none'));
     if (tab === 'stats') {
       document.querySelectorAll('#stats .pane').forEach((p) => (p.style.display = p.dataset.pane === sub ? '' : 'none'));
@@ -111,7 +113,7 @@
     if (typeof render === 'function') render();
   };
   // keep old tab ids working (bookmarks, other modules)
-  const MAP = { today: ['today'], progress: ['stats', 'progress'], history: ['stats', 'history'], warmup: ['today'], minimum: ['today'], battle: ['adventure', 'battle'], world: ['adventure', 'map'], loot: ['loot'], hero: ['hero'] };
+  const MAP = { today: ['today'], progress: ['stats', 'progress'], history: ['stats', 'history'], warmup: ['today'], minimum: ['today'], battle: ['adventure', 'league'], realm: ['adventure', 'realm'], world: ['adventure', 'map'], loot: ['loot'], hero: ['hero'] };
   window.switchTab = function (id) { const m = MAP[id] || ['today']; G.nav(m[0], m[1]); };
   G.goLoot = () => G.nav('loot');
 

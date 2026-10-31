@@ -1,7 +1,7 @@
 /* Pulse Workout Tracker — service worker
    Cache-first for the app shell so it loads instantly and fully offline.
    Bump CACHE on every release so clients pick up the new files. */
-const CACHE = 'pulse-v12';
+const CACHE = 'pulse-v13';
 const SHELL = [
   './',
   './index.html',
@@ -26,7 +26,67 @@ const SHELL = [
   './herolife.js',
   './future.js',
   './tower.js',
-  './nav.js'
+  './rpg.js',
+  './nav.js',
+  './assets/rpg/chars/c1.png',
+  './assets/rpg/chars/c15.png',
+  './assets/rpg/chars/c19.png',
+  './assets/rpg/chars/c24.png',
+  './assets/rpg/chars/c6.png',
+  './assets/rpg/chars/c9.png',
+  './assets/rpg/chars/dog.png',
+  './assets/rpg/chars/slime.png',
+  './assets/rpg/face/c1.png',
+  './assets/rpg/face/c15.png',
+  './assets/rpg/face/c19.png',
+  './assets/rpg/face/c24.png',
+  './assets/rpg/face/c6.png',
+  './assets/rpg/face/c9.png',
+  './assets/rpg/face/dog.png',
+  './assets/rpg/fx/f1.png',
+  './assets/rpg/fx/f11.png',
+  './assets/rpg/fx/f18.png',
+  './assets/rpg/fx/f3.png',
+  './assets/rpg/fx/f5.png',
+  './assets/rpg/fx/f6.png',
+  './assets/rpg/fx/f7.png',
+  './assets/rpg/fx/f8.png',
+  './assets/rpg/items/arrow.png',
+  './assets/rpg/items/big-treasure-chest.png',
+  './assets/rpg/items/coin-2.png',
+  './assets/rpg/items/gold-coin.png',
+  './assets/rpg/items/gold-cup.png',
+  './assets/rpg/items/heart.png',
+  './assets/rpg/items/hud-heart.png',
+  './assets/rpg/items/katana.png',
+  './assets/rpg/items/life-pot.png',
+  './assets/rpg/items/little-treasure-chest.png',
+  './assets/rpg/items/scroll-fire.png',
+  './assets/rpg/items/sword.png',
+  './assets/rpg/music/battle.mp3',
+  './assets/rpg/music/village.mp3',
+  './assets/rpg/pixelify.ttf',
+  './assets/rpg/sfx/1.mp3',
+  './assets/rpg/sfx/13.mp3',
+  './assets/rpg/sfx/2.mp3',
+  './assets/rpg/sfx/3.mp3',
+  './assets/rpg/sfx/5.mp3',
+  './assets/rpg/sfx/9.mp3',
+  './assets/rpg/sfx/alert.mp3',
+  './assets/rpg/sfx/game-over.mp3',
+  './assets/rpg/sfx/gold-1.mp3',
+  './assets/rpg/sfx/kill.mp3',
+  './assets/rpg/sfx/magic-1.mp3',
+  './assets/rpg/sfx/menu-1.mp3',
+  './assets/rpg/sfx/menu-3.mp3',
+  './assets/rpg/sfx/power-up.mp3',
+  './assets/rpg/sfx/succes-2.mp3',
+  './assets/rpg/sfx/succes.mp3',
+  './assets/rpg/sfx/sword.mp3',
+  './assets/rpg/sfx/voice-1.mp3',
+  './assets/rpg/sfx/voice-2.mp3',
+  './assets/rpg/silkscreen.ttf',
+  './assets/rpg/tileset.png'
 ];
 
 self.addEventListener('install', (e) => {
@@ -59,8 +119,8 @@ self.addEventListener('fetch', (e) => {
     return res;
   };
 
-  // Images/icons rarely change: cache-first.
-  if (/\.(png|jpg|jpeg|svg|ico|webp)$/i.test(url.pathname)) {
+  // Images, game art, audio and fonts rarely change: cache-first.
+  if (/\.(png|jpg|jpeg|svg|ico|webp|mp3|ttf)$/i.test(url.pathname)) {
     e.respondWith(caches.match(req).then((cached) => cached || fetch(req).then(putInCache)));
     return;
   }
