@@ -176,7 +176,7 @@
   }
 
   // ---- easter eggs hidden around the app ----
-  const EGG_TABS = ['today', 'progress', 'history', 'battle', 'world', 'loot', 'warmup', 'minimum'];
+  const EGG_TABS = ['today', 'hero', 'adventure', 'loot', 'stats'];
   function placeEgg() {
     const old = document.getElementById('easterEgg'); if (old) old.remove();
     const ev = activeEvent(); if (!ev || !ev.eggs) return;
@@ -210,7 +210,7 @@
     if (mods.label && (!ev || !ev.mods || mods.label !== ev.mods.label)) bits.push(mods.label.replace(ev && ev.mods ? ev.mods.label + ' · ' : '', ''));
     strip.style.display = bits.length ? '' : 'none';
     strip.innerHTML = bits.join(' · ') + ' <span>›</span>';
-    strip.onclick = () => { const b = [...document.querySelectorAll('.tab')].find((x) => x.textContent.includes('World')); if (b) b.click(); };
+    strip.onclick = () => { if (G.nav) G.nav('adventure', 'map'); };
     G.setAmbient && G.setAmbient(ev ? ev.ambient : isBloodMoon() ? { emojis: ['🩸', '🌕'], rate: 0.01, max: 4 } : null);
     if (ev) document.body.dataset.event = ev.id; else delete document.body.dataset.event;
   }
@@ -574,8 +574,8 @@
     renderEventStrip();
     const banner = document.getElementById('eventBanner'); if (banner) banner.innerHTML = eventCardHtml();
     const root = document.getElementById('worldRoot'); if (!root) return;
-    root.innerHTML = `<div class="subtabs"><button class="stab ${wtab === 'map' ? 'on' : ''}" data-wt="map">🗺️ Map</button><button class="stab ${wtab === 'dg' ? 'on' : ''}" data-wt="dg">🏰 Dungeons${W.run ? ' •' : ''}</button><button class="stab ${wtab === 'village' ? 'on' : ''}" data-wt="village">🏘️ Village</button></div>
-      ${wtab === 'map' ? mapHtml() : wtab === 'village' ? '<div id="villageRoot"></div>' : dungeonsHtml()}`;
+    wtab = (G.navSub && { map: 'map', dungeons: 'dg', village: 'village' }[G.navSub('adventure')]) || wtab;
+    root.innerHTML = `${wtab === 'map' ? mapHtml() : wtab === 'village' ? '<div id="villageRoot"></div>' : dungeonsHtml()}`;
     if (wtab === 'village' && G.renderVillage) G.renderVillage(document.getElementById('villageRoot'));
     root.querySelectorAll('[data-wt]').forEach((b) => (b.onclick = () => { wtab = b.dataset.wt; G.renderWorld(); G.sfx && G.sfx('tick'); }));
     root.querySelectorAll('[data-node]').forEach((b) => (b.onclick = () => stageSheet(Number(b.dataset.node))));

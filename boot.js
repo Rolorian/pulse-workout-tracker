@@ -8,6 +8,8 @@
     const L = [];
     const pad = (k) => (k + ' ').padEnd(12, '·') + ' ';
     try { const h = G.hero(); const H = G.heroState(); L.push([pad('HERO'), `${H.name} · ${h.cls.icon} ${h.cls.name} · Lv ${h.level}`, h.cls.color]); } catch (e) {}
+    try { const m = G.heroMood && G.heroMood(); const q = G.heroRequestOpen && G.heroRequestOpen(); if (m) L.push([pad('MOOD'), `${m.icon} ${m.word}${q ? ' · has a request for you' : ''}${G.unreadLetters && G.unreadLetters() ? ` · 📬 ${G.unreadLetters()} letter${G.unreadLetters() > 1 ? 's' : ''}` : ''}`, '#ff9fd0']); } catch (e) {}
+    try { const t = G.towerStatus && G.towerStatus(); if (t) L.push([pad('TOWER'), `${t.height} blocks · this week ${t.thisN}/${t.goal}${t.wobble ? ' · ⚠ WOBBLING' : ''}`, t.wobble ? '#ff6b7a' : '#a7b4c2']); } catch (e) {}
     try { const s = getStreak(); L.push([pad('STREAK'), s ? `${s} day${s > 1 ? 's' : ''} 🔥` : 'offline — train today to reignite', s ? '#ffb86b' : '#ff6b7a']); } catch (e) {}
     try {
       const P = G._plank && G._plank.state();

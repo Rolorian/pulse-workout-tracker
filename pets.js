@@ -41,7 +41,8 @@
     const vol = 1 + Math.min(3, xp / 50);
     const lvl = 1 + skillLevel(w.exercise) / 99;
     const sanct = G.villagePerk && G.villagePerk('sanctuary') ? 1.5 : 1;
-    return Math.min(0.05, (vol * lvl * sanct) / 400);
+    const dream = G.dreamPetBoost && G.dreamPetBoost() ? 3 : 1;
+    return Math.min(0.05, (vol * lvl * sanct * dream) / 400);
   }
   G.petChance = chance;
 

@@ -170,7 +170,7 @@
     const sb = setBonus();
     if (sb) { s.power += sb.pct; s.xp += sb.pct; s.coin += sb.pct; }
     // class perks, traits, talents and weak points from the Hero sheet
-    [G.heroBonus, G.petBonus, G.villageBonus].forEach((fn) => { try { const hb = fn ? fn() : null; if (hb) Object.keys(s).forEach((k) => { if (hb[k]) s[k] += hb[k]; }); } catch (e) {} });
+    [G.heroBonus, G.petBonus, G.villageBonus, G.bondBonus].forEach((fn) => { try { const hb = fn ? fn() : null; if (hb) Object.keys(s).forEach((k) => { if (hb[k]) s[k] += hb[k]; }); } catch (e) {} });
     const now = Date.now(); const e = S.effects;
     let xpMult = 1, coinMult = 1;
     if (e.xp && e.xp.until > now) xpMult *= e.xp.mult;
@@ -383,7 +383,7 @@
       G.emit && G.emit('workout', w);
     });
     S.seen = [...seen].slice(-6000);
-    if (coinsTotal || drops.length) G.reward({ coins: coinsTotal, items: drops }, { label: '💪', el: document.querySelector('.bottom button') });
+    if (coinsTotal || drops.length) G.reward({ coins: coinsTotal, items: drops }, { label: '💪', el: document.getElementById('fab') || document.querySelector('.bottom button') });
     else save();
     if (d.coins >= coinCap() && !d.capWarned) { d.capWarned = true; save(); setTimeout(() => showToast('🪙 Daily training coin cap reached — quests, battles & events still pay out!', null, null, 5000), 3800); }
   }
@@ -442,9 +442,9 @@
     save(); G.sfx && G.sfx('coin');
     if (typeof haptic === 'function') haptic('medium');
     showToast(`🛡️ Equipped ${it.name}`, null, null, 2200);
-    G.renderLoot();
+    G.renderLoot(); G.renderHero && G.renderHero();
   }
-  function unequip(slot) { delete S.equip[slot]; save(); G.renderLoot(); }
+  function unequip(slot) { delete S.equip[slot]; save(); G.renderLoot(); G.renderHero && G.renderHero(); }
   function applyCosmetic(id) {
     const it = BY_ID[id]; if (!it) return;
     if (it.type === 'theme') S.theme = id; else S.title = id;
@@ -881,10 +881,60 @@
   }
   G.itemSheet = itemSheet;
 
+  // ---------------- gear screens (shown in Hero) ----------------
+  G.SLOTS = SLOTS;
+  G.slotHtml = function (slotId) {
+    const sl = SLOTS.find((x) => x.id === slotId); const inst = findInst(S.equip[slotId]); const it = inst && BY_ID[inst.id];
+    return `<button class="dslot" data-slot="${slotId}">${it ? itemCard(it, inst) : `<div class="icard empty"><div class="ii">${sl.icon}</div></div>`}<span>${sl.name}</span></button>`;
+  };
+  G.statBarHtml = function () {
+    const st = G.stats();
+    return `<div class="statbar">${['power', 'xp', 'coin', 'crit', 'luck'].map((k) => `<div><b>${k === 'crit' ? st.critChance : st[k]}%</b><span>${STAT_LABEL[k]}</span></div>`).join('')}</div>
+      <div class="muted" style="text-align:center">${st.set ? `<span style="color:${TIERS[st.set.tier].color}">${MATERIALS[st.set.tier]} set bonus +${st.set.pct}%</span> · ` : 'Full armour set of one material = bonus · '}damage ×${(1 + st.power / 100).toFixed(2)} · XP ×${st.xpMult} · coins ×${st.coinMult}</div>`;
+  };
+  function bindItems(el) {
+    el.querySelectorAll('[data-uid]').forEach((b) => (b.onclick = () => itemSheet(Number(b.dataset.uid))));
+    el.querySelectorAll('[data-cos]').forEach((b) => (b.onclick = () => itemSheet(null, b.dataset.cos)));
+    el.querySelectorAll('[data-slot]').forEach((b) => (b.onclick = () => openSlot(b.dataset.slot)));
+  }
+  G.bindItems = bindItems;
+  G.renderBag = function (el) {
+    if (!el) return;
+    const bag = bagItems(); const bank = S.items.filter((i) => i.bank && !equippedUids().has(i.uid));
+    el.innerHTML = `<div class="card"><div class="cardhead"><h2>🎒 Bag</h2><span class="muted">${bag.length}/${BAG_SIZE} · tap an item</span></div>
+        <div class="bag">${Array.from({ length: BAG_SIZE }, (_, i) => { const inst = bag[i]; return inst ? `<button class="bslot" data-uid="${inst.uid}">${itemCard(BY_ID[inst.id], inst, inst.locked ? 'locked' : '')}</button>` : '<div class="bslot"><div class="icard empty"></div></div>'; }).join('')}</div></div>
+      <div class="card"><div class="cardhead"><h2>🏦 Bank</h2><span class="muted">${bank.length} items</span></div>
+        ${bank.length ? `<div class="bag">${bank.map((inst) => `<button class="bslot" data-uid="${inst.uid}">${itemCard(BY_ID[inst.id], inst)}</button>`).join('')}</div>` : '<div class="empty">Overflow from a full bag lands here.</div>'}</div>
+      <div class="card"><div class="cardhead"><h2>🎨 Cosmetics</h2><span class="muted">${S.owned.length} owned</span></div>
+        <div class="bag">${S.owned.map((id) => { const it = BY_ID[id]; if (!it) return ''; const act = S.theme === id || S.title === id || (id === 'theme_emerald' && !S.theme); return `<button class="bslot" data-cos="${id}">${itemCard(it, null, act ? 'active' : '')}</button>`; }).join('')}</div>
+        <div class="muted">Themes recolour the whole app, titles show under the logo.</div></div>`;
+    bindItems(el);
+  };
+  // slot picker: what's equipped + everything that fits, with stat differences
+  function openSlot(slotId) {
+    const sl = SLOTS.find((x) => x.id === slotId); const cur = findInst(S.equip[slotId]); const curIt = cur && BY_ID[cur.id];
+    const eq = equippedUids();
+    const cands = S.items.filter((i) => { const it = BY_ID[i.id]; return it && it.type === 'gear' && it.slot === slotId && !eq.has(i.uid); })
+      .sort((a, b) => BY_ID[b.id].tier - BY_ID[a.id].tier || (b.ench || 0) - (a.ench || 0));
+    const cs = cur ? instStats(cur) : {};
+    const diff = (inst) => { const st = instStats(inst); const ks = new Set([...Object.keys(st), ...Object.keys(cs)]); const out = [...ks].map((k) => { const d = r1((st[k] || 0) - (cs[k] || 0)); return d ? `<span class="stat ${d > 0 ? 'up' : 'down'}">${STAT_LABEL[k]} ${d > 0 ? '+' : ''}${d}%</span>` : ''; }).join(''); return out || '<span class="muted">same stats</span>'; };
+    const html = `<div class="cz-title" style="text-align:left">${sl.icon} ${sl.name} slot</div>
+      ${curIt ? `<div class="shop-row">${itemCard(curIt, cur)}<div class="crate-main"><div class="crate-name" style="color:${TIERS[curIt.tier].color}">${esc(curIt.name)}${cur.ench ? ' +' + cur.ench : ''}</div><div class="drop-stats sm">${statLines(curIt, cur)}</div></div>
+        <div class="row2" style="flex-direction:column;gap:4px"><button class="gbtn sm" data-info="${cur.uid}">Details</button><button class="gbtn ghost sm" data-unequip="1">Unequip</button></div></div>` : '<div class="muted">Nothing equipped.</div>'}
+      <div class="muted" style="margin:12px 0 4px">From your bag & bank (${cands.length})</div>
+      ${cands.length ? cands.map((inst) => { const it = BY_ID[inst.id]; return `<div class="shop-row">${itemCard(it, inst)}<div class="crate-main"><div class="crate-name" style="color:${TIERS[it.tier].color}">${esc(it.name)}${inst.ench ? ' +' + inst.ench : ''}</div><div class="drop-stats sm">${diff(inst)}</div></div><button class="gbtn sm" data-equip="${inst.uid}">Equip</button></div>`; }).join('')
+        : `<div class="empty">No ${sl.name.toLowerCase()} items yet — open crates, visit the shop or clear dungeons.</div>`}`;
+    const sh = G.sheet(html);
+    sh.querySelectorAll('[data-equip]').forEach((b) => (b.onclick = () => { equip(Number(b.dataset.equip)); G.closeSheet(); }));
+    const inf = sh.querySelector('[data-info]'); if (inf) inf.onclick = () => itemSheet(Number(inf.dataset.info));
+    const un = sh.querySelector('[data-unequip]'); if (un) un.onclick = () => { unequip(slotId); G.closeSheet(); };
+  }
+  G.openSlot = openSlot;
+
   // ---------------- Loot tab UI ----------------
   let tab = 'crates';
   let fuseSel = [];
-  G.goLoot = function () { const b = [...document.querySelectorAll('.tab')].find((x) => x.textContent.includes('Loot')); if (b) b.click(); };
+  G.goLoot = function () { if (G.nav) G.nav('loot'); };
 
   function updateWallet() {
     const c = document.getElementById('coinCount'), g = document.getElementById('gemCount');
@@ -909,7 +959,7 @@
     updateWallet();
     if (!root) return;
     const d = daily(); const st = G.stats();
-    const tabs = [['crates', '📦 Crates'], ['casino', '🎰 Casino'], ['gear', '🛡️ Gear'], ['shop', '🛒 Shop'], ['forge', '⚒️ Forge'], ['log', '📖 Log']];
+    tab = (G.navSub && G.navSub('loot')) || tab;
     let body = '';
     if (tab === 'crates') {
       body = `<div class="card"><div class="cardhead"><h2>📦 Loot Crates</h2><span class="muted">Pity: ${S.pity}/50 → Legendary</span></div>
@@ -958,7 +1008,7 @@
       const gear = S.items.filter((i) => BY_ID[i.id].type === 'gear' && !eq.has(i.uid) && !i.locked).sort((a, b) => BY_ID[a.id].tier - BY_ID[b.id].tier);
       fuseSel = fuseSel.filter((u) => gear.some((g) => g.uid === u));
       body = `<div class="card"><div class="cardhead"><h2>✨ Enchanting</h2><span class="muted">${S.dust} dust</span></div>
-        <div class="muted">Tap any item in your 🛡️ Gear bag to enchant it from +0 up to +10. From +5, a failed enchant can SHATTER the item — pay 5 💎 for a blessed attempt to make it safe.</div></div>
+        <div class="muted">Tap any item in Hero › 🎒 Bag to enchant it from +0 up to +10. From +5, a failed enchant can SHATTER the item — pay 5 💎 for a blessed attempt to make it safe.</div></div>
         <div class="card"><div class="cardhead"><h2>🔮 Fusion</h2><span class="muted">${fuseSel.length}/3 selected</span></div>
         <div class="muted" style="margin-bottom:8px">Pick 3 gear items of the same tier → 1 item of the next tier (5% chance to jump two).</div>
         ${gear.length ? `<div class="bag">${gear.map((inst) => `<button class="bslot" data-fuse="${inst.uid}">${itemCard(BY_ID[inst.id], inst, fuseSel.includes(inst.uid) ? 'sel' : '')}</button>`).join('')}</div>` : '<div class="empty">No unlocked spare gear yet.</div>'}
@@ -966,12 +1016,13 @@
         <div class="card"><div class="cardhead"><h2>♻️ Salvage</h2></div>
         <div class="muted" style="margin-bottom:8px">Turns unequipped, unlocked gear into dust (used for enchanting).</div>
         <div class="row2"><button class="gbtn ghost" data-salv="0">All Common</button><button class="gbtn ghost" data-salv="1">Uncommon & below</button><button class="gbtn ghost" data-salv="2">Rare & below</button></div></div>`;
-    } else if (tab === 'log') {
+    }
+    if (tab === 'log' || tab === 'forge') {
       const groups = [['Weapons', (i) => i.slot === 'weapon'], ['Armour', (i) => ARMOUR.includes(i.slot)], ['Jewellery', (i) => i.slot === 'ring' || i.slot === 'amulet'],
         ['Consumables', (i) => i.type === 'cons'], ['Themes & Titles', (i) => i.type === 'theme' || i.type === 'title'], ['Rival trophies', (i) => !!i.rival], ['Event exclusives', (i) => !!i.event]];
       const all = CATALOG.filter((i) => !i.noDrop);
       const have = all.filter((i) => S.log[i.id]).length;
-      body = `<div class="card"><div class="cardhead"><h2>📖 Collection Log</h2><span class="muted">${have}/${all.length} · ${Math.round(have / all.length * 100)}%</span></div>
+      body += `<div class="card"><div class="cardhead"><h2>📖 Collection Log</h2><span class="muted">${have}/${all.length} · ${Math.round(have / all.length * 100)}%</span></div>
         <div class="xp-bar"><div class="fill" style="width:${have / all.length * 100}%"></div></div>
         <div class="muted" style="margin-top:6px">Best ever drop: <span style="color:${TIERS[S.stats.best || 0].color}">${TIERS[S.stats.best || 0].name}</span> · Crates opened: ${S.stats.crates || 0} · Items shattered: ${S.stats.breaks || 0}</div></div>
         ${groups.map(([name, f]) => {
@@ -989,10 +1040,8 @@
         <div class="muted">Training coins today: ${d.coins}/${coinCap()} · Drops today: ${d.drops}/${dropCap()}</div>
         ${effectsHtml()}
       </div>
-      <div class="subtabs">${tabs.map(([id, n]) => `<button class="stab ${tab === id ? 'on' : ''}" data-t="${id}">${n}</button>`).join('')}</div>
       ${body}`;
 
-    root.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => { tab = b.dataset.t; G.renderLoot(); G.sfx && G.sfx('tick'); }));
     root.querySelectorAll('[data-crate]').forEach((b) => (b.onclick = () => openCrate(b.dataset.crate)));
     root.querySelectorAll('[data-g]').forEach((b) => (b.onclick = () => ({ spin: spinWheel, flip: coinFlip, scratch: scratchCard, slots })[b.dataset.g]()));
     root.querySelectorAll('[data-uid]').forEach((b) => (b.onclick = () => itemSheet(Number(b.dataset.uid))));

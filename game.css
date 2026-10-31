@@ -415,3 +415,104 @@
 .vc-new{position:absolute;inset:0;display:grid;place-items:center;font-size:104px;opacity:0;animation:vcPop .9s 1.3s cubic-bezier(.2,1.6,.4,1) forwards;filter:drop-shadow(0 0 24px #f5c542)}
 @keyframes vcPop{from{opacity:0;transform:scale(.2) rotate(-20deg)}to{opacity:1;transform:none}}
 .vcer .cer-name{animation-delay:1.6s}
+
+/* ---------- bottom navigation ---------- */
+.app{padding-bottom:calc(env(safe-area-inset-bottom) + 104px) !important}
+.section.retired{display:none !important}
+.navbar{position:fixed;left:0;right:0;bottom:0;z-index:58;display:flex;justify-content:space-around;padding:6px max(8px,calc((100vw - 620px)/2)) calc(env(safe-area-inset-bottom) + 6px);background:rgba(7,10,15,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+.navbtn{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;color:var(--muted);padding:6px 0;cursor:pointer;font-family:inherit}
+.navbtn .nb-ic{font-size:21px;filter:grayscale(.7);transition:transform .15s,filter .15s}
+.navbtn .nb-l{font:800 9.5px var(--mono);letter-spacing:.6px;text-transform:uppercase}
+.navbtn.on{color:var(--accent)}.navbtn.on .nb-ic{filter:none;transform:translateY(-2px) scale(1.12)}
+.navbtn.on::before{content:"";position:absolute;top:-6px;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--accent);box-shadow:var(--glow)}
+.nbadge,.sbadge{display:none;position:absolute;top:2px;right:calc(50% - 22px);min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font:800 9px/16px var(--mono);text-align:center}
+.sbadge{position:relative;top:-6px;right:auto;margin-left:3px}
+.fab{position:fixed;right:max(16px,calc((100vw - 620px)/2 + 16px));bottom:calc(env(safe-area-inset-bottom) + 76px);z-index:59;width:60px;height:60px;border-radius:20px;border:0;background:var(--accent-grad);color:#06130d;font-size:32px;font-weight:900;box-shadow:0 10px 26px rgba(0,0,0,.45),var(--glow);cursor:pointer;transition:transform .12s}
+.fab:active{transform:scale(.9)}
+.toast{bottom:calc(env(safe-area-inset-bottom) + 146px) !important}
+.enc-bubble{right:auto !important;left:14px;bottom:calc(env(safe-area-inset-bottom) + 78px) !important}
+.navsub{margin-bottom:12px}
+.fold{padding:0}.fold-h{width:100%;display:flex;justify-content:space-between;align-items:center;background:none;border:0;color:var(--text);font:800 12px var(--mono);letter-spacing:1.2px;text-transform:uppercase;padding:16px;cursor:pointer}
+.fold-arrow{transition:transform .2s;color:var(--muted)}.fold.open .fold-arrow{transform:rotate(180deg)}
+.fold-body{display:none;padding:0 4px 8px}.fold.open .fold-body{display:block}
+.fold-body .card.flat{background:none;border:0;box-shadow:none;margin:0;padding:6px 12px}
+.linkbtn{background:none;border:0;color:var(--accent);font:inherit;font-size:11px;cursor:pointer;text-decoration:underline;padding:0}
+
+/* ---------- hero: equipment around the avatar ---------- */
+.hero-idc{text-align:center;margin-bottom:8px}
+.equip-grid{display:grid;grid-template-columns:1fr 1.5fr 1fr;grid-template-areas:"ring helm amulet" "weapon av body" "gloves av legs" ". boots .";gap:8px;align-items:center;justify-items:center;max-width:360px;margin:0 auto 10px}
+.eg-ring{grid-area:ring}.eg-helm{grid-area:helm}.eg-amulet{grid-area:amulet}.eg-weapon{grid-area:weapon}.eg-body{grid-area:body}.eg-gloves{grid-area:gloves}.eg-legs{grid-area:legs}.eg-boots{grid-area:boots}
+.equip-grid .dslot{width:62px}.equip-grid .dslot .icard .ii{font-size:22px}
+.eg-av{grid-area:av;position:relative;width:100%;display:flex;justify-content:center}
+.eg-av canvas{width:136px;height:136px;image-rendering:pixelated;border-radius:18px;background:radial-gradient(circle at 50% 60%,rgba(255,255,255,.05),transparent 70%),var(--bg);border:1px solid var(--line)}
+.eg-mood{position:absolute;top:-6px;right:4px;font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+.eg-stage{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);white-space:nowrap;font:800 9px var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:2px 7px;color:var(--gold)}
+.hero-card .hero-cls{justify-content:center;margin-top:6px}.hero-card .hero-perk{text-align:center}
+.stat.up{color:var(--green);border-color:rgba(73,227,154,.4)}.stat.down{color:var(--red);border-color:rgba(255,107,122,.4)}
+
+/* ---------- home hero companion ---------- */
+.hh{border-color:color-mix(in srgb,#ff9fd0 30%,var(--line))}
+.hh.asleep{background:linear-gradient(160deg,#141a35,var(--panel) 70%)}
+.hh-top{display:flex;gap:12px;align-items:flex-start;position:relative}
+#homeHeroCv{width:76px;height:76px;flex:none;image-rendering:pixelated;border-radius:14px;background:var(--bg);border:1px solid var(--line)}
+.hh-id{flex:1;min-width:0;padding-right:34px}.hh-id>b{font-size:15px}
+.hh-say{margin-top:6px;font-size:13px;line-height:1.4;font-style:italic}
+.hh-req{margin-top:6px}.hh-req .xp-bar{margin:8px 0 4px}
+.hh-row{display:flex;justify-content:space-between;align-items:center;gap:6px}.hh-row .muted{font-size:10px}
+.hh-no{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:3px 8px;font-size:10px;cursor:pointer;white-space:nowrap}
+.hh-dream{margin-top:6px;font-size:12.5px;line-height:1.45;color:#c7b8ff}.hh-dream div{font-style:italic;margin:3px 0}
+.hh-dreamline{margin-top:10px;font-size:12px;padding:8px 10px;border-radius:10px;background:rgba(199,184,255,.08);border:1px solid rgba(199,184,255,.3)}
+.hh-mail{position:absolute;top:0;right:0;background:var(--panel2);border:1px solid var(--line);border-radius:12px;font-size:20px;padding:6px 8px;cursor:pointer}
+.hh-mail span{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font:800 9px/16px var(--mono);min-width:16px;height:16px;border-radius:9px;padding:0 4px}
+
+/* ---------- letters ---------- */
+.inbox{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.letter-row{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--text);cursor:pointer;margin-bottom:6px;font-size:13px}
+.letter-row.unread{border-color:color-mix(in srgb,var(--gold) 50%,var(--line))}.letter-row.unread b::after{content:" •";color:var(--gold)}
+.lr-ic{font-size:24px}
+.letter{background:linear-gradient(180deg,#f3e6c8,#e8d6ad);color:#3a2a14;border-radius:14px;padding:18px 16px;box-shadow:inset 0 0 40px rgba(120,80,20,.25);font-family:Georgia,'Times New Roman',serif;margin-right:2px}
+.letter.future{background:linear-gradient(180deg,#e6e0ff,#cfc4ff);color:#251a4a}
+.letter.villager{background:linear-gradient(180deg,#e8f3dc,#d4e8c0);color:#22361a}
+.lt-from{display:flex;justify-content:space-between;gap:8px;font-size:12px;opacity:.85;flex-wrap:wrap}
+.lt-subj{font-size:19px;font-weight:700;margin:10px 0 6px}
+.lt-body p{font-size:14.5px;line-height:1.55;margin:0 0 10px;opacity:0;animation:ltIn .5s forwards}
+@keyframes ltIn{to{opacity:1}}
+.lt-sign{font-style:italic;text-align:right}
+.lt-gift{margin:10px 0;font-family:var(--mono);font-size:12px}.lt-gift .gbtn{width:100%}
+.letter .gbtn.ghost{background:rgba(0,0,0,.08);color:inherit;border-color:rgba(0,0,0,.15);width:100%}
+
+/* ---------- growth ---------- */
+.grow-line{display:flex;justify-content:space-between;gap:4px}
+.gs{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);opacity:.45;text-align:center}
+.gs span{font-size:18px}.gs b{font-size:9px}.gs i{font:600 8px var(--mono);color:var(--muted);font-style:normal}
+.gs.done{opacity:.85}.gs.cur{opacity:1;border-color:var(--gold);box-shadow:0 0 12px rgba(245,197,66,.3)}
+.grow-pair{position:relative;display:flex;align-items:center;gap:12px;margin:18px 0}
+.grow-pair canvas{width:120px;height:120px;image-rendering:pixelated;border-radius:16px;background:var(--bg);border:1px solid var(--line)}
+.grow-pair span{font-size:26px;color:var(--gold)}
+
+/* ---------- future you ---------- */
+.futures{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fut{border-radius:14px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;border:1px solid var(--line)}
+.fut.good{background:linear-gradient(180deg,rgba(73,227,154,.12),transparent);border-color:rgba(73,227,154,.4)}
+.fut.bad{background:linear-gradient(180deg,rgba(120,120,130,.12),transparent)}
+.fut-h{font:800 11px var(--mono);text-transform:uppercase;letter-spacing:1px}
+.fut canvas{width:110px;height:110px;image-rendering:pixelated;border-radius:14px;background:var(--bg)}
+.fut-cvw{position:relative}.fut.bad canvas{filter:grayscale(1) brightness(.55) sepia(.3)}
+.fut-dust{position:absolute;top:-4px;right:-6px;font-size:22px}.fut-sofa{position:absolute;bottom:-6px;left:-8px;font-size:26px}
+.fut-l{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;text-align:center}.fut-l b{font-size:13px}.fut.bad .fut-l{color:var(--muted)}
+.road{position:relative;display:flex;flex-direction:column;gap:12px;padding-left:6px}
+.road::before{content:"";position:absolute;left:22px;top:10px;bottom:10px;width:2px;background:repeating-linear-gradient(180deg,var(--line) 0 6px,transparent 6px 10px)}
+.rd{display:flex;gap:12px;position:relative}
+.rd-dot{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--panel2);border:2px solid var(--line);font-size:16px;z-index:1}
+.rd.ahead .rd-dot{border-color:var(--green);box-shadow:0 0 12px rgba(73,227,154,.4)}.rd.behind .rd-dot{border-color:var(--red)}
+.rd-main{flex:1;min-width:0}.rd-t{font-weight:800;font-size:13px}.rd-d{font-size:11px;color:var(--muted);margin:2px 0 5px}.rd-d b{color:var(--text)}
+.rd-d .up{color:var(--green);font-weight:800}.rd-d .down{color:var(--red);font-weight:800}
+.rd-bar{height:4px;border-radius:3px;background:var(--line);overflow:hidden;margin-bottom:3px}.rd-bar div{height:100%;background:var(--accent-grad)}
+.rd-main .muted{font-size:10px}
+
+/* ---------- habit tower ---------- */
+.tower-cv{width:100%;height:240px;display:block;border-radius:14px;margin-bottom:10px}
+.tower-card.wobble{border-color:rgba(255,107,122,.5)}
+.tw-week{font-size:13px;margin-bottom:6px}
+.tw-warn{font-size:12px;padding:10px;border-radius:12px;background:rgba(255,107,122,.08);border:1px solid rgba(255,107,122,.4);margin:8px 0;display:flex;flex-direction:column;gap:8px}
+.tw-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:8px}

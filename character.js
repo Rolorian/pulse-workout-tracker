@@ -81,6 +81,7 @@
   G.talent = (id) => H.talents[id] || 0;
   function treeSpent(stat) { return TALENTS[stat].reduce((a, t) => a + (H.talents[t[0]] || 0), 0); }
   function treePoints(stat, base) { return Math.floor(base[stat] / 10); }
+  G.talentSpent = treeSpent;
 
   // ---------------- traits & weak points ----------------
   const TRAITS = [
@@ -267,15 +268,17 @@
   function tierCol(it, t) { if (!it) return null; if (it.tier === 7) return `hsl(${(t / 20) % 360},90%,70%)`; return G.TIERS[it.tier].color; }
   function line(px, x0, y0, x1, y1, c) { const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let err = dx + dy; for (;;) { px(x0, y0, c); if (x0 === x1 && y0 === y1) break; const e2 = 2 * err; if (e2 >= dy) { err += dy; x0 += sx; } if (e2 <= dx) { err += dx; y0 += sy; } } }
 
-  function drawAvatar(cv, t) {
+  function drawAvatar(cv, t, opts) {
+    opts = opts || {};
+    const g = opts.stage != null ? opts.stage : (G.heroGrowth ? G.heroGrowth().stage : 0);
     const ctx = cv.getContext('2d'); const S = cv.width / 32;
     ctx.clearRect(0, 0, cv.width, cv.height);
     const c = compute(); const col = c.cls.color || '#9aa4af';
     // aura
-    const g = ctx.createRadialGradient(cv.width / 2, cv.height * 0.55, 2, cv.width / 2, cv.height * 0.55, cv.width * 0.48);
-    const pulse = 0.25 + 0.12 * Math.sin(t / 500);
-    g.addColorStop(0, col + Math.round(pulse * 255).toString(16).padStart(2, '0')); g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, cv.width, cv.height);
+    const ag = ctx.createRadialGradient(cv.width / 2, cv.height * 0.55, 2, cv.width / 2, cv.height * 0.55, cv.width * 0.48);
+    const pulse = 0.2 + 0.05 * g + 0.12 * Math.sin(t / 500);
+    ag.addColorStop(0, col + Math.round(Math.min(1, pulse) * 255).toString(16).padStart(2, '0')); ag.addColorStop(1, 'transparent');
+    ctx.fillStyle = ag; ctx.fillRect(0, 0, cv.width, cv.height);
     const bob = Math.floor(t / 600) % 2;
     const px = (x, y, color) => { ctx.fillStyle = color; ctx.fillRect(x * S, (y + bob + 1) * S, S, S); };
     const rect = (x, y, w, h, color) => { for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) px(x + i, y + j, color); };
@@ -284,6 +287,12 @@
     const helm = equipped('helm'), body = equipped('body'), legs = equipped('legs'), boots = equipped('boots'), gloves = equipped('gloves'), weapon = equipped('weapon'), amulet = equipped('amulet'), ring = equipped('ring');
     // shadow
     ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(cv.width / 2, 30.5 * S, 7 * S, 1.2 * S, 0, 0, 6.3); ctx.fill();
+    // cape (grows with your hero)
+    if (g >= 1) {
+      const capeC = shade(col.startsWith('#') ? col : '#9aa4af', 0.55); const len = g >= 3 ? 16 : 11; const sway = Math.round(Math.sin(t / 450));
+      for (let y = 0; y < len; y++) { const w = 10 + Math.floor(y / 4); const x0 = 16 - Math.floor(w / 2) + (y > len - 5 ? sway : 0); rect(x0, 12 + y, w, 1, capeC); if (g >= 4) { px(x0, 12 + y, '#f5c542'); px(x0 + w - 1, 12 + y, '#f5c542'); } }
+      if (g >= 4) rect(16 - 6 + sway, 12 + len - 1, 12, 1, '#f5c542');
+    }
     // legs + boots
     const lc = tierCol(legs, t) || pants;
     rect(12, 21, 3, 7, lc); rect(17, 21, 3, 7, lc);
@@ -296,6 +305,8 @@
     if (body) { rect(15, 13, 2, 7, shade(G.TIERS[body.tier].color, 1.25)); rect(11, 12, 10, 1, shade(G.TIERS[body.tier].color, 0.7)); } else rect(11, 19, 10, 1, '#1b1b1b');
     // arms + hands
     rect(9, 13, 2, 7, tc); rect(21, 13, 2, 7, tc);
+    if (g >= 3) { rect(8, 14, 1, 5, tc); rect(23, 14, 1, 5, tc); }
+    if (g >= 2) { const pc = body ? shade(G.TIERS[body.tier].color, 0.85) : '#8a94a3'; rect(8, 12, 4, 2, pc); rect(20, 12, 4, 2, pc); }
     const hc = tierCol(gloves, t) || skin;
     rect(9, 20, 2, 2, hc); rect(21, 20, 2, 2, hc);
     if (ring) px(9, 21, tierCol(ring, t));
@@ -303,7 +314,11 @@
     rect(15, 11, 2, 1, skin);
     rect(12, 3, 8, 8, skin);
     rect(12, 2, 8, 2, hair); rect(11, 3, 1, 4, hair); rect(20, 3, 1, 4, hair);
-    px(14, 7, '#1b1b1b'); px(17, 7, '#1b1b1b'); rect(15, 9, 2, 1, shade(skin, 0.75));
+    const eye = g >= 5 ? (col.startsWith('#') ? col : '#ffffff') : '#1b1b1b';
+    if (g >= 5) { ctx.shadowColor = eye; ctx.shadowBlur = 8; }
+    px(14, 7, eye); px(17, 7, eye); ctx.shadowBlur = 0; rect(15, 9, 2, 1, shade(skin, 0.75));
+    if (g >= 2) { px(18, 5, '#b5524a'); px(19, 6, '#b5524a'); }
+    if (g >= 4) { rect(13, 9, 2, 2, hair); rect(17, 9, 2, 2, hair); rect(13, 10, 6, 1, hair); }
     if (amulet) { px(15, 13, tierCol(amulet, t)); px(16, 13, tierCol(amulet, t)); }
     // helm
     if (helm) {
@@ -333,6 +348,8 @@
     // active pet follows you
     const pet = G.activePet && G.activePet();
     if (pet) { ctx.font = `${S * 8}px system-ui,"Apple Color Emoji"`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; if (pet.golden) { ctx.shadowColor = '#ffe066'; ctx.shadowBlur = 12; } ctx.fillText(pet.icon, 27.5 * S, (26.5 + (Math.floor(t / 400) % 2 ? 0 : -0.6)) * S); ctx.shadowBlur = 0; }
+    // mythic runes orbit the hero
+    if (g >= 5) for (let i = 0; i < 4; i++) { const a = t / 900 + i * Math.PI / 2; const rx = Math.round(16 + Math.cos(a) * 13), ry = Math.round(16 + Math.sin(a) * 13); px(rx, ry, i % 2 ? '#ffe066' : (col.startsWith('#') ? col : '#ffffff')); }
     // class head flair when no helm
     if (!helm) {
       const k = c.cls.primary || c.cls.id;
@@ -390,7 +407,8 @@
     const sec = document.getElementById('hero');
     try { checkProgress(); } catch (e) { console.warn('hero', e); }
     const c = compute();
-    const subs = `<div class="subtabs"><button class="stab ${sub === 'char' ? 'on' : ''}" data-hs="char">🧬 Character</button><button class="stab ${sub === 'tal' ? 'on' : ''}" data-hs="tal">🌳 Talents${STATS.some((s) => treePoints(s, c.base) > treeSpent(s)) ? ' •' : ''}</button><button class="stab ${sub === 'galaxy' ? 'on' : ''}" data-hs="galaxy">🌌 Galaxy</button><button class="stab ${sub === 'pets' ? 'on' : ''}" data-hs="pets">🐾 Pets</button></div>`;
+    sub = ({ hero: 'char', bag: 'bag', talents: 'tal', pets: 'pets' })[G.navSub ? G.navSub('hero') : 'hero'] || sub;
+    const subs = '';
     let body = '';
     if (sub === 'char') {
       const bonus = G.heroBonus();
@@ -398,12 +416,16 @@
       const deltas = snapBase ? STATS.map((s) => [s, c.base[s] - snapBase[s]]).filter(([, d]) => d) : [];
       body = `
       <div class="card hero-card" style="--cc:${c.cls.color}">
-        <div class="hero-top"><canvas id="heroAvatar" width="128" height="128"></canvas>
-          <div class="hero-id"><button class="hero-name" id="heroName">${esc(H.name)} ✎</button>
-            <div class="hero-epi">${esc(epithet(c))}</div>
-            <div class="hero-cls"><span>${c.cls.icon}</span> <b>${esc(c.cls.name)}</b> <span class="hero-lv">Lv ${c.level}</span></div>
-            <div class="hero-perk">${esc(c.cls.desc)}</div></div></div>
+        <div class="hero-idc"><button class="hero-name" id="heroName">${esc(H.name)} ✎</button><div class="hero-epi">${esc(epithet(c))}</div></div>
+        <div class="equip-grid">
+          ${['ring', 'helm', 'amulet', 'weapon', 'body', 'gloves', 'legs', 'boots'].map((sl) => `<div class="eg-${sl}">${G.slotHtml ? G.slotHtml(sl) : ''}</div>`).join('')}
+          <div class="eg-av"><canvas id="heroAvatar" width="128" height="128"></canvas><div class="eg-mood" id="heroMood"></div><div class="eg-stage" id="heroStage"></div></div>
+        </div>
+        <div class="hero-cls"><span>${c.cls.icon}</span> <b>${esc(c.cls.name)}</b> <span class="hero-lv">Lv ${c.level}</span></div>
+        <div class="hero-perk">${esc(c.cls.desc)}</div>
+        ${G.statBarHtml ? G.statBarHtml() : ''}
       </div>
+      <div id="heroLifeRoot"></div>
       <div class="card"><div class="cardhead"><h2>📊 Stats</h2><span class="muted">solid = lifetime · glow = last 4 weeks</span></div>
         <canvas id="heroRadar" width="320" height="280" class="radar"></canvas>
         <div class="statlist">${STATS.map((s) => { const i = STAT_INFO[s]; const f = c.form[s] - c.base[s];
@@ -429,6 +451,8 @@
         </div>
         <div class="row2"><button class="gbtn ghost" id="talReset">↺ Reset ${tree} tree (free)</button></div>
         <div class="muted" style="margin-top:8px">Tap a talent to add a rank. Bottom-row talents unlock after 3 points in the tree.</div></div>`;
+    } else if (sub === 'bag') {
+      body = `<div id="bagRoot"></div>`;
     } else if (sub === 'pets') {
       body = `<div id="petsRoot"></div>`;
     } else {
@@ -450,9 +474,12 @@
     const tr = root.querySelector('#talReset'); if (tr) tr.onclick = () => { TALENTS[tree].forEach(([id]) => delete H.talents[id]); save(); render(); };
     if (sub === 'galaxy') { G.renderGalaxy && G.renderGalaxy(document.getElementById('galaxyRoot')); }
     else if (sub === 'pets') { G.renderPets && G.renderPets(document.getElementById('petsRoot')); }
+    else if (sub === 'bag') { G.renderBag && G.renderBag(document.getElementById('bagRoot')); }
+    if (sub === 'char') { G.bindItems && G.bindItems(root.querySelector('.equip-grid')); G.renderHeroLife && G.renderHeroLife(document.getElementById('heroLifeRoot')); if (radarT0 === 0) { radarFrom = H.snap ? H.snap.base : null; radarT0 = performance.now(); } animate(); }
     else if (sec && sec.classList.contains('active')) { if (sub === 'char' && radarT0 === 0) { radarFrom = H.snap ? H.snap.base : null; radarT0 = performance.now(); } animate(); }
   }
   G.renderHero = render;
+  G.drawHero = drawAvatar;
   G.heroSub = (s) => { sub = s; };
   setTimeout(() => { try { checkProgress(); } catch (e) { console.warn('hero', e); } }, 0);
   G.on && G.on('render', () => { try { const sec = document.getElementById('hero'); if (sec && sec.classList.contains('active')) render(); else checkProgress(); } catch (e) { console.warn('hero', e); } });
