@@ -277,6 +277,10 @@
     return 0;
   }
   function regionState(ri) { W.region[ri] = W.region[ri] || { stage: 0, start: null, done: false }; return W.region[ri]; }
+  // shared with the Realm (rpg.js): the same regions & dungeons, and conquering a region there conquers it here
+  G.worldRegions = () => REGIONS;
+  G.regionDone = (ri) => !!(W.region[ri] && W.region[ri].done);
+  G.realmConquer = (ri) => { const rs = regionState(ri); if (rs.done) return; rs.done = true; rs.start = null; rs.stage = 4; if (W.activeRegion === ri) W.activeRegion = null; save(); };
   function regionUnlocked(ri) { return ri === 0 || (regionState(ri - 1).done && advLevel() >= REGIONS[ri].need); }
 
   function curDef(ri) { const rs = regionState(ri); return rs.start && rs.def && rs.defStage === rs.stage ? rs.def : stageDef(ri, rs.stage); }
@@ -353,6 +357,7 @@
     { name: 'Cloud Vault', icon: '☁️', mobs: [['Gryphon', '🦅'], ['Storm Sprite', '⚡'], ['Sky Serpent', '🐉']], boss: ['Thunderbird', '🦤'] },
     { name: 'Titan\'s Forge', icon: '⚒️', mobs: [['Forge Golem', '🗿'], ['Cyclops', '👁️'], ['Titan Guard', '🛡️']], boss: ['Forge-Father', '⚡'] }
   ];
+  G.worldDungeons = () => DUNGEONS;
   const RELICS = {
     lungs: { name: 'Iron Lungs', icon: '🫁', desc: 'Monsters have 15% less HP', hp: 0.85 },
     berserk: { name: 'Berserker Totem', icon: '🪓', desc: '+50% damage, monsters +20% HP', dmg: 1.5, hp: 1.2 },

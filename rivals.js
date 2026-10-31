@@ -230,6 +230,12 @@
     const db = document.getElementById('duelBtn'); if (db) db.onclick = openDuelPicker;
   };
 
+  // the Realm's wandering buddies read the live league here
+  G.rivalRoster = function () {
+    const sk = wk(new Date()); const rows = standings(sk, new Date());
+    const out = rows.filter((r) => r.id !== 'you').map((r) => ({ id: r.id, name: r.rv.name, emoji: r.rv.emoji, xp: r.xp, rank: rows.indexOf(r) + 1, pass: r.rv.pass, lead: r.rv.lead }));
+    out.week = sk; return out;
+  };
   G.rivalSummary = function () {
     const rows = standings(wk(new Date()), new Date()); const i = rows.findIndex((x) => x.id === 'you');
     const above = i > 0 ? rows[i - 1] : null;

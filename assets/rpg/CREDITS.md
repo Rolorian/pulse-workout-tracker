@@ -6,4 +6,6 @@
 - **Pixelify Sans** by Stefie Justprince — SIL Open Font License 1.1 (see OFL-PixelifySans.txt). Subset to Latin.
 - **Silkscreen** by Jason Kottke — SIL Open Font License 1.1 (see OFL-Silkscreen.txt). Subset to Latin.
 
-Files used: `chars/c15.png` hero · `c1.png` goblin · `c9.png` Elder Oren · `c6.png` Mira · `c19.png` Bo · `c24.png` Pip · `dog.png` Rex · `slime.png` field slime.
+Also from the Ninja Adventure Godot project (same author, CC0, https://github.com/pixel-boy/NinjaAdventure): `walls.png`, `interior.png`, `ruins.png`.
+
+Files used: all 25 character sheets and portraits (`chars/`, `face/`), all 22 monsters (`mon/`), the main tileset, effects, items, 5 music loops (village, wilds, dungeon, battle, boss) and sound effects.

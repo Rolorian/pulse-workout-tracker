@@ -647,3 +647,32 @@ body.realm-on #fab{display:none}
 .rv-iname{position:relative;font:18px Silkscreen,monospace;color:var(--ink);margin-top:8px}
 .rv-itier{position:relative;font-size:14px;color:var(--tc);filter:brightness(.7);text-transform:capitalize}
 .rv-ist{position:relative;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:6px}.rv-ist .stat{font:13px Pixelify,monospace;background:#2a1d30;color:#f3e3c3;border:2px solid #1a1020;border-radius:0;padding:3px 8px}
+/* realm v2: zones, travel map, buddies, moves, soundtrack */
+.rl-btns{display:flex;gap:6px}
+.rl-party{position:absolute;left:10px;top:calc(env(safe-area-inset-top) + 86px);display:flex;align-items:center;gap:6px;background:rgba(20,12,26,.78);border:2px solid #2b1b33;padding:3px 8px 3px 3px;color:var(--parch);pointer-events:none}
+.rp-face{flex:none;width:30px;height:30px;background-size:cover;image-rendering:pixelated;border:2px solid #1a1020;background-color:#3a2a3e}
+.rp-n{font:11px Silkscreen,monospace;color:var(--gold)}.rp-l{font-size:13px}
+.rl-zone{position:absolute;left:0;right:0;top:34%;text-align:center;pointer-events:none;opacity:0}
+.rl-zone.on{animation:rzIn 3.2s steps(16) forwards}
+@keyframes rzIn{0%{opacity:0;transform:translateY(8px)}12%,70%{opacity:1;transform:none}100%{opacity:0}}
+.rz-n{font:26px Silkscreen,monospace;color:var(--gold);text-shadow:3px 3px 0 #120a1c,-2px -2px 0 #120a1c;letter-spacing:2px;text-transform:uppercase;padding:0 12px}
+.rz-s{font-size:16px;color:var(--parch);text-shadow:2px 2px 0 #120a1c;margin-top:4px}
+.rm-box{max-height:84%;overflow:auto}
+.tv-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.tv-row,.bd-row,.bt-row{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:#efe0bd;border:2px solid var(--ink);padding:7px 8px;font-family:Pixelify,monospace;color:var(--ink);cursor:pointer}
+.tv-row:disabled{opacity:.45;cursor:default}
+.tv-row.here{background:#ffe9a8}.tv-row.done .tv-pin{background:#2f6b3a}.tv-row.open .tv-pin{background:#c2410c}.tv-row.locked .tv-pin{background:#777}
+.tv-pin{flex:none;width:12px;height:12px;background:#c2410c;border:2px solid var(--ink);transform:rotate(45deg)}
+.tv-main{display:flex;flex-direction:column;min-width:0;flex:1}
+.tv-n{font-size:16px}.tv-s{font-size:13px;opacity:.75}.tv-s em{font-style:normal;color:#8a1c1c}
+.bd-row.on{background:#d9f2c9}
+.bt-row.done{opacity:.55}.bt-r{font:12px Silkscreen,monospace;color:#8a3a1c;white-space:nowrap}
+.mv-slot{display:block;margin-top:8px;font-family:Pixelify,monospace;text-transform:none;letter-spacing:0;color:var(--ink)}
+.mv-sn{display:block;font-size:15px;margin-bottom:3px}.mv-sn em{font-style:normal;opacity:.7;font-size:13px}
+.mv-slot select{width:100%;background:#efe0bd;color:var(--ink);border:2px solid var(--ink);border-radius:0;padding:8px;font:15px Pixelify,monospace}
+.snd-row{display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:2px dotted var(--parch2)}
+.snd-row>div{flex:1;min-width:0}.snd-n{font-size:16px}.snd-s{font-size:12px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rm-mini{display:inline-flex;align-items:center;background:var(--wood);color:var(--parch);border:2px solid var(--ink);font:14px Pixelify,monospace;padding:6px 9px;cursor:pointer}
+.rm-mini.ghost{background:transparent;color:var(--ink)}
+.rb-lv{color:var(--parch);font-size:10px;margin-left:4px}
+.rb-ally{font:10px Silkscreen,monospace;color:#7dff9a;margin-top:4px}

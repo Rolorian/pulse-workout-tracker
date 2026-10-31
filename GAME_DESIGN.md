@@ -43,9 +43,39 @@
 - Music: one village loop and one battle loop. Sound effects are from the pack; dialogue voices are synthesised blips.
 - The battle backdrop is always the south field.
 
+
+## 2b. Realm v2 — the world opens up (shipped)
+
+The Adventure tab's other screens now live *inside* the Realm.
+
+| Old screen | In the Realm |
+|---|---|
+| **Map** (10 regions) | Each region is a walkable zone: a winding trail from the north gate to the boss arena, with its own biome, colour grade, weather and monsters. Beating the boss conquers the region on the Map screen too (`G.realmConquer`), opens the road to the next region, and unseals its dungeon. The ◈ button and waystones open a travel map. |
+| **Dungeons** | A cave in every region leads to that region's dungeon (same names, monsters and boss as the roguelike runs). There are 3 floors of stone rooms. A guard blocks the stairs, there are chests, and the boss is on floor 3. Dungeons reset on every visit. |
+| **Village** | Pulsehaven shows all 10 Village buildings. Unrestored ones are ruins with nameplates; tap one to open its bundles. Restored buildings come back as real houses. The Tavern lets you rest, and the Market and Blacksmith run shops. |
+| **Battle** | Monsters with Battle-tab names (Slime, Goblin, Skeleton, Troll, Dark Knight, Demon) count there through `G.onMonsterKill`. King Slime, Lich Lord and World Dragon are world bosses in regions 1, 8 and 10. Slaying one marks it slain in the Battle tab and drops a unique item. |
+| **League rivals** | Rivals wander the village and the regions as buddies. Their level grows from their real weekly league XP (banked each week) plus fights at your side. Team up and they follow you and attack after every move. Level-ups are announced. |
+
+Also new in v2:
+- **Moves from your training.** The four slots auto-pick your most-trained exercise per category, and you can change any slot in ☰ ▸ Moves. Hard bodyweight exercises hit ×1.6.
+- **Hearts from CON.** You get +1 heart per 12 CON, up to 5 extra. Hearts regenerate over real time.
+- **Daily bounty board** in the square. There are also potions and elixirs from Mira, and a whetstone from the smith.
+- **Elite monsters** (orange, bigger). Bosses enrage below 50% HP.
+- **Your own music.** ☰ ▸ Soundtrack takes an MP3 from your phone for Village, Wilds, Dungeons, Battles or Boss fights. It's stored in IndexedDB and stays offline.
+- **Second quest, "The Road South."**
+
+### Honest placeholders (v2)
+- Region maps are generated from a seed (trail, clearings, decor), not hand-drawn. Bosses are scaled and tinted versions of pack sprites, because the CC0 pack has no large boss art.
+- Dungeon relics, shrines and curses from the roguelike runs aren't in Realm dungeons yet.
+- The Frostpeak and Shadow biomes reuse the base tiles with colour grading. There are no unique tilesets per biome.
+- Pets don't follow you in the Realm yet.
+
 ## 3. Living backlog (prioritised)
 
 **Next (P1)**
+- Pets following you in the Realm, with skilling spots (fishing, mining) for skilling pets.
+- Relics and shrines in Realm dungeons, matching the roguelike runs.
+- Building interiors (Tavern, Dojo daily dummy, your home).
 - Moves built from *your* exercise library: pick 4 from your most-trained skills, with multipliers by category.
 - Hero HP and defence from the Hero sheet (CON → hearts, END → guard strength). Class abilities as special moves.
 - Interiors: Elder's house, the dojo (a daily training-dummy challenge that counts toward Daily Minimum) and your own home (rest = streak freeze display).
