@@ -270,6 +270,7 @@
   G.rpgOpen = function () {
     build(); loadImages();
     if (!hero) spawn();
+    if (!B) setTimeout(flushWorkouts, 300);
     open = true; root.classList.add('on'); document.body.classList.add('realm-on');
     resize(); snapCam(); renderHud();
     if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); }
@@ -279,6 +280,8 @@
   };
   G.rpgClose = function () {
     if (!open) return;
+    if (B && B.phase === 'end') { /* left mid-spoils: keep sets safe */ }
+    if (!B) flushWorkouts();
     open = false; if (root) root.classList.remove('on'); document.body.classList.remove('realm-on');
     cancelAnimationFrame(raf); raf = 0; stopMusic(); closeMenu();
     if (hero) { R.x = hero.tx; R.y = hero.ty; R.dir = hero.dir; save(true); }
@@ -740,7 +743,7 @@
   function closeReps() { RC = null; const el = battleEl && battleEl.querySelector('#rbReps'); if (el) { el.classList.remove('on'); el.innerHTML = ''; } }
   G._rpgReps = { set(n) { if (RC) { if (RC.mv.timed) RC.acc = n; else RC.n = n; updReps(); } }, go() { repAct('go'); } };
 
-  function log(ex, amt) { B.logged[ex] = (B.logged[ex] || 0) + amt; }
+  function log(ex, amt) { B.logged[ex] = (B.logged[ex] || 0) + amt; R.inBattle = { label: B.def.name, logged: B.logged }; save(true); }
   function playerMove(mv, amt) {
     B.phase = 'anim'; B.turns++; B.say = mv.timed ? `Iron Guard! You held for ${amt}s` : `${mv.name}! ${amt} ${mv.ex.toLowerCase()}`; renderBattleUi();
     if (mv.timed) {
@@ -800,22 +803,34 @@
   }
   function nextTurn() { if (!B) return; pickIntent(); B.phase = 'player'; B.restUntil = Date.now() + 20000; renderBattleUi(); }
 
-  function commitWorkouts(label) {
-    // one normal workout entry per exercise used — this is where XP, coins, quests & streaks come from
+  // Battle sets become ordinary workout entries (one per exercise) — this is where XP, coins, quests & streaks come from.
+  // They're staged in the save first and written to the log when you leave the battle screen, so app pop-ups
+  // (level-ups, drops) appear back in the world instead of covering the spoils, and nothing is lost if the app closes.
+  function stageWorkouts(label) {
     const entries = [];
     Object.entries(B.logged).forEach(([ex, amt]) => {
       if (!amt) return;
       const unit = ex === 'Plank' ? 'minutes' : 'reps';
       const amount = ex === 'Plank' ? Math.round(amt / 60 * 100) / 100 : amt;
-      const w = { id: Date.now() + Math.floor(Math.random() * 1000) + entries.length, exercise: ex, amount, sets: 1, unit, date: dateKey(new Date()), time: new Date().toTimeString().slice(0, 5), isPR: false, feeling: '💪', notes: `⚔️ Realm: ${label}`, weight: null, category: null, realm: true };
-      entries.push(w);
+      entries.push({ id: Date.now() + Math.floor(Math.random() * 1000) + entries.length, exercise: ex, amount, sets: 1, unit, date: dateKey(new Date()), time: new Date().toTimeString().slice(0, 5), isPR: false, feeling: '💪', notes: `⚔️ Realm: ${label}`, weight: null, category: null, realm: true });
     });
-    if (!entries.length) return [];
-    entries.forEach((w) => workouts.push(w));
-    try { persist(); } catch (e) { console.warn(e); }
-    try { checkQuestProgress && checkQuestProgress(); } catch (e) {}
+    B.logged = {}; R.inBattle = null;
+    R.pending = (R.pending || []).concat(entries); save(true);
     return entries.map((w) => ({ ex: w.exercise, amt: w.unit === 'minutes' ? `${Math.round(w.amount * 60)}s` : `${w.amount}`, xp: (() => { try { return Math.round(xpForWorkout(w)); } catch (e) { return 0; } })() }));
   }
+  function flushWorkouts() {
+    if (R.inBattle && !B) { // the app was closed mid-fight: those sets still count
+      const ib = R.inBattle; R.inBattle = null;
+      Object.entries(ib.logged || {}).forEach(([ex, amt], i) => { if (amt > 0) (R.pending = R.pending || []).push({ id: Date.now() + i, exercise: ex, amount: ex === 'Plank' ? Math.round(amt / 60 * 100) / 100 : amt, sets: 1, unit: ex === 'Plank' ? 'minutes' : 'reps', date: dateKey(new Date()), time: new Date().toTimeString().slice(0, 5), isPR: false, feeling: '💪', notes: `⚔️ Realm: ${ib.label} (unfinished)`, weight: null, category: null, realm: true }); });
+    }
+    if (!R.pending || !R.pending.length || typeof workouts === 'undefined') return;
+    const have = new Set(workouts.map((w) => w.id));
+    R.pending.forEach((w) => { if (!have.has(w.id)) workouts.push(w); });
+    R.pending = []; save(true);
+    try { persist(); } catch (e) { console.warn(e); }
+    try { checkQuestProgress && checkQuestProgress(); } catch (e) {}
+  }
+  G.rpgFlush = flushWorkouts;
 
   function victory() {
     if (!B) return;
@@ -825,7 +840,7 @@
     if (ent.enemy === 'goblin' && R.q === 2) R.q = 3;
     if (ent.enemy === 'slime') R.slimeAt = Date.now() + 3 * 3600 * 1000;
     save(true);
-    const xp = commitWorkouts(def.name);
+    const xp = stageWorkouts(def.name);
     const coinsBefore = G.state ? G.state().coins : 0;
     G.reward && G.reward({ coins: def.bounty }, { quiet: true });
     const gained = (G.state ? G.state().coins : 0) - coinsBefore;
@@ -866,14 +881,14 @@
   function defeat() {
     if (!B) return;
     stopMusic(); sfx('over', 0.5); banner('KNOCKED DOWN', true);
-    commitWorkouts(B.def.name + ' (retreated)');
+    stageWorkouts(B.def.name + ' (knocked down)');
     const ui = battleEl.querySelector('#rbUi');
     ui.innerHTML = `<div class="rv"><div class="rv-h">You'll get it next time</div><div class="rv-note">Every rep you did still counts — it's in your log. Elder Oren patched you up.</div><button class="rc-go" id="rvDone">Wake up</button></div>`;
     ui.querySelector('#rvDone').onclick = () => endBattle('lose');
   }
   function endBattle(how) {
     if (!B) return;
-    if (how === 'flee') commitWorkouts(B.def.name + ' (retreated)');
+    if (how === 'flee') stageWorkouts(B.def.name + ' (retreated)');
     const ent = B.ent; const wasB = B;
     clearTimeout(B.restT); closeReps();
     fade(false, () => {
@@ -884,6 +899,7 @@
       if (how === 'flee') { hero.path = []; const p = findPath(hero.tx, hero.ty, hero.tx, Math.max(21, hero.ty - 2), hero); if (p) hero.path = p; }
       R.x = hero.tx; R.y = hero.ty; save(true); snapCam(); renderHud();
       music('village');
+      setTimeout(flushWorkouts, 450);
       if (how === 'win' && R.q === 3) setTimeout(() => hint('Quest updated · Return to Elder Oren'), 500);
       if (how === 'lose') setTimeout(() => say('elder', ['Easy now. You took a beating.', 'Rest, then try again. The goblin\'s not going anywhere.']), 500);
       try { if (typeof render === 'function') render(); } catch (e) {}
@@ -974,5 +990,6 @@
 
   // ------------------------------------------------------------------ keep the HUD fresh when the rest of the app changes
   G.on && G.on('render', () => { if (open) renderHud(); });
+  setTimeout(() => { if (!B) flushWorkouts(); }, 1500);
   G._rpgDebug = { ents: () => ents, hero: () => hero, battle: () => B, startFight(id) { const e = ents.find((x) => x.id === id); if (e) startEncounter(e); }, tp(x, y) { hero.tx = x; hero.ty = y; hero.x = x * T; hero.y = y * T; hero.path = []; snapCam(); }, walk(x, y) { const p = findPath(hero.tx, hero.ty, x, y, hero); if (p) hero.path = p; return !!p; }, talk(id) { const e = ents.find((x) => x.id === id); if (e) goTo(e); } };
 })();
