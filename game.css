@@ -676,3 +676,58 @@ body.realm-on #fab{display:none}
 .rm-mini.ghost{background:transparent;color:var(--ink)}
 .rb-lv{color:var(--parch);font-size:10px;margin-left:4px}
 .rb-ally{font:10px Silkscreen,monospace;color:#7dff9a;margin-top:4px}
+/* realm v3: combat presentation, bonds, training sessions */
+.rb-hp{position:relative}.rb-hp i{position:absolute;left:0;top:0;bottom:0}
+.rb-hp i.trail{background:#fff4d6;transition:width .45s cubic-bezier(.3,0,.2,1)}
+.rb-hp i#rbEHp{transition:width .12s steps(3)}
+.rb-intent.heavy{border-color:#8a1c1c;animation:intentPulse 1s steps(4) infinite}
+@keyframes intentPulse{50%{box-shadow:0 0 0 2px rgba(255,60,40,.55)}}
+.rb-intent .warn{display:inline-block;font:10px Silkscreen,monospace;color:#ffd23f;margin-left:4px}
+.rl-hearts.hit{animation:heartHit .35s steps(5)}
+@keyframes heartHit{20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+.rb-moves.in .rb-mv{animation:mvIn .28s cubic-bezier(.2,1.4,.4,1) both;animation-delay:var(--d)}
+@keyframes mvIn{from{transform:translateY(14px);opacity:0}}
+.rb-mv{transition:transform .08s,filter .08s}.rb-mv:active{filter:brightness(1.25)}
+.rb-boss{position:absolute;left:0;right:0;top:20%;text-align:center;pointer-events:none;opacity:0;transform:scale(1.4);transition:opacity .35s,transform .5s cubic-bezier(.2,1.2,.3,1)}
+.rb-boss.on{opacity:1;transform:none}
+.bi-sub{font:13px Silkscreen,monospace;color:#f3e3c3;letter-spacing:3px;text-transform:uppercase;text-shadow:2px 2px 0 #000}
+.bi-n{font:34px Silkscreen,monospace;color:#ff6b4a;text-shadow:3px 3px 0 #120a1c,-2px -2px 0 #120a1c;letter-spacing:2px;text-transform:uppercase;padding:0 10px}
+.rl-train{z-index:16}
+.ts-who{display:flex;gap:8px;align-items:center}
+.ts-note{text-align:center;font-size:13px;opacity:.65;margin-top:6px}
+.bl-up{text-align:center}
+.bl-face{width:86px;height:86px;margin:2px auto 6px;background-size:cover;image-rendering:pixelated;border:3px solid var(--ink);box-shadow:inset 0 0 0 2px #6b4d6e;animation:rvIn .5s steps(5)}
+.bl-line{font-size:16px;margin:10px 4px 2px;color:#5a3524}
+.bl-hearts{display:inline-flex;gap:3px;vertical-align:middle;margin:4px 0}
+.bh{width:14px;height:13px;background:#c9b48f;clip-path:polygon(50% 100%,0 40%,0 15%,20% 0,40% 0,50% 15%,60% 0,80% 0,100% 15%,100% 40%)}
+.bh.on{background:#e0325a}.bh.new{animation:bhPop .6s steps(6)}
+@keyframes bhPop{0%{transform:scale(0)}60%{transform:scale(1.6)}100%{transform:none}}
+.bl-hearts.sm .bh{width:10px;height:9px}
+.bd-row.bond{cursor:default;align-items:flex-start}
+.bd-bar{display:block;height:6px;background:#c9b48f;border:1px solid var(--ink);margin:3px 0}.bd-bar i{display:block;height:100%;background:#e0325a}
+.bd-row.locked{opacity:.55}.rp-face.q{background:#3a2a3e}
+/* ===== Adventure sub-tabs: dark-fantasy pixel skin (Map, Dungeons, Village, Battle) ===== */
+#adventure{--panel:#1a1220;--panel2:#241a2b;--line:#3d2c45;--hair:#2c2033;--text:#f3e3c3;--muted:#a8927c;--accent:#ffd23f;--accent2:#e07a3a;--accent-grad:linear-gradient(180deg,#d9622b,#a8431b);--radius:2px;--shadow:0 4px 0 rgba(0,0,0,.45);--glow:0 0 0 2px rgba(255,210,63,.35)}
+#adventure .card{border:2px solid #0e0912;border-radius:2px;background:#1a1220;box-shadow:inset 0 0 0 2px #33243b,0 4px 0 rgba(0,0,0,.45)}
+#adventure .card h2,#adventure .cardhead h2{font:400 13px Silkscreen,monospace;letter-spacing:1px;color:#ffd23f}
+#adventure .muted,#adventure .rg-lore,#adventure .crate-name,#adventure p{font-family:Pixelify,ui-monospace,monospace}
+#adventure .muted{font-size:13px;color:#a8927c}
+#adventure .navsub .stab{border-radius:2px;background:#241a2b;border:2px solid #0e0912;box-shadow:inset 0 -3px 0 rgba(0,0,0,.35);font:400 14px Pixelify,monospace;color:#d9c7a7}
+#adventure .navsub .stab.on{background:#c2410c;color:#fff7e6;box-shadow:inset 0 -3px 0 rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.18)}
+#adventure .gbtn{border-radius:2px;border:2px solid #0e0912;font:400 13px Silkscreen,monospace;color:#fff7e6;text-transform:uppercase;box-shadow:inset 0 -4px 0 rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.15)}
+#adventure .gbtn.ghost{background:#241a2b;color:#f3e3c3}
+#adventure .gbtn:active{transform:translateY(2px);box-shadow:inset 0 -1px 0 rgba(0,0,0,.3)}
+#adventure .region{border-radius:2px;border:2px solid #0e0912;box-shadow:inset 0 0 0 2px #2c2033}
+#adventure .rg-name,#adventure .ev-name,#adventure .cz-title{font-family:Silkscreen,monospace;font-weight:400;letter-spacing:.5px}
+#adventure .node{border-radius:2px}
+#adventure .xp-bar,#adventure .bbar{border-radius:0;border:1px solid #0e0912}
+#adventure .xp-bar .fill,#adventure .bbar>div{border-radius:0}
+#adventure .board .brow,#adventure .shop-row{border-radius:2px}
+.rl-portal{display:flex;gap:10px;align-items:stretch;margin-bottom:12px;background:#f3e3c3;border:3px solid #1a1020;box-shadow:inset 0 0 0 3px #e2c99d,0 4px 0 rgba(0,0,0,.45);padding:8px;color:#1a1020}
+.rpo-art{flex:none;width:84px;height:84px;align-self:center;background:#2a1d30 center/100% 100% no-repeat;image-rendering:pixelated;border:2px solid #1a1020}
+.rpo-body{flex:1;min-width:0}
+.rpo-k{font:10px Silkscreen,monospace;color:#8a3a1c;text-transform:uppercase;letter-spacing:1px}
+.rpo-t{font:15px Silkscreen,monospace;margin:2px 0}
+.rpo-s{font:14px/1.25 Pixelify,monospace;color:#5a3524}
+.rpo-go{margin-top:7px;background:#c2410c;color:#fff7e6;border:2px solid #1a1020;box-shadow:inset 0 -3px 0 rgba(0,0,0,.3);font:13px Silkscreen,monospace;padding:7px 10px;cursor:pointer;text-transform:uppercase}
+.rpo-go:active{transform:translateY(2px)}

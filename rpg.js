@@ -178,7 +178,7 @@
     ['c20', 2.4, '#ffb400', 115, [['Titan Fist', 13], ['Roar', 0], ['World Breaker', 17]]]
   ];
   // world bosses from the Battle tab — slaying one here slays it there too
-  const WBOSS = { 0: { bi: 0, name: 'King Slime', spr: 'm18', sc: 2.6, tint: '#2ecc71', hp: 75, crown: true, item: 'rpg_crown_slime', intents: [['Body Slam', 7], ['Split', 0], ['Royal Flood', 10]] },
+  const WBOSS = { 0: { bi: 0, name: 'King Slime', spr: 'm18', sc: 2.6, tint: '#2ecc71', hp: 75, crown: 6, item: 'rpg_crown_slime', intents: [['Body Slam', 7], ['Split', 0], ['Royal Flood', 10]] },
     7: { bi: 1, name: 'Lich Lord', spr: 'c23', sc: 2.3, tint: '#8e44ad', hp: 120, item: 'rpg_lich_phylactery', intents: [['Soul Drain', 10], ['Raise Dead', 0], ['Necrotic Nova', 14]] },
     9: { bi: 2, name: 'World Dragon', spr: 'm20', sc: 3, tint: '#b71c1c', hp: 150, item: 'rpg_dragon_heart', intents: [['Dragonfire', 13], ['Wingbeat', 6], ['Inhale', 0], ['Cataclysm', 18]] } };
   const bossSlainInBattleTab = (bi) => { try { return (typeof getBosses === 'function' ? getBosses() : []).some((b) => b.name === BOSSES[bi].name && b.defeated); } catch (e) { return false; } };
@@ -256,13 +256,24 @@
     [['rock', 6, 33], ['rock', 30, 36], ['stump', 10, 39], ['treeB', 27, 32], ['treeA', 7, 38], ['stone', 25, 40], ['stone', 13, 35], ['crate', 17, 36], ['pot', 22, 36]].forEach(([n, x, y]) => zplace(z, n, x, y));
     scatter(z, 80, ['flowers', 'dots', 'tuft', 'tuft2', 'clover', 'twigs'], 7);
     z.exits.push({ x: 19, y: H - 1, w: 2, h: 1, to: 'r0', tx: 18, ty: 2, label: () => `${REG()[0].name}`, locked: () => (R.q < 4 ? 'The road south isn\'t safe yet.' : null) });
-    z.npcs = [
+    const built = (id) => !!(G._village && G._village.done(id));
+    const P = prosperity();
+    if (built('blacksmith')) z.npcs.push(['hana', 'c19', 'Smith Hana', 32, 13, 1, () => villagerTalk('hana')]);
+    if (built('tavern')) z.npcs.push(['tomas', 'c10', 'Innkeeper Tomas', 6, 18, 1, () => villagerTalk('tomas')]);
+    if (built('farm')) z.npcs.push(['ade', 'c2', 'Farmer Ade', 9, 22, 2, () => villagerTalk('ade')]);
+    if (built('temple')) z.npcs.push(['lin', 'c5', 'Sister Lin', 33, 7, 1, () => villagerTalk('lin')]);
+    // townsfolk move in as the village prospers, and they talk about what you've done
+    [['c13', 'Traveller', 14, 13, 4], ['c3', 'Fisher Jun', 27, 15, 6], ['c12', 'Weaver Sol', 11, 19, 10], ['c24', 'Courier Vee', 24, 13, 14]].forEach(([im, n, x, y, need], i) => { if (P >= need) z.npcs.push(['folk' + i, im, n, x, y, 3, () => talkFolk('folk' + i)]); });
+    if (P >= 3) [[8, 12], [31, 12], [8, 14], [31, 14]].forEach(([x, y]) => { zplace(z, 'lantern', x, y); z.lights.push([x + 0.5, y + 0.3]); });
+    if (P >= 6) [[15, 15], [24, 11], [16, 11], [23, 16], [12, 16], [27, 16]].forEach(([x, y]) => { if (!occupied(z, x, y) && !z.block[zat(z, x, y)]) zplace(z, 'flowers', x, y); });
+    if (P >= 12) [[13, 10], [26, 10]].forEach(([x, y]) => { if (!occupied(z, x, y)) zplace(z, 'stall', x, y); });
+    if (R.pipChest === dk() && !(R.chests['village-pip'] || {})[dk()]) z.chests = [{ id: dk(), x: [[3, 24], [36, 22], [10, 26], [28, 26]][hash(dk()) % 4][0], y: [[3, 24], [36, 22], [10, 26], [28, 26]][hash(dk()) % 4][1], pip: true }];
+    z.npcs.unshift(
       ['elder', 'c9', 'Elder Oren', 21, 11, 0, talkElder],
       ['mira', 'c6', 'Mira', 12, 13, 3, talkMira],
       ['bo', 'c8', 'Bo', R.q >= 2 ? 18 : 19, R.q >= 2 ? 29 : 30, 0, talkBo],
       ['pip', 'c25', 'Pip', 26, 20, 3, talkPip],
-      ['dog', 'dog', 'Rex', 27, 21, 4, talkDog]
-    ];
+      ['dog', 'dog', 'Rex', 27, 21, 4, talkDog]);
     z.spawns.push({ id: 'gate_goblin', mob: 'goblin', x: 20, y: 36, r: 2, lvl: 1, name: 'Gate Goblin', once: true, quest: true });
     z.spawns.push({ id: 'field_slime', mob: 'slime', x: 26, y: 37, r: 3, lvl: 1, cond: () => !!R.kills.gate_goblin }, { id: 'field_slime2', mob: 'slime', x: 10, y: 35, r: 3, lvl: 1, cond: () => !!R.kills.gate_goblin });
     z.gateClosed = () => R.q < 2;
@@ -406,7 +417,7 @@
     hero = mk('hero', 'c15', R.x, R.y, { dir: R.dir, speed: 5 });
     Z.npcs.forEach(([id, im, name, x, y, wr, talk]) => { if (id === 'bo') { x = R.q >= 2 ? 18 : 19; y = R.q >= 2 ? 29 : 30; } mk(id, im, x, y, { name, wanderR: wr, talk, speed: id === 'dog' ? 3.5 : 2.4 }); });
     Z.spawns.forEach((s) => { if (!alive(Z, s)) return; const d = enemyDef(s, Z); mk('s:' + s.id, d.spr, s.x, s.y, { name: d.name, spawn: s, def: d, enemy: true, wanderR: s.r, speed: d.boss ? 1.2 : 2, home: [s.x, s.y], scale: d.sc, tint: d.tint, crown: d.crown, lvl: s.lvl }); });
-    (Z.chests || []).forEach((c) => { if (!(R.chests[Z.id + (R.dg[Z.ri] || 0)] || {})[c.id]) mk('chest:' + c.id, 'chest', c.x, c.y, { chest: c, name: 'Chest' }); });
+    (Z.chests || []).forEach((c) => { const key = c.pip ? 'village-pip' : Z.id + (R.dg[Z.ri] || 0); if (!(R.chests[key] || {})[c.id]) mk('chest:' + c.id, 'chest', c.x, c.y, { chest: c, name: 'Chest' }); });
     buddiesInZone().forEach((b, i) => { const sp = buddySpot(i); if (sp) mk('buddy:' + b.id, b.spr, sp[0], sp[1], { name: `${b.name}`, buddy: b, wanderR: 3, talk: talkBuddy, speed: 2.6 }); });
     if (R.party) { const b = buddyInfo(R.party); if (b && !ents.some((e) => e.buddy && e.buddy.id === b.id)) { const sp = freeNear(hero.tx, hero.ty); mk('buddy:' + b.id, b.spr, sp[0], sp[1], { name: b.name, buddy: b, follow: true, talk: talkBuddy, speed: 5 }); } }
     ents.forEach((e) => { if (e.buddy && R.party === e.buddy.id) { e.follow = true; e.wanderR = 0; } });
@@ -491,6 +502,7 @@
       <div class="rl-joy" id="rlJoy"><div class="rl-knob"></div></div>
       <div class="rl-dlg" id="rlDlg"></div>
       <div class="rl-menu" id="rlMenu"></div>
+      <div class="rb-reps rl-train" id="rlTrain"></div>
       <div class="rl-loading" id="rlLoading"><div class="rl-ltitle">PULSE REALM</div><div class="rl-lbar"><i></i></div></div>
       <div class="rl-fade" id="rlFade"></div>`;
     document.body.appendChild(root);
@@ -526,7 +538,7 @@
     if (!Z.canvas) buildGround(Z);
     spawnZone(); snapCam(); renderHud();
     music(zoneMusic());
-    zoneBanner(Z.name, Z.dungeon ? 'Dungeon' : Z.ri != null ? `Region ${Z.ri + 1}${conquered(Z.ri) ? ' · conquered' : ''}` : 'Your village');
+    if (!opts.quiet) zoneBanner(Z.name, Z.dungeon ? 'Dungeon' : Z.ri != null ? `Region ${Z.ri + 1}${conquered(Z.ri) ? ' · conquered' : ''}` : 'Your village');
   }
   function travel(id, tx, ty, opts) { if (busy) return; busy = true; hero.path = []; fade(false, () => { enterZone(id, tx, ty, opts); busy = false; }); sfx('menu3', 0.35); }
   G.rpgOpen = function () {
@@ -551,8 +563,8 @@
   };
   G.rpgIsOpen = () => open;
   function refreshVillage() { // buildings may have been restored in the Village tab since we last looked
-    const sig = Object.keys(SITES).map((id) => (G._village && G._village.done(id) ? 1 : 0)).join('');
-    if (ZCACHE.village && ZCACHE.village.sig !== sig) { delete ZCACHE.village; Z = null; enterZone('village', hero ? hero.tx : R.x, hero ? hero.ty : R.y); }
+    const sig = Object.keys(SITES).map((id) => (G._village && G._village.done(id) ? 1 : 0)).join('') + ':' + [3, 4, 6, 10, 12, 14].filter((n) => prosperity() >= n).length + ':' + (R.pipChest === dk() ? 1 : 0);
+    if (ZCACHE.village && ZCACHE.village.sig !== sig) { delete ZCACHE.village; if (Z && Z.id === 'village') { Z = null; enterZone('village', hero ? hero.tx : R.x, hero ? hero.ty : R.y, { quiet: true }); } }
     if (ZCACHE.village) ZCACHE.village.sig = sig;
   }
   function regen() { const now = Date.now(); const hrs = (now - (R.hpAt || now)) / 3600e3; if (hrs > 0) { R.hp = Math.min(maxHp(), R.hp + Math.floor(hrs * 6)); if (hrs >= 1 / 6) R.hpAt = now; } if (R.hp <= 0) R.hp = 1; save(); }
@@ -576,11 +588,11 @@
     if (solid(gx, gy, hero)) {
       if (Z.gateClosed && Z.gateClosed() && ty >= 30 && ty <= 32 && (tx === 19 || tx === 20)) { const bo = ents.find((e) => e.id === 'bo'); if (bo) { goTo(bo); return; } }
       const n = [[0, 1], [1, 0], [-1, 0], [0, -1]].map(([dx, dy]) => [tx + dx, ty + dy]).find(([x, y]) => !solid(x, y, hero));
-      if (!n) { tapMark = { x: tx, y: ty, t: 0, bad: true }; return; }
+      if (!n) { tapMark = { x: tx, y: ty, t: 0, bad: true }; face(hero, tx, ty); hero.hop = 1; snd('bump'); return; }
       [gx, gy] = n;
     }
     const p = findPath(hero.tx, hero.ty, gx, gy, hero);
-    if (!p) { tapMark = { x: tx, y: ty, t: 0, bad: true }; return; }
+    if (!p) { tapMark = { x: tx, y: ty, t: 0, bad: true }; face(hero, tx, ty); hero.hop = 1; snd('bump'); return; }
     hero.path = p; hero.onArrive = null; tapMark = { x: gx, y: gy, t: 0 };
     if (R.hint < 1) { R.hint = 1; save(); hideHint(); }
   }
@@ -628,6 +640,7 @@
   function bump(x, y) { const ex = Z.exits.find((q) => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h); if (ex) useExit(ex); }
   function arrived() {
     R.x = hero.tx; R.y = hero.ty; R.dir = hero.dir; save();
+    hero.steps = (hero.steps || 0) + 1; snd('step', hero.steps % 2 ? 0.85 : 1.1);
     if (Math.random() < 0.3) dust(hero);
     const ex = Z.exits.find((q) => hero.tx >= q.x && hero.tx < q.x + q.w && hero.ty >= q.y && hero.ty < q.y + q.h);
     if (ex) { hero.path = []; useExit(ex); return; }
@@ -690,10 +703,24 @@
     const im = e.tint ? tinted(k, e.tint, 0.38) : IMG[k];
     if (e.dogSprite) { const f = e.moving ? Math.floor(e.step) % 2 : Math.floor(t * 1.5) % 2; c.save(); if (e.dir === 2) { c.translate(e.x + 16, e.y); c.scale(-1, 1); c.drawImage(im, f * 16, 0, 16, 16, 0, 0, 16, 16); } else c.drawImage(im, f * 16, 0, 16, 16, e.x, e.y, 16, 16); c.restore(); return; }
     let row = e.moving ? Math.floor(e.step) % 4 : 0; if (e.monster) row = Math.floor(t * 5 + e.bob) % 4;
-    c.drawImage(im, e.dir * 16, row * 16, 16, 16, sx, sy, sz, sz);
-    if (e.crown) drawCrown(c, sx + sz / 2, sy + sz * 0.12, sc);
+    // life: a one-pixel breath while idle, a bounce on the passing steps, a hop when bumping into things
+    const breath = !e.moving && !e.monster && Math.floor(t * 1.4 + e.bob) % 2 ? 1 : 0;
+    const bounce = e.moving && row % 2 === 1 ? -1 : 0;
+    const hop = e.hop > 0 ? -Math.round(Math.sin(e.hop * Math.PI) * 3) : 0;
+    c.drawImage(im, e.dir * 16, row * 16, 16, 16 - breath, sx, sy + breath * sc + (bounce + hop) * sc, sz, sz - breath * sc);
+    if (e.crown) drawCrown(c, sx + sz / 2, sy + sz * (e.crown / 16) - sc, sc);
     if (e.enemy && e.lvl) { c.font = '5px Silkscreen, monospace'; c.textAlign = 'center'; c.fillStyle = 'rgba(0,0,0,.7)'; c.fillText('Lv' + e.lvl, e.x + 8.5, sy - 1.5); c.fillStyle = e.def.boss ? '#ff6b6b' : e.def.elite ? '#ffb347' : '#f3e3c3'; c.fillText('Lv' + e.lvl, e.x + 8, sy - 2); }
     if (e.follow) { c.fillStyle = '#7dff9a'; c.fillRect(e.x + 7, sy - 3, 2, 2); }
+  }
+  function drawBubble(c, x, y, ch, a) {
+    c.globalAlpha = a; c.fillStyle = '#f3e3c3'; c.fillRect(x - 6, y - 7, 12, 8); c.fillRect(x - 5, y - 8, 10, 10); c.fillRect(x - 1, y + 2, 2, 2);
+    c.fillStyle = '#1a1020';
+    if (ch === '...') { c.fillRect(x - 4, y - 3, 2, 2); c.fillRect(x - 1, y - 3, 2, 2); c.fillRect(x + 2, y - 3, 2, 2); }
+    else if (ch === '!') { c.fillStyle = '#c2410c'; c.fillRect(x - 1, y - 6, 2, 5); c.fillRect(x - 1, y, 2, 1); }
+    else if (ch === 'heart') { c.fillStyle = '#e0325a'; c.fillRect(x - 4, y - 5, 3, 3); c.fillRect(x + 1, y - 5, 3, 3); c.fillRect(x - 3, y - 3, 6, 2); c.fillRect(x - 2, y - 1, 4, 1); c.fillRect(x - 1, y, 2, 1); }
+    else if (ch === 'note') { c.fillStyle = '#2f6b3a'; c.fillRect(x, y - 6, 1, 6); c.fillRect(x - 2, y - 1, 3, 2); c.fillRect(x + 1, y - 6, 2, 1); }
+    else if (ch === 'tap') { c.fillStyle = '#8a3a1c'; c.fillRect(x - 3, y - 4, 6, 1); c.fillRect(x - 3, y - 2, 6, 1); c.fillRect(x - 3, y, 4, 1); }
+    c.globalAlpha = 1;
   }
   function drawCrown(c, x, y, sc) { const s = sc; c.fillStyle = '#ffd23f'; c.fillRect(x - 4 * s, y, 8 * s, 2 * s); c.fillRect(x - 4 * s, y - 2 * s, 1.5 * s, 2 * s); c.fillRect(x - 0.75 * s, y - 3 * s, 1.5 * s, 3 * s); c.fillRect(x + 2.5 * s, y - 2 * s, 1.5 * s, 2 * s); c.fillStyle = '#e74c3c'; c.fillRect(x - 0.5 * s, y + 0.3 * s, s, s); }
   function drawProp(c, p) { const im = IMG[p.sheet]; if (!im) return; c.drawImage(im, p.sx * T, p.sy * T, p.w * T, p.h * T, p.x * T, p.y * T, p.w * T, p.h * T); }
@@ -712,7 +739,8 @@
     const night = Z.dungeon ? 0 : daylight();
     ambient(dt, night > 0.5);
     const vw = W * DPR / S, vh = H * DPR / S;
-    cam.x += (hero.x + 8 - vw / 2 - cam.x) * Math.min(1, dt * 8); cam.y += (hero.y + 8 - vh / 2 - cam.y) * Math.min(1, dt * 8); clampCam();
+    const lk = hero.moving ? [[0, 1], [0, -1], [-1, 0], [1, 0]][hero.dir] : [0, 0]; cam.lx = (cam.lx || 0) + (lk[0] * 14 - (cam.lx || 0)) * Math.min(1, dt * 2.5); cam.ly = (cam.ly || 0) + (lk[1] * 10 - (cam.ly || 0)) * Math.min(1, dt * 2.5);
+    cam.x += (hero.x + 8 + cam.lx - vw / 2 - cam.x) * Math.min(1, dt * 6); cam.y += (hero.y + 8 + cam.ly - vh / 2 - cam.y) * Math.min(1, dt * 6); clampCam();
     const c = ctx; c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = false;
     c.fillStyle = Z.dark ? '#08060c' : '#0d1a0f'; c.fillRect(0, 0, cv.width, cv.height);
     let shx = 0, shy = 0; if (cam.shake > 0) { cam.shake -= dt * 30; shx = (Math.random() - 0.5) * cam.shake; shy = (Math.random() - 0.5) * cam.shake; }
@@ -729,6 +757,9 @@
     // building nameplates for ruins you can restore
     Z.props.forEach((p) => { if (p.building && !p.built) { c.font = '5px Silkscreen, monospace'; c.textAlign = 'center'; c.fillStyle = 'rgba(0,0,0,.65)'; const tw = c.measureText(p.bname).width + 4; c.fillRect(p.x * T + p.w * 8 - tw / 2, p.y * T - 3, tw, 7); c.fillStyle = '#ffd23f'; c.fillText(p.bname, p.x * T + p.w * 8, p.y * T + 2); } });
     ents.forEach((e) => { const m = marker(e); if (!m) return; const y = e.y - 9 - ((e.scale || 1) - 1) * 16 + Math.sin(t * 4) * 1.5; c.fillStyle = 'rgba(0,0,0,.6)'; c.fillRect(e.x + 6, y - 1, 5, 9); c.fillStyle = m === '!' ? '#ffd23f' : m === '?' ? '#9be7ff' : '#ff5a4a'; c.fillRect(e.x + 7, y, 3, 5); c.fillRect(e.x + 7, y + 6, 3, 2); });
+    ents.forEach((e) => { if (e.hop > 0) e.hop = Math.max(0, e.hop - dt * 4); if (e.emote) { e.emote.t += dt; if (e.emote.t > 1.6) e.emote = null; else drawBubble(c, e.x + 8, e.y - 6 - ((e.scale || 1) - 1) * 16 - Math.min(1, e.emote.t * 8) * 2, e.emote.ch, Math.min(1, (1.6 - e.emote.t) * 4)); } });
+    const near = !hero.moving && !hero.path.length && !dlgQ && nearestInteractable();
+    if (near) drawBubble(c, near.x, near.y + Math.sin(t * 5) * 1.2, near.ch, 0.92);
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i]; p.life -= dt; if (p.life <= 0) { parts.splice(i, 1); continue; }
       p.x += p.vx * dt; p.y += p.vy * dt; if (p.leaf) p.vx += Math.sin(t * 2 + i) * dt * 10; if (p.fly) { p.vx += (Math.random() - 0.5) * 20 * dt; p.vy += (Math.random() - 0.5) * 20 * dt; } if (p.snow) p.vx += Math.sin(t + i) * dt * 4;
@@ -750,6 +781,12 @@
     c.globalCompositeOperation = 'source-over';
     const vg = c.createRadialGradient(cv.width / 2, cv.height / 2, Math.min(cv.width, cv.height) * (Z.dungeon ? 0.2 : 0.35), cv.width / 2, cv.height / 2, Math.max(cv.width, cv.height) * 0.75);
     vg.addColorStop(0, 'rgba(8,4,16,0)'); vg.addColorStop(1, `rgba(8,4,16,${Z.dungeon ? 0.85 : 0.55})`); c.fillStyle = vg; c.fillRect(0, 0, cv.width, cv.height);
+  }
+  function nearestInteractable() {
+    let best = null, bd = 99;
+    ents.forEach((e) => { if (e === hero || e.enemy || e.follow || !(e.talk || e.chest)) return; const d = Math.abs(e.tx - hero.tx) + Math.abs(e.ty - hero.ty); if (d <= 2 && d < bd && !e.emote && !marker(e)) { bd = d; best = { x: e.x + 8, y: e.y - 8, ch: e.chest ? 'tap' : '...' }; } });
+    Z.props.forEach((p) => { if (!(p.building || p.board || p.waystone)) return; const cx = clamp(hero.tx, p.x, p.x + p.w - 1), cy = clamp(hero.ty, p.y, p.y + p.h - 1); const d = Math.abs(cx - hero.tx) + Math.abs(cy - hero.ty); if (d <= 1 && d < bd) { bd = d; best = { x: (p.x + p.w / 2) * T, y: p.y * T - 4, ch: 'tap' }; } });
+    return best;
   }
   function marker(e) {
     if (e.id === 'elder' && (R.q === 0 || R.q === 3 || R.q === 5)) return R.q === 0 ? '!' : '?';
@@ -798,7 +835,9 @@
     showMenu(`<div class="rm-title">${esc(h.name || 'Hero')}</div>
       <div class="rm-sub">Hearts ${R.hp}/${maxHp()} · Potions ${R.potions} · Elixirs ${R.elixirs} · Wins ${R.wins}</div>
       <div class="rm-grid"><button class="rm-item" data-m="travel">World map</button><button class="rm-item" data-m="moves">Moves</button>
-        <button class="rm-item" data-m="party">${b ? 'Party: ' + esc(b.short) : 'Buddies'}</button><button class="rm-item" data-m="sound">Soundtrack</button></div>
+        <button class="rm-item" data-m="party">${b ? 'Party: ' + esc(b.short) : 'Buddies'}</button><button class="rm-item" data-m="bonds">Villagers</button></div>
+      <button class="rm-item" data-m="sound">Soundtrack</button>
+      <button class="rm-item" data-m="shake">Screen shake <b>${['OFF', 'LOW', 'FULL'][R.shakeLvl == null ? 2 : R.shakeLvl]}</b></button>
       <button class="rm-item" data-m="music">Music <b>${R.music ? 'ON' : 'OFF'}</b></button>
       <button class="rm-item" data-m="joy">Controls <b>${R.joy ? 'STICK' : 'TAP'}</b></button>
       <div class="rm-sep">Other screens</div>
@@ -808,6 +847,8 @@
         const k = x.dataset.m;
         if (k === 'music') { R.music = !R.music; save(); if (R.music) music(zoneMusic()); else stopMusic(); openMenu(); }
         else if (k === 'joy') { R.joy = !R.joy; save(); renderHud(); openMenu(); }
+        else if (k === 'shake') { R.shakeLvl = ((R.shakeLvl == null ? 2 : R.shakeLvl) + 1) % 3; save(); openMenu(); }
+        else if (k === 'bonds') openBonds();
         else if (k === 'travel') openTravel(); else if (k === 'moves') openMoves(); else if (k === 'sound') openSound(); else if (k === 'party') openParty();
       }));
       m.querySelectorAll('[data-go]').forEach((x) => (x.onclick = () => { closeMenu(); G.nav && G.nav('adventure', x.dataset.go); }));
@@ -932,7 +973,7 @@
   function say(whoId, lines, done, faceKey, nameOverride) {
     if (menuOpen) closeMenu();
     dlgQ = { lines: lines.map((l) => (typeof l === 'string' ? { who: whoId, text: l } : Object.assign({ who: whoId }, l))), i: 0, who: whoId, done, faceKey, nameOverride };
-    const e = ents.find((x) => x.id === whoId); if (e && hero) { face(e, hero.tx, hero.ty); e.frozen = true; }
+    const e = ents.find((x) => x.id === whoId); if (e && hero) { face(e, hero.tx, hero.ty); e.frozen = true; e.emote = { ch: marker(e) === '!' ? '!' : (bondOf && bondOf(whoId) >= 3 ? 'heart' : '...'), t: 0 }; e.hop = 0.6; }
     showLine();
   }
   let typeT = 0;
@@ -966,7 +1007,7 @@
   function useProp(p) {
     if (p.building) {
       const b = (G._village && G._village.B.find((x) => x.id === p.building)) || { name: p.bname, perk: '' };
-      if (p.built) { if (p.building === 'tavern') { say('elder', [{ text: `The Tavern. Warm stew, warmer beds. Rest here to restore your hearts?`, choices: [['Rest (free)', () => { R.hp = maxHp(); R.hpAt = Date.now(); save(); renderHud(); sfx('power', 0.45); hint('Fully rested'); }], ['Not now', null]] }], null, 'c10', 'Innkeeper'); return; }
+      if (p.built) { if (p.building === 'tavern') { say('tomas', [{ text: `The Tavern. Warm stew, warmer beds. Rest here to restore your hearts?`, choices: [['Rest (free)', rest], ['Not now', null]] }], null, 'c10', 'Innkeeper Tomas'); return; }
         if (p.building === 'market' || p.building === 'blacksmith') { shop(p.building === 'blacksmith'); return; } }
       say('elder', [p.built ? `${b.name}. ${b.perk || ''}` : `The ${b.name} lies in ruins. Fill its bundles with training to rebuild it. Perk: ${b.perk || ''}`, { text: 'Open the building?', choices: [['Open', () => { try { G._village.openBuilding(p.building); } catch (e) { G.nav && G.nav('adventure', 'village'); } }], ['Later', null]] }], null, 'c9', 'Elder Oren');
       return;
@@ -1001,10 +1042,11 @@
   }
   function shop(smith) {
     const S0 = G.state ? G.state() : { coins: 0 };
-    const items = smith ? [['sharpen', 'Whetstone', 'Next battle: +25% damage', 180]] : [['potion', 'Potion', 'Restores 8 hearts-worth (2 hearts)', 120], ['elixir', 'Elixir', 'Restores all hearts', 320]];
+    const off = !smith && perkOn('mira') ? 0.8 : smith && perkOn('hana') ? 0.5 : 1;
+    const items = (smith ? [['sharpen', 'Whetstone', 'Next battle: +25% damage', 180]] : [['potion', 'Potion', 'Restores 2 hearts', 120], ['elixir', 'Elixir', 'Restores all hearts', 320]]).map((x) => [x[0], x[1], x[2], Math.round(x[3] * off)]);
     say(smith ? 'elder' : 'mira', [{ text: smith ? 'Blades, buckles, whetstones. Coin up front.' : `Fresh potions! You've got ${S0.coins.toLocaleString()} coins.`, choices: items.map(([id, n, d, c]) => [`${n} · ${c}c`, () => {
       if (!G.canPay || !G.canPay('coins', c)) { hint('Not enough coins'); sfx('menu3', 0.3, 0.7); return; }
-      G.pay('coins', c); if (id === 'potion') R.potions++; else if (id === 'elixir') R.elixirs++; else R.sharp = 1;
+      G.pay('coins', c); if (id === 'potion') R.potions++; else if (id === 'elixir') R.elixirs++; else R.sharp = perkOn('hana') ? 1.35 : 1;
       save(); renderHud(); sfx('gold', 0.45); hint(`Bought ${n}`);
     }]).concat([['Just looking', null]]) }], null, smith ? 'c19' : 'c6', smith ? 'Smith Hana' : 'Mira');
   }
@@ -1026,24 +1068,200 @@
     } else if (R.q === 5) {
       say('elder', [`You beat ${REG()[0].boss[0]}? Ha! I knew it.`, 'The whole world map is yours to walk now. Every boss you beat opens the next road, and its dungeon.', 'Take these. And check the notice board — the bounties pay well.'], () => { R.q = 6; R.potions += 2; R.elixirs += 1; save(); renderHud(); G.reward && G.reward({ coins: 400, gems: 5 }, { label: 'Quest complete: The Road South' }); sfx('win2', 0.5); });
     } else {
-      const nx = REG().findIndex((x, i) => !conquered(i)); const st = (typeof getStreak === 'function') ? getStreak() : 0;
-      say('elder', [nx >= 0 ? `${REG()[nx].boss[0]} still holds ${REG()[nx].name}. Take the south road and keep going.` : 'Every region is free. The world bosses still stir, though.',
-        pick([st > 1 ? `${st} days in a row. The village notices.` : 'The best warriors train when no one is watching.', 'The notice board has new bounties every morning.', 'Your rivals wander the roads now. Some will fight beside you.', 'Rest at the tavern once it\'s rebuilt — hearts come back faster there.'])]);
+      const nx = REG().findIndex((x, i) => !conquered(i));
+      villagerTalk('elder', Math.random() < 0.5 ? (nx >= 0 ? `${REG()[nx].boss[0]} still holds ${REG()[nx].name}. Take the south road and keep going.` : 'Every region is free. The world bosses still stir, though.') : null);
     }
   }
   function talkBo(e) {
     if (R.q < 1) say('bo', ['Gate\'s shut. Goblins about.', 'Elder Oren\'s orders — nobody goes south. Speak to him first.']);
     else if (R.q === 1) say('bo', ['Oren sent you? Hah.', 'I\'ve seen you training in the square at dawn. Fine.', 'The goblin camps just past the trail. Go get it.'], () => { busy = true; e.path = [[18, 30], [18, 29]]; e.onArrive = () => { e.dir = 3; busy = false; R.q = 2; save(); renderHud(); sfx('magic', 0.45); hint('The south gate is open'); }; });
     else if (R.q === 2) say('bo', ['Well? Go on. I\'ll hold the gate.']);
-    else say('bo', [pick(['Never seen a goblin run that fast.', 'Gate\'s yours whenever you need it.', 'The south road goes a long way. Bring potions.'])]);
+    else villagerTalk('bo');
   }
-  function talkMira() { shop(false); }
-  function talkPip() { say('pip', [pick(['Rex says woof. That means "do ten squats".', 'When I grow up I\'m gonna punch a goblin too!', 'I saw a HUGE slime with a crown in the meadow!', 'Bo says you\'re strong. Are you stronger than a cart?'])]); }
+  function talkMira() { villagerTalk('mira'); }
+  function talkPip() { villagerTalk('pip'); }
+  function talkFolk(id) {
+    const rep = reputation(); const c = Object.keys(R.conq).map(Number); const last = c.length ? REG()[Math.max(...c)] : null;
+    const lines = { Newcomer: ['New in town? Mind the goblins.', 'Elder Oren\'s been looking for someone like you.'], Gatebreaker: ['You\'re the one who chased off the gate goblin!', 'Bo won\'t stop talking about you.'], Defender: [last ? `Is it true you beat ${last.boss[0]}?` : 'The roads feel safer lately.', 'My kids play "the Defender" now. You\'re always the hero.'], 'Hero of Pulsehaven': ['The Hero of Pulsehaven! Can I shake your hand?', 'Business has doubled since the roads opened. Thank you.'], 'Legend of the Valley': ['They\'ll sing about you for a hundred years.', 'I named my son after you. Well, after your squats.'] }[rep] || ['Hello!'];
+    say(id, [pick(lines)]);
+  }
   function talkDog(e) { e.dir = 2; say('dog', ['Woof!'], () => buzz('light'), 'dog'); }
+
+  // ================================================================== BONDS — villagers who get to know you, and a village that grows with you
+  const BOND_AT = [0, 3, 8, 15, 25, 40];
+  const VILLAGER = {
+    elder: { name: 'Elder Oren', face: 'c9', slot: 'guard', task: 'Morning stillness', ask: 'Hold a plank beside me while the kettle boils. Old bones like company.',
+      perk: 'Leaves a potion for you each day you visit', gift: { potions: 1 },
+      lines: [['Forty years I swung a hammer in the forge. Now I swing advice. Lighter, mostly.', 'The village used to have a bell. Goblins took it. Rude.'],
+        ['You walk differently than when you arrived. Taller.', 'My wife used to say rest is a skill too. She was right about most things.'],
+        ['I kept something for you. My old forge apron. ...It doesn\'t fit anyone. But it\'s yours.', 'When I was young I thought strength was lifting things. It\'s getting up again.']] },
+    mira: { name: 'Mira', face: 'c6', slot: 'smash', task: 'Flour sacks', ask: 'The flour delivery came and my back is done. Squats with the sacks? I\'ll count!',
+      perk: '20% off everything at her stall', lines: [['Rumour has it Bo sings to the gate when he thinks no one\'s listening.', 'Cinnamon rolls are done at dawn. Train first, then eat. That\'s the rule.'],
+        ['I put an extra honey cake aside. Don\'t tell Pip.', 'You\'re in half the stories people tell at my stall now.'],
+        ['When the goblins came, I hid in the oven. Cold, luckily. You\'d never hide.', 'Pulsehaven feels like a town again. Thank you. Really.']] },
+    bo: { name: 'Bo', face: 'c8', slot: 'strike', task: 'Gate drills', ask: 'Drill with me. Push-ups, guard style. Don\'t tell anyone I asked.',
+      perk: 'Hands you a free whetstone each day you visit', lines: [['Gate\'s quiet. I like quiet. ...Mostly.', 'I tried your plank thing. I lasted eleven seconds. Don\'t laugh.'],
+        ['I\'ve been training too. Mornings. Before the gate.', 'If you ever need someone at your back, I\'m here. Gate can watch itself an hour.'],
+        ['I used to think I was just the guy who opens the gate. Now I\'m the guy who trains with you.', 'Here. Polished your blade while you slept. Don\'t make it weird.']] },
+    pip: { name: 'Pip', face: 'c25', slot: 'quick', task: 'Race me!', ask: 'Race me! Whoever does more wins! GO!',
+      perk: 'Stashes a treasure chest in the village every day', lines: [['Rex ate a whole sock today. A WHOLE sock.', 'Is it true you punched a scarecrow so hard it said sorry?'],
+        ['I\'m training too! Look! ...That was a push-up. Mostly.', 'I found a shiny thing behind the well. I\'ll hide one for you every day!'],
+        ['When I grow up I\'m gonna be like you. But taller.', 'Rex and me made you a medal. It\'s a bottle cap. It\'s the best one.']] },
+    hana: { name: 'Smith Hana', face: 'c19', slot: 'strike', task: 'Work the bellows', ask: 'Bellows need pumping and my arms are spent. Press-ups keep the same rhythm.',
+      perk: 'Whetstones half price and 35% sharper', building: 'blacksmith', lines: [['Steel remembers every strike. So do muscles.', 'Bring me goblin iron someday. I\'ll make something mean.'],
+        ['Your grip\'s changed. Calluses in the right places now.', 'I sharpen Bo\'s spear twice a week. He never uses it.'],
+        ['I\'d forge you a crown if you\'d wear it. You wouldn\'t.', 'Best customer I\'ve ever had. Only customer, some weeks.']] },
+    tomas: { name: 'Innkeeper Tomas', face: 'c10', slot: 'smash', task: 'Haul the kegs', ask: 'New kegs in the cellar. Squats are just keg-lifting without the keg. Help?',
+      perk: 'Resting leaves you Well-fed: +20% damage in your next battle', building: 'tavern', lines: [['Stew\'s on. It\'s always on.', 'Travellers ask about you now. I tell them you tip well.'],
+        ['Kept your usual table by the fire.', 'The bards are writing a song about you. It rhymes "squat" with "a lot". Sorry.'],
+        ['This inn was rubble. Now it\'s the warmest room in the valley. Your doing.', 'Drinks are on the house. Forever. Don\'t tell anyone.']] },
+    ade: { name: 'Farmer Ade', face: 'c2', slot: 'quick', task: 'Turn the field', ask: 'Rows need turning. Lunges up and down the furrows — good for the legs, better for the beans.',
+      perk: 'Leaves a potion from the harvest each day', gift: { potions: 1 }, building: 'farm', lines: [['Beans like rain. I like beans.', 'The slimes eat my lettuce. Don\'t hit them too hard, they\'re mostly water.'],
+        ['Best harvest in years. The soil knows good company.', 'Took your advice. Stretching before the plough. My back thanks you.'],
+        ['Named a pumpkin after you. It\'s enormous.', 'Pulsehaven eats well because of you. Never forget that.']] },
+    lin: { name: 'Sister Lin', face: 'c5', slot: 'guard', task: 'Still breath', ask: 'Sit with me. Hold still, breathe slow. A plank is a prayer with your elbows.',
+      perk: 'A blessing that restores all your hearts once a day', building: 'temple', lines: [['Breathe in for four. Out for six. The body listens.', 'The shrine bell rings when someone in the valley keeps a promise.'],
+        ['The bell rang this morning. I think it was you.', 'Rest days are sacred. The goblins don\'t know that.'],
+        ['You came here a stranger and became a keeper of this place.', 'May your joints stay kind and your streaks long.']] }
+  };
+  function bond(id) { R.bonds = R.bonds || {}; return (R.bonds[id] = R.bonds[id] || { pts: 0, lvl: 0, day: null, fav: null, perk: null }); }
+  function bondOf(id) { if (!VILLAGER[id]) return 0; const b = bond(id); let l = 0; BOND_AT.forEach((v, i) => { if (b.pts >= v) l = i; }); return l; }
+  function addBond(id, n, why) {
+    const v = VILLAGER[id]; if (!v) return; const b = bond(id); const before = bondOf(id); b.pts += n; const after = bondOf(id); b.lvl = after; save();
+    const e = ents.find((x) => x.id === id); if (e) e.emote = { ch: 'heart', t: 0 };
+    snd('heart'); if (after > before) setTimeout(() => bondLevelUp(id, after), 400); else hint(`${v.name} ♥ +${n}${why ? ' · ' + why : ''}`);
+  }
+  function bondLevelUp(id, lvl) {
+    const v = VILLAGER[id]; snd('chime'); buzz('success');
+    const gifts = { 1: { coins: 60 }, 2: { coins: 120, potions: 1 }, 3: { coins: 0 }, 4: { gems: 3 }, 5: { gems: 10, coins: 500 } }[lvl] || {};
+    if (gifts.potions) R.potions += gifts.potions; if (gifts.coins || gifts.gems) G.reward && G.reward({ coins: gifts.coins || 0, gems: gifts.gems || 0 }, { quiet: true });
+    save(); renderHud(); refreshVillage();
+    const msg = lvl === 3 ? `Bond ${lvl}: ${v.perk}` : lvl === 5 ? 'Bond 5 — they\'d do anything for you now' : `Bond ${lvl} with ${v.name}`;
+    showMenu(`<div class="bl-up"><div class="bl-face" style="background-image:url(${faceUrl(v.face)})"></div><div class="rm-title">${esc(v.name)}</div><div class="bl-hearts">${bondHearts(lvl, true)}</div><div class="rm-sub">${esc(msg)}</div>
+      ${gifts.coins || gifts.gems || gifts.potions ? `<div class="rm-sub">Gift: ${[gifts.coins ? gifts.coins + ' coins' : '', gifts.gems ? gifts.gems + ' gems' : '', gifts.potions ? 'a potion' : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      <div class="bl-line">“${esc(v.lines[Math.min(2, Math.floor(lvl / 2))][0])}”</div></div><button class="rm-item" data-close>Lovely</button>`);
+  }
+  function bondHearts(l, big) { let h = ''; for (let i = 1; i <= 5; i++) h += `<i class="bh ${i <= l ? 'on' : ''} ${big && i === l ? 'new' : ''}"></i>`; return h; }
+  const perkOn = (id) => bondOf(id) >= 3;
+  // the village's reputation of you, built from what you've actually done
+  function reputation() {
+    const c = Object.keys(R.conq).length + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter((i) => !R.conq[i] && G.regionDone && G.regionDone(i)).length;
+    const p = prosperity();
+    if (c >= 8 || p >= 30) return 'Legend of the Valley'; if (c >= 4 || p >= 18) return 'Hero of Pulsehaven'; if (c >= 1 || p >= 8) return 'Defender'; if (R.q >= 4) return 'Gatebreaker'; return 'Newcomer';
+  }
+  function prosperity() { const built = Object.keys(SITES).filter((id) => G._village && G._village.done(id)).length; const bl = Object.keys(VILLAGER).reduce((a, id) => a + bondOf(id), 0); return built * 2 + bl; }
+  // daily visit perks
+  function dailyPerks(id) {
+    const b = bond(id); if (!perkOn(id) || b.perk === dk()) return null; b.perk = dk(); save();
+    if (id === 'elder' || id === 'ade') { R.potions++; save(); renderHud(); return 'Left you a potion.'; }
+    if (id === 'bo') { R.sharp = 1; save(); return 'Sharpened your blade — your next battle hits 25% harder.'; }
+    if (id === 'lin') { R.hp = maxHp(); R.hpAt = Date.now(); save(); renderHud(); return 'Her blessing restores all your hearts.'; }
+    if (id === 'pip') { R.pipChest = dk(); save(); return 'Hid a treasure chest somewhere in the village!'; }
+    return null;
+  }
+  function moveEx(slot) { const m = moves().find((x) => x.id === slot); return m ? m.ex : 'Squats'; }
+  function favourFor(id) {
+    const v = VILLAGER[id]; const ex = moveEx(v.slot); const hold = HOLDS.includes(ex);
+    // sized to your own normal sets, never more than a comfortable single set
+    let avg = 12; try { const ws = workouts.filter((w) => w.exercise === ex && w.unit === 'reps').slice(-12); if (ws.length) avg = ws.reduce((a, w) => a + w.amount, 0) / ws.length; } catch (e) {}
+    return { ex, timed: hold, target: hold ? 40 : clamp(Math.round(avg * 0.8), 6, 25) };
+  }
+  function villagerTalk(id, opener) {
+    const v = VILLAGER[id]; if (!v) return; const b = bond(id); const lvl = bondOf(id);
+    const first = b.day !== dk();
+    const perk = first ? dailyPerks(id) : null;
+    if (first) { b.day = dk(); save(); }
+    const tier = Math.min(2, Math.floor(lvl / 2));
+    const ctx = contextLine(id);
+    const greet = opener || ctx || pick(v.lines[tier]);
+    const fav = favourFor(id); const favDone = b.fav === dk();
+    const choices = [];
+    if (!favDone) choices.push([`Help: ${v.task}`, () => askFavour(id, fav)]);
+    choices.push(['Chat', () => say(id, [pick(v.lines[tier].concat(v.lines[Math.max(0, tier - 1)]))], null, v.face, v.name)]);
+    if (id === 'mira') choices.push(['Shop', () => shop(false)]);
+    if (id === 'hana') choices.push(['Shop', () => shop(true)]);
+    if (id === 'tomas') choices.push(['Rest', () => rest()]);
+    choices.push(['Bye', null]);
+    const lines = [greet]; if (perk) lines.push(perk);
+    lines.push({ text: favDone ? 'Thanks again for earlier.' : 'Anything I can do for you?', choices });
+    say(id, lines, null, v.face, v.name);
+    if (first) setTimeout(() => addBond(id, 1, 'daily visit'), 300);
+  }
+  function contextLine(id) {
+    const st = (typeof getStreak === 'function') ? getStreak() : 0; const h = new Date().getHours();
+    const c = Object.keys(R.conq).map(Number); const last = c.length ? REG()[Math.max(...c)] : null;
+    const r = Math.random();
+    if (r < 0.25 && last) return { elder: `${last.boss[0]}, gone. I'll sleep better tonight.`, mira: `Everyone's talking about ${last.name}. Did you really walk all the way there?`, bo: `${last.boss[0]}? Ha. Wish I'd seen its face.`, pip: `Did ${last.boss[0]} cry? I bet it cried.` }[id] || null;
+    if (r < 0.4 && st >= 3) return { elder: `${st} days running. Steady wins.`, mira: `${st} days in a row! I'm baking you something.`, bo: `${st} days. I'm at two. Keep going.`, pip: `${st} days! That's more than my fingers on one hand!` }[id] || null;
+    if (r < 0.55 && (h < 7 || h >= 22)) return { elder: 'Up at this hour? Rest matters as much as reps.', mira: 'Couldn\'t sleep either?', bo: 'Night watch. Me and the moths.', pip: 'Mum says I should be asleep. Shh.' }[id] || null;
+    return null;
+  }
+  function askFavour(id, fav) {
+    const v = VILLAGER[id];
+    say(id, [{ text: v.ask, choices: [[fav.timed ? `${fav.ex} · ${fav.target}s` : `${fav.ex} · ${fav.target}`, () => startSession(id, fav)], ['Not today', () => say(id, ['No worries. Rest is training too.'], null, v.face, v.name)]] }], null, v.face, v.name);
+  }
+  function rest() {
+    R.hp = maxHp(); R.hpAt = Date.now(); if (perkOn('tomas')) R.wellFed = 1; save(); renderHud(); snd('heal');
+    hint(perkOn('tomas') ? 'Fully rested and Well-fed (+20% damage next battle)' : 'Fully rested');
+  }
+  // ---------- training sessions outside battle: same counter, logged straight to your history ----------
+  let TS = null;
+  function startSession(id, fav) {
+    const v = VILLAGER[id]; const el = root.querySelector('#rlTrain');
+    TS = { id, fav, n: 0, acc: 0, running: false, started: 0 };
+    el.innerHTML = `<div class="rc-box"><div class="rc-top"><div class="ts-who"><div class="rp-face" style="background-image:url(${faceUrl(v.face)})"></div><div><div class="rc-mv">${esc(v.task)}</div><div class="rc-ex">${esc(fav.ex)} with ${esc(v.name.split(' ').pop())} · goal ${fav.timed ? fav.target + 's' : fav.target}</div></div></div><button class="rc-x" data-ts="cancel">Stop</button></div>
+      ${fav.timed ? `<div class="rc-num" id="tsNum">0:00</div><div class="rc-sub" id="tsSub"></div><div class="rc-row"><button class="rc-b" data-ts="m5">−5s</button><button class="rc-big" data-ts="toggle" id="tsTog">Start</button><button class="rc-b" data-ts="p5">+5s</button></div>`
+      : `<div class="rc-num" id="tsNum">0</div><div class="rc-sub" id="tsSub"></div><button class="rc-pad" data-ts="plus">+1</button><div class="rc-row"><button class="rc-b" data-ts="undo">Undo</button><button class="rc-b" data-ts="reset">Reset</button><button class="rc-b" data-ts="type">Type</button></div>`}
+      <button class="rc-go" data-ts="go" id="tsGo" disabled>Done</button><div class="ts-note">Stop whenever you need to — any effort counts.</div></div>`;
+    el.classList.add('on');
+    el.querySelectorAll('[data-ts]').forEach((b) => b.addEventListener('pointerdown', (ev) => { ev.preventDefault(); tsAct(b.dataset.ts, b); }));
+    tsUpd();
+  }
+  function tsAct(a, b) {
+    if (!TS) return; const f = TS.fav;
+    if (a === 'plus') { TS.n++; blip(500 + Math.min(TS.n, 30) * 18); buzz('light'); if (b) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); } }
+    else if (a === 'undo') TS.n = Math.max(0, TS.n - 1); else if (a === 'reset') TS.n = 0;
+    else if (a === 'type') { const v = prompt(`How many ${f.ex.toLowerCase()}?`, TS.n || ''); const n = Math.floor(Number(v)); if (n > 0 && n < 500) TS.n = n; }
+    else if (a === 'toggle') { if (TS.running) { TS.acc += (Date.now() - TS.started) / 1000; TS.running = false; } else { TS.started = Date.now(); TS.running = true; (function tick() { if (TS && TS.running) { tsUpd(); setTimeout(tick, 250); } })(); } }
+    else if (a === 'm5') TS.acc = Math.max(0, TS.acc - 5); else if (a === 'p5') TS.acc += 5;
+    else if (a === 'cancel') { closeSession(); return; }
+    else if (a === 'go') { if (TS.running) { TS.acc += (Date.now() - TS.started) / 1000; TS.running = false; } const amt = f.timed ? Math.round(TS.acc) : TS.n; if (amt < 1) return; finishSession(amt); return; }
+    tsUpd();
+  }
+  function tsUpd() {
+    if (!TS) return; const el = root.querySelector('#rlTrain'); const f = TS.fav; const sec = TS.acc + (TS.running ? (Date.now() - TS.started) / 1000 : 0);
+    const n = f.timed ? Math.floor(sec) : TS.n; const go = el.querySelector('#tsGo');
+    el.querySelector('#tsNum').textContent = f.timed ? `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}` : TS.n;
+    el.querySelector('#tsSub').textContent = n >= f.target ? 'Goal reached!' : n ? `${f.target - n} to the goal` : f.timed ? 'Tap Start when you\'re in position' : 'Tap the pad for every rep';
+    if (f.timed) el.querySelector('#tsTog').textContent = TS.running ? 'Pause' : sec ? 'Resume' : 'Start';
+    go.disabled = n < 1;
+  }
+  function closeSession() { TS = null; const el = root.querySelector('#rlTrain'); el.classList.remove('on'); el.innerHTML = ''; }
+  function finishSession(amt) {
+    const { id, fav } = TS; const v = VILLAGER[id]; closeSession();
+    const unit = fav.timed ? ((exMeta(fav.ex) || {}).unit || 'minutes') : 'reps';
+    const amount = unit === 'minutes' ? Math.round(amt / 60 * 100) / 100 : amt;
+    R.pending = (R.pending || []).concat([{ id: Date.now(), exercise: fav.ex, amount, sets: 1, unit, date: dk(), time: new Date().toTimeString().slice(0, 5), isPR: false, feeling: '💪', notes: `🏘️ Realm: ${v.task} with ${v.name}`, weight: null, category: null, realm: true }]);
+    save(true); flushWorkouts();
+    bond(id).fav = dk(); save();
+    const full = amt >= fav.target * 0.6;
+    say(id, [full ? pick(['That was brilliant. Thank you.', 'You make it look easy!', 'Same time tomorrow? Please?']) : 'Every bit helps. Thank you — truly.'], () => addBond(id, full ? 3 : 1, v.task), v.face, v.name);
+  }
+  function openBonds() {
+    const ids = Object.keys(VILLAGER).filter((id) => !VILLAGER[id].building || (G._village && G._village.done(VILLAGER[id].building)));
+    showMenu(`<div class="rm-title">Pulsehaven</div><div class="rm-sub">Reputation: <b>${esc(reputation())}</b> · Prosperity ${prosperity()}</div>
+      <div class="tv-list">${ids.map((id) => { const v = VILLAGER[id]; const b = bond(id); const l = bondOf(id); const nx = BOND_AT[l + 1]; const prevAt = BOND_AT[l];
+        return `<div class="bd-row bond"><div class="rp-face" style="background-image:url(${faceUrl(v.face)})"></div><div class="tv-main"><span class="tv-n">${esc(v.name)} <span class="bl-hearts sm">${bondHearts(l)}</span></span>
+          <span class="tv-s">${l >= 3 ? 'Perk: ' + esc(v.perk) : `At bond 3: ${esc(v.perk)}`}</span>
+          <span class="bd-bar"><i style="width:${nx ? Math.round((b.pts - prevAt) / (nx - prevAt) * 100) : 100}%"></i></span>
+          <span class="tv-s">${b.day === dk() ? 'Visited today' : 'Say hello today'} · ${b.fav === dk() ? 'Favour done' : `Favour: ${esc(v.task)}`}</span></div></div>`; }).join('')}
+      ${Object.keys(VILLAGER).filter((id) => !ids.includes(id)).map((id) => `<div class="bd-row locked"><div class="rp-face q"></div><div class="tv-main"><span class="tv-n">???</span><span class="tv-s">Moves in when the ${esc(((G._village && G._village.B.find((x) => x.id === VILLAGER[id].building)) || {}).name || 'building')} is rebuilt</span></div></div>`).join('')}</div>
+      <button class="rm-item ghost" data-close>Close</button>`);
+  }
 
   // ================================================================== CHESTS
   function openChestEnt(e) {
-    const key = Z.id + (R.dg[Z.ri] || 0); R.chests[key] = R.chests[key] || {}; R.chests[key][e.chest.id] = 1; save();
+    const key = e.chest.pip ? 'village-pip' : Z.id + (R.dg[Z.ri] || 0); R.chests[key] = R.chests[key] || {}; R.chests[key][e.chest.id] = 1; save();
     const i = ents.indexOf(e); if (i >= 0) ents.splice(i, 1);
     sfx('gold', 0.5); buzz('success');
     const coins = 40 + (Z.ri || 0) * 30 + Math.floor(Math.random() * 40);
@@ -1073,12 +1291,15 @@
     const reps = Math.min(def.boss ? 160 : 60, def.hp + Math.floor(lv / 4));
     const hp = Math.round(reps * Math.pow(1 + pw / 100, 0.75));
     const party = R.party ? buddyInfo(R.party) : null;
-    B = { ent, def, ehp: hp, emax: hp, phase: 'intro', intent: null, shield: 0, enrage: 0, logged: {}, turns: 0, fx: [], nums: [], ally: party, music: def.boss ? 'boss' : 'battle', sharp: R.sharp ? 1.25 : 1 };
-    R.sharp = 0; R.fights++; R.hp = Math.max(R.hp, 4); save();
+    B = { ent, def, ehp: hp, emax: hp, shown: hp, phase: 'intro', intent: null, shield: 0, enrage: 0, logged: {}, turns: 0, fx: [], nums: [], parts: [], tw: [], q: [], clock: 0, stopUntil: 0, slowUntil: 0, slowScale: 1, shake: 0,
+      hero: { ox: 0, oy: 0, sx: 1, sy: 1, pose: 'idle', ang: 0.55, trail: [], flash: 0, alpha: 1 }, foe: { ox: 0, oy: 0, sx: 1, sy: 1, flash: 0, alpha: 1, red: 0 },
+      allyA: { ox: 0, oy: 0, pose: 'idle' }, cam: { z: 1, fx: 0.5, fy: 0.55 }, dim: 0, flashW: 0, lb: 0, shieldVis: 0,
+      ally: party, music: def.boss ? 'boss' : 'battle', sharp: (R.sharp ? (R.sharp > 1 ? R.sharp : 1.25) : 1) * (R.wellFed ? 1.2 : 1) };
+    R.sharp = 0; R.wellFed = 0; R.fights++; R.hp = Math.max(R.hp, 4); save();
     pickIntent();
-    battleTransition(() => { buildBattle(); music(B.music); B.phase = 'player'; renderBattleUi(); });
+    battleTransition(() => { buildBattle(); music(B.music); if (def.boss && !TEST()) bossIntro(); else { B.phase = 'player'; renderBattleUi(); } });
   }
-  function battleTransition(cb) { const f = root.querySelector('#rlFade'); f.classList.add('swirl'); setTimeout(() => { cb(); setTimeout(() => f.classList.remove('swirl'), 80); }, TEST() ? 0 : 650); }
+  function battleTransition(cb) { const f = root.querySelector('#rlFade'); f.classList.add('swirl'); snd('whoosh', 0.6); setTimeout(() => { cb(); setTimeout(() => f.classList.remove('swirl'), 80); }, TEST() ? 0 : 650); }
   function pickIntent() {
     const it = B.def.intents; let i = Math.floor(Math.random() * it.length); if (B.turns === 0 && !it[i][1]) i = 0;
     const raging = B.def.boss && B.ehp < B.emax / 2;
@@ -1087,9 +1308,9 @@
   function buildBattle() {
     battleEl = document.createElement('div'); battleEl.className = 'rb'; battleEl.id = 'rlBattle';
     battleEl.innerHTML = `<div class="rb-stage"><canvas id="rbCv"></canvas>
-        <div class="rb-bar rb-e"><div class="rb-n">${esc(B.def.name)} <span class="rb-lv">Lv ${B.ent.lvl || 1}</span></div><div class="rb-hp"><i id="rbEHp"></i></div><div class="rb-hpn" id="rbEHpN"></div></div>
+        <div class="rb-bar rb-e"><div class="rb-n">${esc(B.def.name)} <span class="rb-lv">Lv ${B.ent.lvl || 1}</span></div><div class="rb-hp"><i class="trail" id="rbEHpT"></i><i id="rbEHp"></i></div><div class="rb-hpn" id="rbEHpN"></div></div>
         <div class="rb-bar rb-h"><div class="rb-n">${esc(heroName())}</div><div class="rl-hearts" id="rbHearts"></div>${B.ally ? `<div class="rb-ally">+ ${esc(B.ally.short)} Lv ${B.ally.lvl}</div>` : ''}</div>
-        <div class="rb-intent" id="rbIntent"></div><div class="rb-banner" id="rbBanner"></div></div>
+        <div class="rb-intent" id="rbIntent"></div><div class="rb-banner" id="rbBanner"></div><div class="rb-boss" id="rbBoss"></div></div>
       <div class="rb-ui" id="rbUi"></div><div class="rb-reps" id="rbReps"></div>`;
     root.appendChild(battleEl);
     bcv = battleEl.querySelector('#rbCv'); bctx = bcv.getContext('2d'); sizeBattle();
@@ -1098,24 +1319,36 @@
   const shortName = () => B.def.name.split(' ').pop();
   function renderBattleUi() {
     if (!B || !battleEl) return;
-    battleEl.querySelector('#rbEHp').style.width = Math.max(0, B.ehp / B.emax * 100) + '%';
+    const pct = Math.max(0, B.ehp / B.emax * 100);
+    battleEl.querySelector('#rbEHp').style.width = pct + '%';
+    clearTimeout(B.trailT); B.trailT = setTimeout(() => { const t = battleEl && battleEl.querySelector('#rbEHpT'); if (t) t.style.width = pct + '%'; }, 420);
     battleEl.querySelector('#rbEHpN').textContent = `${Math.max(0, B.ehp)}/${B.emax}${B.def.boss && B.ehp < B.emax / 2 && B.ehp > 0 ? ' · ENRAGED' : ''}`;
     battleEl.querySelector('#rbHearts').innerHTML = heartsHtml(R.hp, maxHp()) + (B.shield ? `<span class="rb-sh">GUARD ${Math.round(B.shield * 100)}%</span>` : '');
     const it = battleEl.querySelector('#rbIntent');
-    it.innerHTML = B.phase === 'player' && B.intent ? (B.intent.dmg ? `<b>${esc(shortName())}</b> readies <b>${esc(B.intent.name)}</b> <span class="dmg">${B.intent.dmg}</span>` : `<b>${esc(shortName())}</b> — ${esc(B.intent.name)} (no attack)`) : '';
-    it.classList.toggle('on', !!it.innerHTML);
+    const heavy = B.intent && B.intent.dmg >= 8;
+    it.innerHTML = B.phase === 'player' && B.intent ? (B.intent.dmg ? `<b>${esc(shortName())}</b> readies <b>${esc(B.intent.name)}</b> <span class="dmg">${B.intent.dmg}</span>${heavy ? ' <span class="warn">HEAVY</span>' : ''}` : `<b>${esc(shortName())}</b> — ${esc(B.intent.name)} (no attack)`) : '';
+    it.classList.toggle('on', !!it.innerHTML); it.classList.toggle('heavy', !!heavy);
     const ui = battleEl.querySelector('#rbUi');
-    if (B.phase !== 'player') { ui.innerHTML = B.phase === 'end' ? '' : `<div class="rb-wait">${esc(B.say || '…')}</div>`; return; }
+    if (B.phase === 'intro') { ui.innerHTML = '<div class="rb-wait"></div>'; return; }
+    if (B.phase !== 'player') { if (B.phase !== 'end') ui.innerHTML = `<div class="rb-wait">${esc(B.say || '…')}</div>`; return; }
     const rest = B.restUntil && B.restUntil > Date.now() ? Math.ceil((B.restUntil - Date.now()) / 1000) : 0;
     const mv = moves();
-    ui.innerHTML = `${rest ? `<div class="rb-rest">Catch your breath · <b>${rest}s</b> <span>(optional)</span></div>` : '<div class="rb-rest ready">Your turn — choose a move</div>'}
-      <div class="rb-moves">${mv.map((m) => `<button class="rb-mv" data-mv="${m.id}"><span class="mv-n">${m.id === 'strike' ? 'Strike' : m.id === 'smash' ? 'Smash' : m.id === 'quick' ? 'Flurry' : 'Guard'}</span><span class="mv-e">${esc(m.ex)}${m.timed ? ' · timed' : ''}</span><span class="mv-h">${m.hint}</span></button>`).join('')}</div>
-      <div class="rb-row"><button class="rb-sm" data-act="potion" ${R.potions && R.hp < maxHp() ? '' : 'disabled'}><i class="px px-pot"></i>Potion ×${R.potions}</button>${R.elixirs ? `<button class="rb-sm" data-act="elixir" ${R.hp < maxHp() ? '' : 'disabled'}>Elixir ×${R.elixirs}</button>` : ''}<button class="rb-sm ghost" data-act="flee">Retreat</button></div>`;
-    ui.querySelectorAll('[data-mv]').forEach((b) => (b.onclick = () => { sfx('menu', 0.3); openReps(mv.find((m) => m.id === b.dataset.mv)); }));
-    const heal = (k, n) => { R[k]--; R.hp = Math.min(maxHp(), R.hp + n); save(); sfx('power', 0.5); B.nums.push({ x: 0.27, y: 0.48, txt: '+' + n, c: '#7dff9a', t: 0 }); renderBattleUi(); };
-    ui.querySelector('[data-act="potion"]').onclick = () => { if (R.potions) heal('potions', 8); };
-    const el = ui.querySelector('[data-act="elixir"]'); if (el) el.onclick = () => { if (R.elixirs) heal('elixirs', maxHp()); };
-    ui.querySelector('[data-act="flee"]').onclick = () => endBattle('flee');
+    if (!ui.querySelector('.rb-moves') || ui.dataset.turn !== String(B.turns)) {
+      ui.dataset.turn = String(B.turns);
+      ui.innerHTML = `<div class="rb-rest" id="rbRest"></div>
+      <div class="rb-moves in">${mv.map((m, i) => `<button class="rb-mv" style="--d:${i * 40}ms" data-mv="${m.id}"><span class="mv-n">${m.id === 'strike' ? 'Strike' : m.id === 'smash' ? 'Smash' : m.id === 'quick' ? 'Flurry' : 'Guard'}</span><span class="mv-e">${esc(m.ex)}${m.timed ? ' · timed' : ''}</span><span class="mv-h">${m.hint}</span></button>`).join('')}</div>
+      <div class="rb-row"><button class="rb-sm" data-act="potion"><i class="px px-pot"></i>Potion ×<span>${R.potions}</span></button>${R.elixirs ? `<button class="rb-sm" data-act="elixir">Elixir ×${R.elixirs}</button>` : ''}<button class="rb-sm ghost" data-act="flee">Retreat</button></div>`;
+      ui.querySelectorAll('[data-mv]').forEach((b) => (b.onclick = () => { sfx('menu', 0.3); buzz('light'); openReps(moves().find((m) => m.id === b.dataset.mv)); }));
+      const heal = (k, n) => { R[k]--; R.hp = Math.min(maxHp(), R.hp + n); save(); snd('heal'); healFx(n); renderBattleUi(); ui.dataset.turn = ''; renderBattleUi(); };
+      ui.querySelector('[data-act="potion"]').onclick = () => { if (R.potions && R.hp < maxHp()) heal('potions', 8); };
+      const el = ui.querySelector('[data-act="elixir"]'); if (el) el.onclick = () => { if (R.elixirs && R.hp < maxHp()) heal('elixirs', maxHp()); };
+      ui.querySelector('[data-act="flee"]').onclick = () => endBattle('flee');
+    }
+    ui.querySelector('[data-act="potion"]').disabled = !(R.potions && R.hp < maxHp());
+    const ex = ui.querySelector('[data-act="elixir"]'); if (ex) ex.disabled = !(R.elixirs && R.hp < maxHp());
+    const rr = ui.querySelector('#rbRest');
+    rr.className = 'rb-rest' + (rest ? '' : ' ready');
+    rr.innerHTML = rest ? `Catch your breath · <b>${rest}s</b> <span>(optional)</span>` : 'Your turn — choose a move';
     if (rest) { clearTimeout(B.restT); B.restT = setTimeout(renderBattleUi, 1000); }
   }
   // ---------- rep counter ----------
@@ -1155,63 +1388,186 @@
   G._rpgReps = { set(n) { if (RC) { if (RC.mv.timed) RC.acc = n; else RC.n = n; updReps(); } }, go() { repAct('go'); } };
 
   function log(ex, amt) { B.logged[ex] = (B.logged[ex] || 0) + amt; R.inBattle = { label: B.def.name, logged: B.logged }; save(true); }
+
+  // ---------- the battle director: tweens, a clock that hit-stop and slow-motion can bend, and a timeline ----------
+  const EASE = { lin: (t) => t, out: (t) => 1 - (1 - t) ** 3, in: (t) => t * t * t, io: (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2), back: (t) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2; } };
+  function tw(obj, props, dur, ease = 'out') { Object.keys(props).forEach((k) => { B.tw = B.tw.filter((x) => !(x.o === obj && x.k === k)); B.tw.push({ o: obj, k, a: obj[k], b: props[k], d: Math.max(0.001, dur), t: 0, e: EASE[ease] || EASE.out }); }); }
+  function at(sec, fn) { if (B) B.q.push({ t: B.clock + sec, fn }); }
+  function hitStop(ms) { B.stopUntil = Math.max(B.stopUntil, performance.now() + ms); }
+  function slowmo(scale, ms) { B.slowScale = scale; B.slowUntil = performance.now() + ms; }
+  function shake(n) { const lvl = R.shakeLvl == null ? 2 : R.shakeLvl; B.shake = Math.max(B.shake || 0, n * [0, 0.45, 1][lvl]); }
+  function punch(z, fx) { B.cam.z = z; if (fx != null) B.cam.fx = fx; tw(B.cam, { z: 1, fx: 0.5 }, 0.4, 'out'); }
+  // positions in stage fractions
+  const HX = 0.27, EX = 0.72, GY = 0.62;
+  function spark(x, y, col, n, spd, kind) { for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = spd * (0.4 + Math.random() * 0.8); B.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - spd * 0.3, g: kind === 'dust' ? -20 : 900, life: 0.35 + Math.random() * 0.35, max: 0.7, c: col, kind: kind || 'spark' }); } }
+  function healFx(n) { const w = bcv.width, h = bcv.height; for (let i = 0; i < 14; i++) B.parts.push({ x: w * (HX + (Math.random() - 0.5) * 0.12), y: h * GY - Math.random() * h * 0.1, vx: 0, vy: -60 - Math.random() * 60, g: 0, life: 0.9, max: 0.9, c: '#7dff9a', kind: 'plus' }); B.nums.push({ x: HX, y: 0.44, txt: '+' + n, c: '#7dff9a', t: 0, kind: 'heal' }); }
+
   function playerMove(mv, amt) {
-    B.phase = 'anim'; B.turns++; B.say = mv.timed ? `Guard! You held ${mv.ex.toLowerCase()} for ${amt}s` : `${amt} ${mv.ex.toLowerCase()}!`; renderBattleUi();
-    const pw = 1 + Math.max(0, G.stats ? G.stats().power : 0) / 100;
-    if (mv.timed) {
-      log(mv.ex, amt); B.shield = Math.min(1, amt / 30); const counter = Math.round(amt * 0.25 * pw * B.sharp);
-      B.hAnim = { kind: 'guard', t: 0 }; sfx('magic', 0.45); buzz('medium'); B.fx.push({ img: 'fxRing', x: 0.27, y: 0.6, t: 0, n: 5, sc: 1.4 });
-      setTimeout(() => { if (counter > 0) damageEnemy(counter, false, 'fxSpark'); afterHero(1300); }, 700); return;
-    }
+    B.phase = 'anim'; B.turns++; B.say = mv.timed ? `Guard! ${mv.ex} held for ${amt}s` : `${amt} ${mv.ex.toLowerCase()}!`; renderBattleUi();
     log(mv.ex, amt);
+    const H = B.hero; const pw = 1 + Math.max(0, G.stats ? G.stats().power : 0) / 100;
+    if (mv.timed) {
+      B.shield = Math.min(1, amt / 30); const counter = Math.round(amt * 0.25 * pw * B.sharp);
+      H.pose = 'guard'; tw(H, { sy: 0.88, sx: 1.1 }, 0.12); at(0.12, () => tw(H, { sy: 1, sx: 1 }, 0.3, 'back'));
+      tw(B, { shieldVis: B.shield }, 0.4, 'back'); snd('guard'); buzz('medium');
+      B.fx.push({ img: 'fxRing', x: HX, y: GY - 0.08, t: 0, n: 5, sc: 1.5 });
+      at(0.65, () => {
+        if (counter > 0) { H.pose = 'dash'; tw(H, { ox: 0.3 }, 0.11, 'in'); snd('whoosh', 1.2); at(0.11, () => { H.pose = 'strike'; H.swing = { a: -1.2, b: 1.9, d: 0.08, t: 0 }; }); at(0.15, () => impact(counter, false, { fx: 'fxSpark' })); at(0.3, () => { if (B.phase === 'end') return; H.pose = 'recover'; tw(H, { ox: 0 }, 0.3, 'io'); }); at(0.75, () => { if (B.phase !== 'end') { H.pose = 'guard'; afterHero(); } }); }
+        else afterHero();
+      });
+      return;
+    }
     const hits = mv.hits || 1; const rolls = [];
     for (let i = 0; i < hits; i++) { const r = G.rollDamage ? G.rollDamage(Math.max(1, Math.round(amt * mv.mult * B.sharp / hits))) : { dmg: Math.round(amt * mv.mult / hits), crit: false }; if (hits > 1 && !r.crit && Math.random() < 0.15) { r.dmg *= 2; r.crit = true; } rolls.push(r); }
-    B.hAnim = { kind: 'attack', t: 0 }; sfx('sword', 0.55, mv.id === 'smash' ? 0.8 : 1.1); buzz(mv.id === 'smash' ? 'heavy' : 'medium');
-    rolls.forEach((r, i) => setTimeout(() => damageEnemy(r.dmg, r.crit, mv.fx, mv.id === 'smash'), 280 + i * 260));
-    afterHero(280 + hits * 260 + 600);
+    const big = mv.id === 'smash';
+    // anticipation: lean back and coil
+    H.pose = 'wind'; tw(H, { ox: -0.035, sx: 1.12, sy: 0.84 }, big ? 0.3 : 0.15, 'out'); snd('wind');
+    const tw0 = big ? 0.3 : 0.15;
+    if (big) {
+      at(tw0, () => { H.pose = 'jump'; tw(H, { ox: 0.3, sx: 0.9, sy: 1.14 }, 0.22, 'out'); tw(H, { oy: -0.2 }, 0.2, 'out'); snd('whoosh', 0.8); });
+      at(tw0 + 0.22, () => { H.pose = 'strike'; tw(H, { oy: 0, sx: 1.22, sy: 0.78 }, 0.07, 'in'); H.swing = { a: -2.4, b: 1.7, d: 0.07, t: 0 }; });
+      at(tw0 + 0.29, () => { impact(rolls[0].dmg, rolls[0].crit, { fx: mv.fx, big: true }); groundSlam(); });
+      at(tw0 + 0.5, recover);
+    } else {
+      let t0 = tw0;
+      rolls.forEach((r, i) => {
+        at(t0, () => { if (B.phase === 'end') return; H.pose = 'dash'; tw(H, { ox: 0.31, sx: 1.12, sy: 0.9 }, 0.11, 'in'); snd('whoosh', 1 + i * 0.2); });
+        at(t0 + 0.11, () => { if (B.phase === 'end') return; H.pose = 'strike'; H.swing = i % 2 ? { a: 2.0, b: -1.3, d: 0.08, t: 0 } : { a: -1.3, b: 2.0, d: 0.08, t: 0 }; tw(H, { sx: 1, sy: 1 }, 0.12); });
+        at(t0 + 0.15, () => impact(r.dmg, r.crit, { fx: mv.fx, combo: i }));
+        if (i < hits - 1) at(t0 + 0.25, () => { if (B.phase !== 'end') tw(H, { ox: 0.2 }, 0.08, 'out'); });
+        t0 += i < hits - 1 ? 0.33 : 0.3;
+      });
+      at(t0, recover);
+    }
   }
-  function afterHero(ms) {
-    setTimeout(() => {
-      if (!B || B.phase === 'end') return;
-      if (B.ally) { // your buddy follows up
-        const d = Math.max(1, Math.round((3 + B.ally.lvl * 1.2) * (0.8 + Math.random() * 0.4)));
-        B.aAnim = { t: 0 }; B.say = `${B.ally.short} attacks!`; renderBattleUi();
-        setTimeout(() => { if (!B || B.phase === 'end') return; damageEnemy(d, false, 'fxHit'); setTimeout(() => { if (B && B.ehp > 0) enemyTurn(); }, 600); }, 350);
-      } else enemyTurn();
-    }, ms);
+  function recover() { if (!B || B.phase === 'end') return; const H = B.hero; H.pose = 'recover'; tw(H, { ox: 0, oy: 0, sx: 1, sy: 1 }, 0.34, 'io'); at(0.42, () => { if (B.phase === 'end') return; H.pose = 'idle'; afterHero(); }); }
+  function groundSlam() {
+    const w = bcv.width, h = bcv.height;
+    B.fx.push({ img: 'fxRing', x: EX - 0.02, y: GY - 0.02, t: 0, n: 5, sc: 2.4 });
+    spark(w * (EX - 0.05), h * GY, '#c8b49a', 18, 260, 'dust'); snd('thud');
   }
-  function damageEnemy(d, crit, fx, big) {
-    if (!B) return;
-    B.ehp -= d; B.eFlash = 0.18; B.eKnock = 1;
-    B.fx.push({ img: fx, x: 0.72, y: 0.52, t: 0, n: fx === 'fxSlash' || fx === 'fxCross' ? 4 : 5, sc: big ? 2 : 1.5 });
-    B.nums.push({ x: 0.72, y: 0.36, txt: (crit ? 'CRIT ' : '') + d, c: crit ? '#ffd23f' : '#fff', t: 0, big: crit || big });
-    B.shake = big ? 9 : crit ? 7 : 4; sfx(pick(['hit1', 'hit2', 'hit3']), 0.5, crit ? 0.9 : 1.05);
+  function impact(d, crit, o = {}) {
+    if (!B || B.phase === 'end') return;
+    const F = B.foe; const w = bcv.width, h = bcv.height;
+    B.ehp -= d; const lethal = B.ehp <= 0;
+    F.flash = 1; tw(F, { flash: 0 }, 0.2, 'lin');
+    const kb = (o.big ? 0.06 : crit ? 0.05 : 0.03) * (B.def.boss ? 0.5 : 1);
+    F.ox = kb; tw(F, { ox: 0 }, 0.4, 'out'); F.sx = 0.82; F.sy = 1.14; tw(F, { sx: 1, sy: 1 }, 0.35, 'back');
+    B.fx.push({ img: o.fx || 'fxHit', x: EX, y: GY - 0.1, t: 0, n: o.fx === 'fxSlash' || o.fx === 'fxCross' ? 4 : 5, sc: o.big ? 2.1 : crit ? 1.9 : 1.5 });
+    spark(w * EX, h * (GY - 0.1), crit ? '#ffd23f' : '#ffffff', crit ? 22 : o.big ? 16 : 9, crit ? 520 : 380);
+    B.nums.push({ x: EX + (o.combo ? 0.05 : 0), y: 0.36 - (o.combo ? 0.05 : 0), txt: String(d), c: crit ? '#ffd23f' : o.ally ? '#9be7ff' : '#ffffff', t: 0, kind: crit ? 'crit' : o.big ? 'big' : 'hit' });
+    if (crit) { hitStop(130); slowmo(0.35, 380); B.flashW = 0.5; tw(B, { flashW: 0 }, 0.3, 'lin'); punch(1.12, 0.62); shake(8); snd('crit'); buzz('heavy'); }
+    else if (o.big) { hitStop(110); punch(1.07, 0.6); shake(10); buzz('heavy'); }
+    else { hitStop(o.ally ? 40 : 70); shake(o.ally ? 2 : 4); buzz('medium'); }
+    sfx(pick(['hit1', 'hit2', 'hit3']), 0.5, crit ? 0.85 : 1.05); snd('crack', crit ? 0.8 : 1);
     renderBattleUi();
-    if (B.ehp <= 0 && B.phase !== 'end') { B.phase = 'end'; setTimeout(victory, 600); }
+    if (lethal) { B.phase = 'end'; finisher(); }
+  }
+  // the killing blow: slow motion, a flash, and the enemy shatters into its own pixels
+  function finisher() {
+    const H = B.hero, F = B.foe;
+    hitStop(160); slowmo(0.3, 650); B.flashW = 0.55; tw(B, { flashW: 0 }, 0.3, 'lin');
+    tw(B.cam, { z: 1.2, fx: 0.68, fy: 0.55 }, 0.2, 'out'); snd('finish'); shake(9); buzz('heavy');
+    B.nums.push({ x: 0.5, y: 0.2, txt: B.def.boss ? 'BOSS DOWN' : 'FINISH', c: '#ffd23f', t: 0, kind: 'stamp' });
+    at(0.18, () => { shatter(); F.alpha = 0; B.fx.push({ img: 'fxSmoke', x: EX, y: GY - 0.08, t: 0, n: 6, sc: 2.2 * Math.min(1.6, B.def.sc || 1) }); sfx('kill', 0.5); });
+    at(0.45, () => { tw(B.cam, { z: 1, fx: 0.5, fy: 0.55 }, 0.45, 'io'); H.pose = 'victory'; tw(H, { ox: 0, oy: -0.07, sx: 1, sy: 1 }, 0.16, 'out'); at(0.16, () => tw(H, { oy: 0 }, 0.18, 'in')); });
+    at(0.75, victory);
+  }
+  function shatter() {
+    const k = B.ent.img; const im = B.def.tint ? tinted(k, B.def.tint, 0.38) : IMG[k]; if (!im) return;
+    const c = document.createElement('canvas'); c.width = 16; c.height = 16; const x = c.getContext('2d');
+    const mon = /^m/.test(k); x.drawImage(im, 2 * 16, 0, 16, 16, 0, 0, 16, 16);
+    let px; try { px = x.getImageData(0, 0, 16, 16).data; } catch (e) { return; }
+    const w = bcv.width, h = bcv.height; const big = B.fbig || 6; const cx = w * EX, top = h * GY - big * 16;
+    for (let yy = 0; yy < 16; yy += 1) for (let xx = 0; xx < 16; xx += 1) {
+      const i = (yy * 16 + xx) * 4; if (px[i + 3] < 100 || (xx + yy) % 2 && !mon && Math.random() < 0.3) continue;
+      const ox = (xx - 8) * big, oy = yy * big;
+      B.parts.push({ x: cx + ox, y: top + oy, vx: ox * (4 + Math.random() * 4) + (Math.random() - 0.3) * 120, vy: -150 - Math.random() * 260 + oy * 1.5, g: 820, life: 0.7 + Math.random() * 0.6, max: 1.3, c: `rgb(${px[i]},${px[i + 1]},${px[i + 2]})`, kind: 'shard', sz: big });
+    }
+  }
+  function afterHero() {
+    if (!B || B.phase === 'end') return;
+    if (B.ally) {
+      const A = B.allyA; const d = Math.max(1, Math.round((3 + B.ally.lvl * 1.2) * (0.8 + Math.random() * 0.4)));
+      B.say = `${B.ally.short} follows up!`; renderBattleUi();
+      tw(A, { ox: 0.45 }, 0.16, 'in'); snd('whoosh', 1.3);
+      at(0.16, () => { A.pose = 'strike'; impact(d, false, { fx: 'fxHit', ally: true }); });
+      at(0.3, () => { tw(A, { ox: 0 }, 0.3, 'io'); A.pose = 'idle'; });
+      at(0.75, () => { if (B && B.phase !== 'end') enemyTurn(); });
+    } else at(0.2, enemyTurn);
   }
   function enemyTurn() {
     if (!B || B.phase === 'end') return;
-    const it = B.intent; B.phase = 'enemy';
+    const it = B.intent; const F = B.foe, H = B.hero; B.phase = 'enemy';
     B.say = it.dmg ? `${shortName()} uses ${it.name}!` : `${shortName()}: ${it.name}…`; renderBattleUi();
+    const w = bcv.width, h = bcv.height;
     if (!it.dmg) {
-      if (/Taunt|Rally|Roar|War Cry|Cackle|Laugh|Bellow/.test(it.name)) { B.enrage = 2; B.nums.push({ x: 0.72, y: 0.3, txt: 'ENRAGED', c: '#ff7a5a', t: 0 }); sfx('alert', 0.35, 1.3); }
-      else if (/Harden|Shell|Guard|Hide|Halo/.test(it.name)) { const h = Math.round(B.emax * 0.06); B.ehp = Math.min(B.emax, B.ehp + h); B.nums.push({ x: 0.72, y: 0.3, txt: '+' + h, c: '#7dff9a', t: 0 }); }
-      else B.nums.push({ x: 0.72, y: 0.3, txt: '...', c: '#aaa', t: 0 });
-      setTimeout(nextTurn, 900); renderBattleUi(); return;
+      tw(F, { sy: 1.14, sx: 0.9 }, 0.16, 'out'); at(0.16, () => tw(F, { sy: 1, sx: 1 }, 0.35, 'back'));
+      if (/Taunt|Rally|Roar|War Cry|Cackle|Laugh|Bellow|Crow Call/.test(it.name)) { B.enrage = 2; F.red = 1; tw(F, { red: 0.35 }, 0.6); B.nums.push({ x: EX, y: 0.3, txt: 'ENRAGED', c: '#ff7a5a', t: 0, kind: 'status' }); snd('growl'); shake(3); }
+      else if (/Harden|Shell|Guard|Hide|Halo|Regrow/.test(it.name)) { const hh = Math.round(B.emax * 0.06); B.ehp = Math.min(B.emax, B.ehp + hh); B.nums.push({ x: EX, y: 0.3, txt: '+' + hh, c: '#7dff9a', t: 0, kind: 'heal' }); for (let i = 0; i < 10; i++) B.parts.push({ x: w * (EX + (Math.random() - 0.5) * 0.12), y: h * GY - Math.random() * h * 0.12, vx: 0, vy: -70, g: 0, life: 0.8, max: 0.8, c: '#7dff9a', kind: 'plus' }); snd('heal'); }
+      else B.nums.push({ x: EX, y: 0.3, txt: '…', c: '#aaa', t: 0, kind: 'status' });
+      renderBattleUi(); at(1.0, nextTurn); return;
     }
-    B.eAnim = { t: 0 };
-    setTimeout(() => {
+    const heavy = it.dmg >= 8 || B.def.boss;
+    const wind = heavy ? 0.5 : 0.32;
+    tw(F, { ox: 0.045, sx: 0.88, sy: 1.12, red: 1 }, wind, 'out'); snd('growl');
+    if (heavy) { tw(B, { dim: 0.38 }, wind); tw(B.cam, { z: 1.07, fx: 0.62 }, wind, 'io'); }
+    at(wind, () => { tw(F, { ox: -0.31, sx: 1.16, sy: 0.88 }, 0.1, 'in'); snd('whoosh', 0.7); });
+    at(wind + 0.1, () => {
       if (!B) return;
       let d = it.dmg; const blocked = Math.round(d * B.shield); d -= blocked;
-      B.fx.push({ img: B.shield > 0.5 ? 'fxRing' : 'fxClaw', x: 0.28, y: 0.55, t: 0, n: 5, sc: 1.5 });
-      if (d > 0) { R.hp = Math.max(0, R.hp - d); B.hFlash = 0.2; B.shake = 6; sfx('hit9', 0.5, 0.8); buzz('heavy'); B.nums.push({ x: 0.28, y: 0.38, txt: '-' + d, c: '#ff6b6b', t: 0, big: d >= 8 }); }
-      if (blocked) B.nums.push({ x: 0.28, y: 0.3, txt: `BLOCKED ${blocked}`, c: '#8fd3ff', t: 0 });
-      B.enrage = 0; B.shield = 0; R.hpAt = Date.now(); save(); renderBattleUi();
-      if (R.hp <= 0) { B.phase = 'end'; setTimeout(defeat, 900); return; }
-      setTimeout(nextTurn, 700);
-    }, 450);
+      B.fx.push({ img: blocked && !d ? 'fxRing' : 'fxClaw', x: HX + 0.02, y: GY - 0.1, t: 0, n: 5, sc: 1.6 });
+      if (blocked) { spark(w * (HX + 0.06), h * (GY - 0.1), '#8fd3ff', 16, 420); snd('clang'); hitStop(70); B.nums.push({ x: HX, y: 0.3, txt: `BLOCK ${blocked}`, c: '#8fd3ff', t: 0, kind: 'status' }); }
+      if (d > 0) {
+        R.hp = Math.max(0, R.hp - d); H.flash = 1; tw(H, { flash: 0 }, 0.3, 'lin'); H.pose = 'hurt'; H.ox = -0.045; tw(H, { ox: 0 }, 0.4, 'out');
+        hitStop(heavy ? 100 : 60); shake(heavy ? 10 : 5); snd('hurt'); buzz('heavy'); spark(w * HX, h * (GY - 0.1), '#ff6b6b', heavy ? 14 : 8, 360);
+        B.nums.push({ x: HX, y: 0.38, txt: '-' + d, c: '#ff6b6b', t: 0, kind: heavy ? 'big' : 'hit' });
+        const hs = battleEl.querySelector('#rbHearts'); if (hs) { hs.classList.remove('hit'); void hs.offsetWidth; hs.classList.add('hit'); }
+      }
+      tw(B, { shieldVis: 0 }, 0.3); B.shield = 0; B.enrage = 0; R.hpAt = Date.now(); save(); renderBattleUi();
+    });
+    at(wind + 0.32, () => { tw(F, { ox: 0, sx: 1, sy: 1, red: B.def.boss && B.ehp < B.emax / 2 ? 0.3 : 0 }, 0.38, 'io'); tw(B, { dim: 0 }, 0.4); tw(B.cam, { z: 1, fx: 0.5 }, 0.45, 'io'); });
+    at(wind + 0.8, () => { if (!B) return; if (R.hp <= 0) { B.phase = 'end'; H.pose = 'down'; tw(B, { dim: 0.5 }, 0.5); snd('thud'); at(0.9, defeat); } else { H.pose = 'idle'; nextTurn(); } });
   }
-  function nextTurn() { if (!B || B.phase === 'end') return; pickIntent(); B.phase = 'player'; B.restUntil = Date.now() + 20000; renderBattleUi(); }
+  function nextTurn() { if (!B || B.phase === 'end') return; pickIntent(); B.phase = 'player'; B.restUntil = Date.now() + 20000; renderBattleUi(); if (B.intent.dmg >= 8) snd('warn'); }
+  function bossIntro() {
+    B.phase = 'intro'; renderBattleUi();
+    tw(B, { lb: 1 }, 0.4, 'out'); B.cam.z = 1.45; B.cam.fx = 0.72; B.cam.fy = 0.48; tw(B.cam, { z: 1.25 }, 1.8, 'lin'); snd('rumble'); shake(4);
+    const d = B.def; const sub = d.world != null ? 'World Boss' : d.dungeonBoss != null ? `Lord of ${(DUN()[d.dungeonBoss] || {}).name || 'the deep'}` : `Master of ${REG()[d.region].name}`;
+    const card = battleEl.querySelector('#rbBoss'); card.innerHTML = `<div class="bi-sub">${esc(sub)}</div><div class="bi-n">${esc(d.name)}</div>`; card.classList.add('on');
+    let done = false;
+    const finish = () => { if (done || !B || B.phase !== 'intro') return; done = true; card.classList.remove('on'); tw(B, { lb: 0 }, 0.35, 'io'); tw(B.cam, { z: 1, fx: 0.5, fy: 0.55 }, 0.5, 'io'); B.phase = 'player'; renderBattleUi(); };
+    at(2.1, finish); battleEl.querySelector('.rb-stage').addEventListener('pointerdown', finish, { once: true });
+  }
+
+  // ---------- synthesised combat & world foley (layered under the pack's sound effects) ----------
+  let NOISE = null;
+  function noiseBuf(ctx) { if (NOISE) return NOISE; NOISE = ctx.createBuffer(1, ctx.sampleRate * 1.5, ctx.sampleRate); const d = NOISE.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return NOISE; }
+  function snd(type, rate = 1) {
+    if (!soundOn() || TEST()) return; const ctx = actx(); if (!ctx) return; const n = ctx.currentTime;
+    const out = ctx.createGain(); out.connect(ctx.destination);
+    const noise = (dur, f0, f1, q, g, kind = 'bandpass') => { const s = ctx.createBufferSource(); s.buffer = noiseBuf(ctx); const f = ctx.createBiquadFilter(); f.type = kind; f.Q.value = q; f.frequency.setValueAtTime(f0, n); f.frequency.exponentialRampToValueAtTime(Math.max(20, f1), n + dur); const gg = ctx.createGain(); gg.gain.setValueAtTime(g, n); gg.gain.exponentialRampToValueAtTime(0.0008, n + dur); s.connect(f); f.connect(gg); gg.connect(out); s.start(n); s.stop(n + dur + 0.05); };
+    const tone = (type2, f0, f1, dur, g, delay = 0) => { const o = ctx.createOscillator(); o.type = type2; o.frequency.setValueAtTime(f0, n + delay); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), n + delay + dur); const gg = ctx.createGain(); gg.gain.setValueAtTime(0.0001, n + delay); gg.gain.linearRampToValueAtTime(g, n + delay + 0.008); gg.gain.exponentialRampToValueAtTime(0.0008, n + delay + dur); o.connect(gg); gg.connect(out); o.start(n + delay); o.stop(n + delay + dur + 0.05); };
+    switch (type) {
+      case 'whoosh': noise(0.16 / rate, 500 * rate, 2600 * rate, 1.2, 0.16); break;
+      case 'wind': noise(0.14, 300, 900, 0.8, 0.07); break;
+      case 'crack': noise(0.07, 3000 * rate, 900, 0.7, 0.18, 'highpass'); tone('square', 180 * rate, 60, 0.08, 0.06); break;
+      case 'thud': tone('sine', 130, 38, 0.32, 0.5); noise(0.25, 400, 80, 0.5, 0.22, 'lowpass'); break;
+      case 'crit': tone('square', 880, 880, 0.08, 0.05); tone('square', 1320, 1320, 0.14, 0.05, 0.06); tone('triangle', 1760, 1760, 0.22, 0.05, 0.11); break;
+      case 'finish': tone('sine', 90, 30, 0.7, 0.55); noise(0.6, 2000, 120, 0.6, 0.2, 'lowpass'); tone('triangle', 660, 1320, 0.3, 0.06, 0.05); break;
+      case 'clang': tone('triangle', 1250, 1180, 0.32, 0.12); tone('triangle', 1870, 1800, 0.22, 0.07); noise(0.08, 5000, 3000, 0.8, 0.12, 'highpass'); break;
+      case 'hurt': tone('sawtooth', 240, 90, 0.18, 0.09); noise(0.12, 900, 200, 0.6, 0.12, 'lowpass'); break;
+      case 'growl': tone('sawtooth', 80, 55, 0.35, 0.07); noise(0.3, 250, 120, 2, 0.07); break;
+      case 'warn': tone('square', 330, 330, 0.07, 0.035); tone('square', 330, 330, 0.07, 0.035, 0.12); break;
+      case 'guard': tone('triangle', 520, 780, 0.25, 0.08); noise(0.3, 1800, 3500, 3, 0.04); break;
+      case 'heal': [523, 659, 784].forEach((f, i) => tone('triangle', f, f, 0.18, 0.05, i * 0.07)); break;
+      case 'rumble': noise(1.4, 140, 60, 0.4, 0.35, 'lowpass'); tone('sine', 55, 40, 1.4, 0.3); break;
+      case 'step': noise(0.035, 900 * rate, 400, 1, 0.025, 'lowpass'); break;
+      case 'bump': tone('sine', 160, 90, 0.08, 0.12); break;
+      case 'chime': [784, 988, 1175].forEach((f, i) => tone('triangle', f, f, 0.25, 0.04, i * 0.05)); break;
+      case 'heart': tone('triangle', 660, 990, 0.15, 0.06); tone('triangle', 990, 1320, 0.2, 0.05, 0.1); break;
+    }
+  }
 
   // ---------- workout logging (staged, then written once) ----------
   function stageWorkouts(label) {
@@ -1242,7 +1598,7 @@
   // ---------- results ----------
   function victory() {
     if (!B) return;
-    B.dying = 0.001; sfx('kill', 0.55); buzz('success'); stopMusic();
+    stopMusic();
     const ent = B.ent, def = B.def, s = ent.spawn;
     R.wins++; R.kills[s.id] = (R.kills[s.id] || 0) + 1; R.dead[Z.id] = R.dead[Z.id] || {}; R.dead[Z.id][s.id] = Date.now();
     const xp = stageWorkouts(def.name);
@@ -1344,58 +1700,149 @@
     return o;
   }
   function battleFrame(dt, t) {
-    if (!bcv) return;
-    const c = bctx, w = bcv.width, h = bcv.height;
+    if (!bcv || !B) return;
+    const c = bctx, w = bcv.width, h = bcv.height; const now = performance.now();
+    const sdt = now < B.stopUntil ? 0 : dt * (now < B.slowUntil ? B.slowScale : 1);
+    B.clock += sdt;
+    for (let i = B.tw.length - 1; i >= 0; i--) { const x = B.tw[i]; x.t += sdt; const p = Math.min(1, x.t / x.d); x.o[x.k] = x.a + (x.b - x.a) * x.e(p); if (p >= 1) B.tw.splice(i, 1); }
+    if (B.q.length) { const due = B.q.filter((x) => x.t <= B.clock); if (due.length) { B.q = B.q.filter((x) => x.t > B.clock); due.forEach((x) => { try { x.fn(); } catch (e) { console.warn('realm battle', e); } }); } }
+    if (!B) return;
     const s = Math.max(2, Math.round(DPR * Math.min(3, w / DPR / 130)));
-    c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = false;
-    let shx = 0, shy = 0; if (B.shake > 0) { B.shake -= dt * 30; shx = (Math.random() - 0.5) * B.shake * DPR; shy = (Math.random() - 0.5) * B.shake * DPR; }
-    c.translate(Math.round(shx), Math.round(shy));
+    c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = false; c.fillStyle = '#0b0710'; c.fillRect(0, 0, w, h);
+    let shx = 0, shy = 0; if (B.shake > 0) { B.shake = Math.max(0, B.shake - dt * 34); shx = (Math.random() - 0.5) * B.shake * DPR; shy = (Math.random() - 0.5) * B.shake * DPR; }
+    const cz = B.cam.z, cfx = B.cam.fx * w, cfy = B.cam.fy * h;
+    c.setTransform(cz, 0, 0, cz, Math.round(cfx - cfx * cz + shx), Math.round(cfy - cfy * cz + shy));
     if (!B.bg || B.bg.width !== w || B.bg.height !== h) B.bg = arena(w, h, s);
     c.drawImage(B.bg, 0, 0);
     const big = Math.max(3, Math.round(Math.min(w * 0.2, h * 0.42) / 16));
-    const gy = h * 0.62;
-    // hero
-    let hx = w * 0.27; let hRow = 0;
-    if (B.hAnim) { B.hAnim.t += dt; const a = B.hAnim.t; if (B.hAnim.kind === 'attack') { const k = a < 0.25 ? a / 0.25 : a < 0.55 ? 1 : Math.max(0, 1 - (a - 0.55) / 0.3); hx += w * 0.3 * k; hRow = a > 0.2 && a < 0.6 ? 4 : Math.floor(a * 10) % 4; if (a > 0.9) B.hAnim = null; } else { hRow = 4; if (a > 1.2) B.hAnim = null; } }
-    const hb = Math.sin(t * 3) * s * 0.5;
-    // ally behind the hero
-    if (B.ally && ready(B.ally.spr)) { let ax = w * 0.12; if (B.aAnim) { B.aAnim.t += dt; const a = B.aAnim.t; const k = a < 0.25 ? a / 0.25 : Math.max(0, 1 - (a - 0.25) / 0.35); ax += w * 0.45 * k; if (a > 0.7) B.aAnim = null; } const ab = big * 0.8; shadow(c, ax, gy - h * 0.06, ab); c.drawImage(IMG[B.ally.spr], 3 * 16, (B.aAnim ? 4 : 0) * 16, 16, 16, Math.round(ax - ab * 8), Math.round(gy - h * 0.06 - ab * 16), ab * 16, ab * 16); }
-    shadow(c, hx, gy, big);
-    if (B.hFlash > 0) { B.hFlash -= dt; c.globalAlpha = 0.5 + Math.sin(t * 60) * 0.5; }
-    c.drawImage(IMG.c15, 3 * 16, hRow * 16, 16, 16, Math.round(hx - big * 8), Math.round(gy - big * 16 + hb), big * 16, big * 16);
-    c.globalAlpha = 1;
+    const gy = h * GY;
+    // ---- ally
+    if (B.ally && ready(B.ally.spr)) { const A = B.allyA; const ab = Math.round(big * 0.8); const ax = w * (0.12 + A.ox), ay = gy - h * 0.06; shadow(c, ax, ay, ab); const br = A.pose === 'idle' ? Math.sin(t * 2.6 + 1) * 0.02 : 0; c.drawImage(IMG[B.ally.spr], 3 * 16, (A.pose === 'strike' ? 4 : 0) * 16, 16, 16, Math.round(ax - ab * 8), Math.round(ay - ab * 16 * (1 + br)), ab * 16, Math.round(ab * 16 * (1 + br))); }
+    // ---- hero
+    const H = B.hero; const hx = w * (HX + H.ox), hy = gy + h * H.oy;
+    let col = 3, row = 0;
+    if (H.pose === 'dash') row = 1 + Math.floor(t * 14) % 3; else if (H.pose === 'strike' || H.pose === 'guard') row = 4; else if (H.pose === 'jump') row = 5; else if (H.pose === 'victory') { row = 6; col = 1; } else if (H.pose === 'down') { row = 6; col = 0; } else if (H.pose === 'hurt') { row = 0; }
+    const breathe = H.pose === 'idle' ? Math.sin(t * 2.4) * 0.025 : 0;
+    const hsx = H.sx, hsy = H.sy * (1 + breathe);
+    shadow(c, w * (HX + H.ox), gy, big * (1 - Math.min(0.5, -H.oy * 2)));
+    const dw = big * 16 * hsx, dh = big * 16 * hsy;
+    const him = H.flash > 0.05 ? (H.flash > 0.5 ? tinted('c15', '#ff4444', 0.75) : tinted('c15', '#ff4444', 0.4)) : IMG.c15;
+    c.drawImage(him, col * 16, row * 16, 16, 16, Math.round(hx - dw / 2), Math.round(hy - dh), Math.round(dw), Math.round(dh));
+    // weapon + trail
     const wpn = equippedSlayer() ? IMG.katana : IMG.sword;
-    if (wpn && wpn.complete) { c.save(); c.translate(Math.round(hx + big * 6), Math.round(gy - big * 7 + hb)); c.rotate(B.hAnim && B.hAnim.kind === 'attack' && B.hAnim.t > 0.2 && B.hAnim.t < 0.6 ? 1.9 : 0.5); c.drawImage(wpn, -wpn.width * big / 2, -wpn.height * big, wpn.width * big, wpn.height * big); c.restore(); }
-    // enemy
-    const def = B.def; const ek = B.ent.img; const esc2 = (def.sc || 1); const eb2 = Math.round(big * Math.min(1.9, esc2)) ;
-    let ex = w * 0.72;
-    if (B.eKnock > 0) { B.eKnock = Math.max(0, B.eKnock - dt * 4); ex += B.eKnock * s * 6; }
-    const mon = /^m/.test(ek); let eRow = mon ? Math.floor(t * 6) % 4 : 0;
-    if (B.eAnim) { B.eAnim.t += dt; const a = B.eAnim.t; const k = a < 0.3 ? a / 0.3 : Math.max(0, 1 - (a - 0.3) / 0.3); ex -= w * 0.3 * k; if (!mon) eRow = a > 0.2 && a < 0.45 ? 4 : Math.floor(a * 12) % 4; if (a > 0.7) B.eAnim = null; }
-    else if (!mon && B.phase === 'player') eRow = Math.floor(t * 3) % 2 ? 0 : 2;
-    let ea = 1;
-    if (B.dying) { B.dying += dt; ea = Math.max(0, 1 - B.dying / 0.7); if (B.dying > 0.1 && !B.smoked) { B.smoked = 1; B.fx.push({ img: 'fxSmoke', x: 0.72, y: 0.55, t: 0, n: 6, sc: 2.2 * Math.min(1.6, esc2) }); } }
-    shadow(c, ex, gy, eb2 * ea);
-    c.globalAlpha = ea;
-    let eim = def.tint ? tinted(ek, def.tint, 0.38) : IMG[ek];
-    if (B.eFlash > 0) { B.eFlash -= dt; eim = tinted(ek, '#ffffff', 0.85); }
-    const bob = mon ? 0 : Math.sin(t * 3 + 1) * s * 0.5;
-    if (eim) c.drawImage(eim, 2 * 16, eRow * 16, 16, 16, Math.round(ex - eb2 * 8), Math.round(gy - eb2 * 16 + bob), eb2 * 16, eb2 * 16);
-    if (def.crown) drawCrown(c, ex, gy - eb2 * 16 + eb2 * 2, eb2);
+    if (H.swing) { H.swing.t += sdt; const p = Math.min(1, H.swing.t / H.swing.d); H.ang = H.swing.a + (H.swing.b - H.swing.a) * EASE.out(p); if (p >= 1) { H.swing = null; at(0.12, () => { if (B && !H.swing) tw(H, { ang: 0.55 }, 0.25, 'io'); }); } }
+    const pivX = hx + big * 4.5 * hsx, pivY = hy - dh * 0.42;
+    if (wpn && wpn.complete && H.pose !== 'down' && H.pose !== 'victory') {
+      const L = wpn.height * big; const tipX = pivX + Math.sin(H.ang) * L, tipY = pivY - Math.cos(H.ang) * L;
+      if (H.swing || (H.trail.length && H.trail[0].age < 0.12)) H.trail.unshift({ x: tipX, y: tipY, bx: pivX + Math.sin(H.ang) * L * 0.35, by: pivY - Math.cos(H.ang) * L * 0.35, age: 0 });
+      H.trail.forEach((p) => (p.age += dt)); H.trail = H.trail.filter((p) => p.age < 0.14).slice(0, 10);
+      if (H.trail.length > 1) { c.beginPath(); c.moveTo(H.trail[0].x, H.trail[0].y); H.trail.forEach((p) => c.lineTo(p.x, p.y)); for (let i = H.trail.length - 1; i >= 0; i--) c.lineTo(H.trail[i].bx, H.trail[i].by); c.closePath(); const g = c.createLinearGradient(H.trail[0].x, H.trail[0].y, H.trail[H.trail.length - 1].x, H.trail[H.trail.length - 1].y); g.addColorStop(0, 'rgba(255,250,220,.85)'); g.addColorStop(1, 'rgba(255,210,120,0)'); c.fillStyle = g; c.fill(); }
+      c.save(); c.translate(Math.round(pivX), Math.round(pivY)); c.rotate(H.ang); c.drawImage(wpn, -wpn.width * big / 2, -wpn.height * big, wpn.width * big, wpn.height * big); c.restore();
+    }
+    // guard bubble
+    if (B.shieldVis > 0.02) { const r = big * 11, a = B.shieldVis; c.save(); c.globalAlpha = 0.9; c.fillStyle = `rgba(120,200,255,${0.1 * a})`; c.strokeStyle = `rgba(160,220,255,${0.65 * a})`; c.lineWidth = Math.max(2, big * 0.6); c.beginPath(); c.ellipse(w * (HX + H.ox), gy - big * 8, r * 0.85, r, 0, 0, 7); c.fill(); c.stroke(); c.strokeStyle = `rgba(255,255,255,${0.55 * a})`; c.beginPath(); c.ellipse(w * (HX + H.ox), gy - big * 8, r * 0.85, r, 0, t * 2 % 7, t * 2 % 7 + 0.9); c.stroke(); c.restore(); }
+    // ---- enemy
+    const def = B.def; const ek = B.ent.img; const F = B.foe;
+    const eb2 = B.fbig = Math.round(big * Math.min(1.9, def.sc || 1));
+    const ex = w * (EX + F.ox), ey = gy + h * F.oy; const mon = /^m/.test(ek);
+    let eRow = mon ? Math.floor(t * 6) % 4 : (B.phase === 'enemy' && F.ox < -0.1 ? 4 : 0);
+    const ebre = mon ? 0 : Math.sin(t * 2.2 + 1) * 0.025;
+    if (F.alpha > 0.01) {
+      shadow(c, w * (EX + F.ox), gy, eb2);
+      const edw = eb2 * 16 * F.sx, edh = eb2 * 16 * F.sy * (1 + ebre);
+      const dx = Math.round(ex - edw / 2), dy = Math.round(ey - edh);
+      // telegraph: heavy attacks glow red while you choose your move
+      const tele = B.phase === 'player' && B.intent && B.intent.dmg >= 8 ? 0.35 + Math.sin(t * 6) * 0.25 : 0;
+      const red = Math.max(F.red, tele);
+      if (red > 0.02) { c.globalAlpha = red * 0.8; const rim = tinted(ek, '#ff2a2a', 1); const pad = eb2; c.drawImage(rim, 2 * 16, eRow * 16, 16, 16, dx - pad / 2, dy - pad / 2, edw + pad, edh + pad); c.globalAlpha = 1; }
+      let eim = def.tint ? tinted(ek, def.tint, 0.38) : IMG[ek];
+      if (F.flash > 0.05) eim = tinted(ek, '#ffffff', Math.min(0.95, F.flash));
+      c.globalAlpha = F.alpha;
+      if (eim) c.drawImage(eim, 2 * 16, eRow * 16, 16, 16, dx, dy, Math.round(edw), Math.round(edh));
+      if (def.crown) drawCrown(c, ex, dy + edh * (def.crown / 16) - eb2 * 1.5, eb2);
+      c.globalAlpha = 1;
+      if (def.boss && B.ehp < B.emax / 2 && Math.random() < dt * 10) B.parts.push({ x: ex + (Math.random() - 0.5) * edw, y: dy + edh * 0.8, vx: 0, vy: -90, g: -40, life: 0.8, max: 0.8, c: '#ff5a3c', kind: 'ember' });
+    }
+    // sprite fx
+    for (let i = B.fx.length - 1; i >= 0; i--) { const f = B.fx[i]; f.t += sdt; const fr = Math.floor(f.t / 0.06); if (fr >= f.n) { B.fx.splice(i, 1); continue; } const im = IMG[f.img]; if (!im) continue; const sz = 32 * big * f.sc / 2.4; c.drawImage(im, fr * 32, 0, 32, 32, Math.round(w * f.x - sz / 2), Math.round(h * f.y - sz / 2), sz, sz); }
+    // particles
+    for (let i = B.parts.length - 1; i >= 0; i--) {
+      const p = B.parts[i]; p.life -= sdt || dt * 0.2; if (p.life <= 0) { B.parts.splice(i, 1); continue; }
+      const st = sdt; p.vy += p.g * st; p.x += p.vx * st; p.y += p.vy * st; if (p.kind === 'dust') { p.vx *= 0.92; p.vy *= 0.92; }
+      const a = Math.min(1, p.life / p.max * 1.6);
+      c.globalAlpha = a; c.fillStyle = p.c; c.strokeStyle = p.c;
+      if (p.kind === 'spark') { c.lineWidth = Math.max(2, big * 0.45); c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x - p.vx * 0.035, p.y - p.vy * 0.035); c.stroke(); }
+      else if (p.kind === 'shard') c.fillRect(Math.round(p.x), Math.round(p.y), p.sz, p.sz);
+      else if (p.kind === 'dust') { c.beginPath(); c.arc(p.x, p.y, big * (1.5 + (1 - p.life / p.max) * 3), 0, 7); c.fill(); }
+      else if (p.kind === 'plus') { const z = Math.max(2, big * 0.5); c.fillRect(p.x - z, p.y - z * 0.3, z * 2, z * 0.6); c.fillRect(p.x - z * 0.3, p.y - z, z * 0.6, z * 2); }
+      else c.fillRect(Math.round(p.x), Math.round(p.y), Math.max(2, big * 0.5), Math.max(2, big * 0.5));
+    }
     c.globalAlpha = 1;
-    for (let i = B.fx.length - 1; i >= 0; i--) { const f = B.fx[i]; f.t += dt; const fr = Math.floor(f.t / 0.07); if (fr >= f.n) { B.fx.splice(i, 1); continue; } const im = IMG[f.img]; if (!im) continue; const sz = 32 * big * f.sc / 2.4; c.drawImage(im, fr * 32, 0, 32, 32, Math.round(w * f.x - sz / 2), Math.round(h * f.y - sz / 2 - big * 4), sz, sz); }
+    // damage numbers: pop, overshoot, then float
     c.textAlign = 'center';
     for (let i = B.nums.length - 1; i >= 0; i--) {
-      const n = B.nums[i]; n.t += dt; if (n.t > 1.1) { B.nums.splice(i, 1); continue; }
-      const sc = n.big ? 1.5 : 1; const pop = n.t < 0.12 ? 1.6 - n.t * 5 : 1;
-      c.font = `${Math.round(big * 4 * sc * pop)}px Silkscreen, monospace`; const y = h * n.y - n.t * big * 8 - big * 4;
-      c.globalAlpha = Math.min(1, (1.1 - n.t) * 3); c.fillStyle = '#120a1c'; c.fillText(n.txt, w * n.x + big / 2, y + big / 2); c.fillStyle = n.c; c.fillText(n.txt, w * n.x, y); c.globalAlpha = 1;
+      const n = B.nums[i]; n.t += Math.max(sdt, dt * 0.25); const life = n.kind === 'stamp' ? 1.3 : 1.05; if (n.t > life) { B.nums.splice(i, 1); continue; }
+      const base = n.kind === 'crit' ? 1.7 : n.kind === 'big' ? 1.4 : n.kind === 'stamp' ? 2.2 : n.kind === 'status' ? 0.85 : 1;
+      const pop = n.t < 0.08 ? 0.5 + n.t / 0.08 * 1.1 : n.t < 0.18 ? 1.6 - (n.t - 0.08) / 0.1 * 0.6 : 1;
+      const fs = Math.round(big * 4 * base * pop);
+      c.font = `${fs}px Silkscreen, monospace`;
+      const rise = n.kind === 'stamp' ? 0 : Math.max(0, n.t - 0.15) * big * 9;
+      const x = w * n.x + (n.kind === 'crit' && n.t < 0.2 ? (Math.random() - 0.5) * big : 0), y = h * n.y - rise - big * 2;
+      c.globalAlpha = Math.min(1, (life - n.t) * 4);
+      c.lineWidth = Math.max(3, fs * 0.18); c.strokeStyle = '#120a1c'; c.lineJoin = 'round'; c.strokeText(n.txt, x, y); c.fillStyle = n.c; c.fillText(n.txt, x, y);
+      if (n.kind === 'crit') { c.font = `${Math.round(fs * 0.38)}px Silkscreen, monospace`; c.strokeText('CRITICAL', x, y - fs * 0.85); c.fillStyle = '#fff'; c.fillText('CRITICAL', x, y - fs * 0.85); }
+      c.globalAlpha = 1;
     }
+    // screen-space: dim, flash, letterbox, vignette
     c.setTransform(1, 0, 0, 1, 0, 0);
+    if (B.dim > 0.01) { c.fillStyle = `rgba(10,4,16,${B.dim})`; c.fillRect(0, 0, w, h); }
+    if (B.flashW > 0.01) { c.fillStyle = `rgba(255,250,235,${B.flashW})`; c.fillRect(0, 0, w, h); }
     const vg = c.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, w * 0.8); vg.addColorStop(0, 'rgba(8,4,16,0)'); vg.addColorStop(1, 'rgba(8,4,16,.6)'); c.fillStyle = vg; c.fillRect(0, 0, w, h);
+    if (B.lb > 0.01) { c.fillStyle = '#000'; const bh = h * 0.13 * B.lb; c.fillRect(0, 0, w, bh); c.fillRect(0, h - bh, w, bh); }
   }
-  function shadow(c, x, y, big) { c.fillStyle = 'rgba(8,4,16,.4)'; c.beginPath(); c.ellipse(x, y - big, big * 6, big * 2, 0, 0, 7); c.fill(); }
+  function shadow(c, x, y, big) { c.fillStyle = 'rgba(8,4,16,.42)'; c.beginPath(); c.ellipse(x, y - big * 0.6, big * 6, big * 1.8, 0, 0, 7); c.fill(); }
   function equippedSlayer() { try { const S0 = G.state(); const inst = S0.items.find((i) => i.uid === S0.equip.weapon); return inst && inst.id === 'rpg_goblin_slayer'; } catch (e) { return false; } }
+
+
+  // ================================================================== PORTALS — the old Adventure screens point into the Realm
+  const ART_NEED = { map: ['c15', 'm18'], dungeons: ['c15', 'c23'], village: ['c15', 'c9'], league: ['c15', 'c22', 'c17'] };
+  function portalArt(kind) {
+    const c = document.createElement('canvas'); c.width = 48; c.height = 48; const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+    const g = kind === 'dungeons' ? ['inf', 13, 13] : kind === 'league' ? ['ts', 19, 11] : ['ts', 22, 11];
+    for (let yy = 0; yy < 3; yy++) for (let xx = 0; xx < 3; xx++) x.drawImage(IMG[g[0]], g[1] * T, g[2] * T, T, T, xx * T, yy * T, T, T);
+    const pf = (n, px, py) => { const p = PF[n]; x.drawImage(IMG[p[0]], p[1] * T, p[2] * T, p[3] * T, p[4] * T, px, py, p[3] * T, p[4] * T); };
+    const spr = (k, px, py, col = 0, row = 0) => { if (ready(k)) x.drawImage(IMG[k], col * 16, row * 16, 16, 16, px, py, 16, 16); };
+    if (kind === 'map') { pf('pine', -10, -14); pf('treeB', 26, -16); spr('c15', 6, 26, 3); spr('m18', 28, 28, 2); }
+    else if (kind === 'dungeons') { x.drawImage(IMG.wl, 16, 96, 16, 16, 0, 0, 48, 10); spr('c15', 6, 24, 3); spr('c23', 28, 22, 2); }
+    else if (kind === 'village') { pf(G._village && G._village.done('townhall') ? 'houseO' : 'ruin', -8, -24); spr('c9', 28, 28); spr('c15', 8, 30, 3); }
+    else { spr('c22', 2, 20, 0); spr('c15', 16, 28, 1); spr('c17', 30, 20, 0); }
+    return c.toDataURL();
+  }
+  const ARTC = {};
+  function renderPortals() {
+    const adv = document.getElementById('adventure'); if (!adv || !adv.classList.contains('active')) return;
+    const sub = G.navSub ? G.navSub('adventure') : null; if (!sub || sub === 'realm') return;
+    const pane = adv.querySelector(`.pane[data-pane="${['map', 'dungeons', 'village'].includes(sub) ? 'world' : sub}"]`); if (!pane) return;
+    let el = pane.querySelector('.rl-portal'); if (!el) { el = document.createElement('div'); el.className = 'rl-portal'; pane.prepend(el); }
+    const regs = REG(); const nConq = regs.filter((r, i) => conquered(i)).length; const nx = regs.findIndex((r, i) => !conquered(i));
+    const built = Object.keys(SITES).filter((id) => G._village && G._village.done(id)).length;
+    const txt = {
+      map: [`${nConq}/10 regions conquered`, nx >= 0 ? `Next: ${regs[nx].boss[0]} in ${regs[nx].name}. Walk there and fight it with real sets — it counts here too.` : 'Every region is yours. World bosses still roam.', nx >= 0 && regionOpen(nx) ? `Travel to ${regs[nx].name}` : 'Enter the Realm', nx >= 0 && regionOpen(nx) ? 'r' + nx : null],
+      dungeons: [`${Object.keys(R.dg).length} dungeons cleared in the Realm`, 'Every conquered region has a cave. Three floors, a guard on the stairs, chests, and the dungeon lord below. The runs below still work too.', 'Find a cave', null],
+      village: [`${built}/10 buildings · ${reputation()}`, 'Walk Pulsehaven: ruins become homes as you fill their bundles, and villagers you help move in, open shops and grow fond of you.', 'Walk the village', 'village'],
+      league: ['Your rivals are out there', 'Everyone in your league wanders the Realm as a buddy. They level up from their own training — team up and they fight at your side.', 'Find a buddy', 'village']
+    }[sub];
+    if (!txt) return;
+    const sig = sub + txt.join('|'); if (el.dataset.sig === sig) return; el.dataset.sig = sig;
+    const need = CORE.concat(ART_NEED[sub] || []); need.forEach(img);
+    const art = ARTC[sub] || (need.every(ready) ? (ARTC[sub] = portalArt(sub)) : '');
+    if (!art) setTimeout(() => { el.dataset.sig = ''; renderPortals(); }, 600);
+    el.innerHTML = `<div class="rpo-art" ${art ? `style="background-image:url(${art})"` : ''}></div><div class="rpo-body"><div class="rpo-k">In the Realm</div><div class="rpo-t">${esc(txt[0])}</div><div class="rpo-s">${esc(txt[1])}</div><button class="rpo-go">${esc(txt[2])} ▸</button></div>`;
+    el.querySelector('.rpo-go').onclick = () => { const to = txt[3]; G.nav('adventure', 'realm'); if (to) setTimeout(() => { if (Z && Z.id !== to && !B) travel(to, to === 'village' ? 20 : 18, to === 'village' ? 13 : 2); }, 400); };
+  }
+  G.on && G.on('render', () => { try { renderPortals(); } catch (e) { console.warn('realm portal', e); } });
+  // keep the Map screen in step with what you've conquered in the Realm
+  setTimeout(() => { try { Object.keys(R.conq).forEach((ri) => G.realmConquer && G.realmConquer(Number(ri))); } catch (e) {} }, 0);
 
   // ================================================================== HOOKS
   G.on && G.on('render', () => { if (open) renderHud(); });
@@ -1409,7 +1856,8 @@
     talk(id) { const e = ents.find((x) => x.id === id); if (e) goTo(e); return !!e; },
     go(id, x, y) { enterZone(id, x, y, { arrive: x == null }); },
     useExit(i) { useExit(Z.exits[i]); }, exits: () => Z.exits.map((e) => ({ to: e.to, x: e.x, y: e.y, locked: e.locked ? e.locked() : null })),
-    menu: (k) => (k === 'travel' ? openTravel() : k === 'moves' ? openMoves() : k === 'sound' ? openSound() : k === 'party' ? openParty() : k === 'bounty' ? openBounties() : openMenu()),
+    menu: (k) => (k === 'bonds' ? openBonds() : k === 'travel' ? openTravel() : k === 'moves' ? openMoves() : k === 'sound' ? openSound() : k === 'party' ? openParty() : k === 'bounty' ? openBounties() : openMenu()),
+    bond: (id, n) => (n != null ? addBond(id, n) : bondOf(id)), session: () => TS, tsSet(n) { if (TS) { if (TS.fav.timed) TS.acc = n; else TS.n = n; tsUpd(); } }, tsGo() { tsAct('go'); }, prosperity, reputation,
     prop(kind) { const p = Z.props.find((q) => q[kind] != null && q[kind] !== false); if (p) goToProp(p); return !!p; }
   };
 })();
