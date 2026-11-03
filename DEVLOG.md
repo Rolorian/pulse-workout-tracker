@@ -151,3 +151,26 @@
 - **Your gear on your hero:** your equipped body armour recolours the tabard to its rarity colour, and an equipped helm turns the hair into a metal helm. This shows in the overworld and in battle.
 - ☰ ▸ "Art style: Pulse / Classic" now switches the whole world: characters, monsters, terrain and props.
 - **Tested:** village by day, night and dusk; Goblin Woods; a dungeon; Frostpeak; a battle with equipped gear; dialogue. 0 errors.
+
+## 2026-11-03 · Effects pass: pixelfx (MIT), vendored and locked down
+- **Source:** 24 curated effects from [pixelfx](https://github.com/patch-gg/pixelfx) (MIT) are bundled into one readable local file, `vendor/pixelfx/pixelfx.js`.
+  - It ships with its LICENSE and NOTICE. The non-MIT Patch Pixel font is excluded.
+  - Nothing is loaded from GitHub or npm at runtime, and none of the project's scripts were run.
+- **Audit:** the bundle has no network, storage, cookie, DOM or eval access. It only fills pixel buffers. See `vendor/pixelfx/README.md`.
+- **Privacy lock:** a Content-Security-Policy in `index.html` lets the app load only its own files and talk only to the weather API. Any vendored code that tried to send data elsewhere would be blocked by the browser.
+- **Combat:**
+  - Strike swings a steel slash (gold on crits), Flurry a dagger flurry, and Smash a hammer smash with an earth-toned crater.
+  - Guard raises a lattice shield, and the guard counter has its own slash.
+  - Hits use hit sparks, blunt hits for Smash and allies, and a crit star for crits.
+  - Enemies attack with a claw swipe. A blocked attack shows the shield.
+  - The finisher uses a smoke poof; bosses also get a dark explosion. The boss intro shows a red charge-up.
+  - Healing has a green heal effect.
+- **Status (visual only):** enemy hits paint SCORCHED in the Volcano Forge, POISONED in Mistmarsh, and CHILLED in Frostpeak/Ice Caverns. The effect is drawn over your real hero sprite.
+- **World:**
+  - Rain falls in Mistmarsh and ash in the Volcano Forge.
+  - Opening a chest shows a gold collect burst.
+- **Rendering:** every effect is drawn at an integer scale of the sprite pixels and recoloured to the STYLE_GUIDE palette. A frame is re-rasterised only when the effect advances, so hit-stop costs nothing. `G._rpgDebug.off.pfx = 1` / `.weather = 1` turn the layer off.
+- **Tested:**
+  - Battles in Mistmarsh and the Volcano Forge with every move, the enemy turn, guard and the finisher.
+  - rpg_test, rpg3_test and rpg4_test show 0 errors, and there were 0 requests to anything but the app itself.
+  - Frame rate: 60 fps in the world with rain, and 55–60 fps in battle during Smash (headless software rendering).

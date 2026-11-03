@@ -14,3 +14,10 @@ Files used: all 25 character sheets and portraits (`chars/`, `face/`), all 22 mo
 The default art (`chars2/`, `face2/`, `mon2/`, `env2.png`) is original work generated for Pulse by the scripts in `tools/` (`chargen.py`, `envgen.py`, `mongen.py`).
 Its chunky, earthy look takes stylistic inspiration from classic MMOs; no third-party characters or art are copied.
 The Ninja Adventure art remains available under ☰ ▸ Art style ▸ Classic.
+
+## Effects: pixelfx (MIT)
+The combat, status, weather and pickup effects come from [pixelfx](https://github.com/patch-gg/pixelfx):
+- Copyright (c) 2026 Patch and Hugo Duprez, MIT License.
+- Includes adapted work from Sprite Fusion's pixel art VFX (Hugo Duprez, MIT) and Hollow Crown (rehan-remade, MIT).
+
+A curated subset is copied into `vendor/pixelfx/` with its LICENSE and NOTICE. It is recoloured at runtime to the Pulse palette. The Patch Pixel font is not included.

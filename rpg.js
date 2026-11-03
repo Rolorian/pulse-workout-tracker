@@ -480,6 +480,53 @@
   // Everything here works on top of the Ninja Adventure art: blended terrain edges, baked sun shadows,
   // wind, water, a real light map, ambient life, and dungeon architecture — all in the pack's own palette.
   const OFF = {};
+  // ---------- pixelfx: curated MIT effects copied into vendor/pixelfx (no runtime link, no network, no storage) ----------
+  // Each effect is pure maths that fills a small pixel buffer; we blit it up at an integer scale like the rest of the art.
+  const PAL = {
+    steel: ['#6b5f78', '#8a7f9c', '#b8b0c8', '#d8d2e2', '#f3e3c3', '#fff6dc', '#ffffff'],
+    gold: ['#3d2414', '#8a3a1c', '#c2410c', '#ff8a2a', '#ffd23f', '#fff1a8', '#ffffff'],
+    guard: ['#0b1a2e', '#1d3a5c', '#2f6a99', '#5aa6d6', '#8fd3ff', '#d4f1ff', '#ffffff'],
+    ash: ['#2c2033', '#4a3f44', '#6b5f5a', '#8a7f78', '#a89c90', '#c9bcae', '#e2d6c6', '#ffb070'],
+    earth: ['#3d2414', '#6b4128', '#8a6a50', '#b09878', '#d8c4a0', '#f3e3c3', '#fff6dc', '#ffffff'],
+    life: ['#14301c', '#2f6b3a', '#3f9a52', '#5fd27a', '#7dff9a', '#c8ffd4', '#f0fff4', '#ffffff'],
+    smoke: ['#140c1a', '#2c2033', '#4a3755', '#6b5f78', '#9a90a8', '#c9c2d6']
+  };
+  function pfx(name, o = {}) {
+    const P = window.PFX; if (!P || OFF.pfx) return null; const mod = P.FX[name]; if (!mod) return null;
+    try {
+      const m = mod.meta || {}; const [W, H] = m.size || [128, 128]; const [OX, OY] = m.origin || [W / 2, H / 2];
+      const ax = o.flip ? W - OX : OX;
+      const opts = Object.assign({ seed: (Math.random() * 1e6) | 0 }, o, { x: ax, y: OY }); delete opts.life;
+      const fx = P.createFx(mod, opts);
+      const frame = P.createFrame(W, H, 0, 0); const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const x = cv.getContext('2d'); const img = x.createImageData(W, H);
+      return { fx, frame, cv, x, img, W, H, ax, OY, life: o.life || 0, age: 0 };
+    } catch (e) { console.warn('pfx', name, e); return null; }
+  }
+  function pfxStep(f, dt) { f.age += dt; if (f.life && f.age >= f.life) f.fx.stop(); f.fx.update(dt); return !f.fx.done(); }
+  function pfxDraw(c, f, x, y, u, alpha = 1) {
+    // re-rasterise only when the effect has moved on (hit-stop freezes it)
+    if (f.drawnAt !== f.fx.t) { const P = window.PFX; P.clearFrame(f.frame); f.fx.draw(f.frame); P.composite(f.frame, f.img.data); f.x.putImageData(f.img, 0, 0); f.drawnAt = f.fx.t; }
+    if (alpha < 1) c.globalAlpha = alpha;
+    c.drawImage(f.cv, Math.round(x - f.ax * u), Math.round(y - f.OY * u), f.W * u, f.H * u);
+    if (alpha < 1) c.globalAlpha = 1;
+  }
+  // weather over the world: rain in Mistmarsh, ash over the Volcano Forge (Frostpeak keeps its own snowfall)
+  let WX = null; const WFX = [];
+  function wfx(name, x, y, o) { const f = pfx(name, o); if (f) { f.wx = x; f.wy = y; WFX.push(f); } }
+  function weatherFor() { if (!Z || Z.dungeon || Z.id === 'village' || Z.ri == null) return null; return Z.ri === 3 ? 'rain' : Z.ri === 6 ? 'ash' : null; }
+  function drawWeather(c, dt) {
+    const k = OFF.weather ? null : weatherFor();
+    if (!k) { WX = null; return; }
+    if (!WX || WX.k !== k) { const f = k === 'rain' ? pfx('rain') : pfx('snow', { palette: PAL.ash }); if (!f) return; WX = { k, f }; f.fx.update(4); }
+    const f = WX.f; pfxStep(f, dt);
+    const P = window.PFX; P.clearFrame(f.frame); f.fx.draw(f.frame); P.composite(f.frame, f.img.data); f.x.putImageData(f.img, 0, 0);
+    // only the falling part: the effect's own ground strip (splashes, drifts) would show as a band where tiles meet
+    const u = S, sh = f.H - 40, fw = f.W * u, fh = sh * u;
+    c.globalAlpha = k === 'rain' ? 0.75 : 0.8;
+    for (let y = 0; y < cv.height; y += fh) for (let x = 0; x < cv.width; x += fw) c.drawImage(f.cv, 0, 0, f.W, sh, x, y, fw, fh);
+    c.globalAlpha = 1;
+  }
   const AMB_NIGHT = [62, 70, 128], AMB_DUNGEON = [52, 44, 76];
   const SHEETPX = {};
   function sheetPx(k) { if (SHEETPX[k]) return SHEETPX[k]; const im = IMG[k]; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d'); x.drawImage(im, 0, 0); SHEETPX[k] = { w: c.width, d: x.getImageData(0, 0, c.width, c.height).data }; return SHEETPX[k]; }
@@ -818,6 +865,7 @@
   let coreReady = false;
   function whenCore(cb) { CORE.forEach(img); const ok = () => CORE.every(ready); if (ok()) { coreReady = true; cb(); return; } const iv = setInterval(() => { if (ok()) { clearInterval(iv); coreReady = true; cb(); } }, 60); }
   function enterZone(id, tx, ty, opts = {}) {
+    WFX.length = 0; WX = null;
     Z = zoneById(id); Z.enteredAt = Date.now();
     if (Z.dungeon && opts.fresh) Z.enteredAt = Date.now();
     if (tx == null || (Z.dungeon && opts.arrive)) { const sp = opts.up ? Z.exitDown : Z.entry || [18, 2]; tx = sp[0]; ty = sp[1]; }
@@ -1062,10 +1110,12 @@
       if (p.ring) { c.strokeStyle = `rgba(${p.c},${(p.life / p.max) * 0.6})`; c.lineWidth = 1; c.beginPath(); c.ellipse(p.x, p.y, 2 + (1 - p.life / p.max) * 5, 1 + (1 - p.life / p.max) * 2, 0, 0, 7); c.stroke(); } else if (p.puff) { c.beginPath(); c.arc(p.x, p.y, r, 0, 7); c.fill(); } else c.fillRect(Math.round(p.x), Math.round(p.y), r, r);
     }
     drawCritters(c, false);
+    for (let i = WFX.length - 1; i >= 0; i--) { const f = WFX[i]; if (!pfxStep(f, dt)) { WFX.splice(i, 1); continue; } pfxDraw(c, f, f.wx, f.wy, 1); }
     c.setTransform(1, 0, 0, 1, 0, 0);
     // light: zone palette by day, moonlit blue by night, warm pools around every lamp, torch and your lantern
     if (!OFF.light) lightPass(c, night, t);
     if (Z.fog) { c.fillStyle = Z.fog; c.fillRect(0, 0, cv.width, cv.height); }
+    drawWeather(c, dt);
     if (!OFF.rays) godRays(c, t, night);
     const vg = c.createRadialGradient(cv.width / 2, cv.height / 2, Math.min(cv.width, cv.height) * (Z.dungeon ? 0.2 : 0.35), cv.width / 2, cv.height / 2, Math.max(cv.width, cv.height) * 0.75);
     vg.addColorStop(0, 'rgba(8,4,16,0)'); vg.addColorStop(1, `rgba(8,4,16,${Z.dungeon ? 0.85 : 0.55})`); c.fillStyle = vg; c.fillRect(0, 0, cv.width, cv.height);
@@ -1569,7 +1619,8 @@
     const items = Math.random() < 0.4 && G.rollDrop ? [G.rollDrop([40, 32, 18, 7, 2.5, 0.4, 0.08, 0.02]).id] : [];
     if (Math.random() < 0.3) R.potions++;
     G.reward && G.reward({ coins, items }, { label: 'Chest:' });
-    for (let k = 0; k < 10; k++) parts.push({ x: e.x + 8, y: e.y + 6, vx: (Math.random() - 0.5) * 40, vy: -20 - Math.random() * 20, life: 0.7, max: 0.7, c: '255,210,63', r: 1 });
+    wfx('collectBurst', e.x + 8, e.y + 14, { palette: PAL.gold });
+    for (let k = 0; k < 6; k++) parts.push({ x: e.x + 8, y: e.y + 6, vx: (Math.random() - 0.5) * 40, vy: -20 - Math.random() * 20, life: 0.7, max: 0.7, c: '255,210,63', r: 1 });
     renderHud();
   }
 
@@ -1592,7 +1643,7 @@
     const reps = Math.min(def.boss ? 160 : 60, def.hp + Math.floor(lv / 4));
     const hp = Math.round(reps * Math.pow(1 + pw / 100, 0.75));
     const party = R.party ? buddyInfo(R.party) : null;
-    B = { ent, def, ehp: hp, emax: hp, shown: hp, phase: 'intro', intent: null, shield: 0, enrage: 0, logged: {}, turns: 0, fx: [], nums: [], parts: [], tw: [], q: [], clock: 0, stopUntil: 0, slowUntil: 0, slowScale: 1, shake: 0,
+    B = { ent, def, ehp: hp, emax: hp, shown: hp, phase: 'intro', intent: null, shield: 0, enrage: 0, logged: {}, turns: 0, fx: [], pfx: [], nums: [], parts: [], tw: [], q: [], clock: 0, stopUntil: 0, slowUntil: 0, slowScale: 1, shake: 0,
       hero: { ox: 0, oy: 0, sx: 1, sy: 1, pose: 'idle', ang: 0.55, trail: [], flash: 0, alpha: 1 }, foe: { ox: 0, oy: 0, sx: 1, sy: 1, flash: 0, alpha: 1, red: 0 },
       allyA: { ox: 0, oy: 0, pose: 'idle' }, cam: { z: 1, fx: 0.5, fy: 0.55 }, dim: 0, flashW: 0, lb: 0, shieldVis: 0,
       ally: party, music: def.world != null ? 'worldboss' : def.boss ? 'boss' : def.elite ? 'elite' : 'battle', sharp: (R.sharp ? (R.sharp > 1 ? R.sharp : 1.25) : 1) * (R.wellFed ? 1.2 : 1) };
@@ -1705,7 +1756,31 @@
   // positions in stage fractions
   const HX = 0.27, EX = 0.72, GY = 0.62;
   function spark(x, y, col, n, spd, kind) { for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = spd * (0.4 + Math.random() * 0.8); B.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - spd * 0.3, g: kind === 'dust' ? -20 : 900, life: 0.35 + Math.random() * 0.35, max: 0.7, c: col, kind: kind || 'spark' }); } }
-  function healFx(n) { const w = bcv.width, h = bcv.height; for (let i = 0; i < 14; i++) B.parts.push({ x: w * (HX + (Math.random() - 0.5) * 0.12), y: h * GY - Math.random() * h * 0.1, vx: 0, vy: -60 - Math.random() * 60, g: 0, life: 0.9, max: 0.9, c: '#7dff9a', kind: 'plus' }); B.nums.push({ x: HX, y: 0.44, txt: '+' + n, c: '#7dff9a', t: 0, kind: 'heal' }); }
+  // a pixelfx effect on the battle stage. pos: [x, y] in stage fractions, or a function returning one (to follow a fighter).
+  // k: effect pixels per sprite pixel. Falls back to the old sprite flipbook if the effect can't be made.
+  function bfx(name, pos, o = {}, k = 0.45, fallback) {
+    const f = pfx(name, o); if (!f) { if (fallback) B.fx.push(fallback); return null; }
+    f.pos = pos; f.k = k; f.a = o.alpha || 1; B.pfx.push(f); return f;
+  }
+  const heroAt = () => [HX + B.hero.ox, GY + B.hero.oy];
+  const foeAt = () => [EX + B.foe.ox, GY + B.foe.oy];
+  // the hero's own sprite as a pixelfx "actor", so status effects (burning, poison, frost) paint over the real character
+  let HACT = null;
+  function heroActor() {
+    const im = heroImg(); if (HACT && HACT.src === im) return HACT.a;
+    try {
+      const c = document.createElement('canvas'); c.width = 16; c.height = 16; const x = c.getContext('2d'); x.drawImage(im, 3 * 16, 0, 16, 16, 0, 0, 16, 16);
+      const d = x.getImageData(0, 0, 16, 16).data; let x0 = 16, y0 = 16, x1 = -1, y1 = -1;
+      for (let y = 0; y < 16; y++) for (let xx = 0; xx < 16; xx++) if (d[(y * 16 + xx) * 4 + 3] > 100) { x0 = Math.min(x0, xx); y0 = Math.min(y0, y); x1 = Math.max(x1, xx); y1 = Math.max(y1, y); }
+      if (x1 < 0) return null; const w = x1 - x0 + 1, h = 16 - y0;
+      const data = new Uint8Array(w * h), px = new Uint32Array(w * h);
+      for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) { const i = ((y + y0) * 16 + xx + x0) * 4; if (d[i + 3] > 100) { data[y * w + xx] = 1; px[y * w + xx] = (0xff << 24 | d[i + 2] << 16 | d[i + 1] << 8 | d[i]) >>> 0; } }
+      const a = { mask: { w, h, data }, pixels: px, x: x0 - 8, y: y0 - 16, w, h, k: 1, head: [0, y0 - 16], chest: [0, Math.round(y0 - 16 + h * 0.45)] };
+      HACT = { src: im, a }; return a;
+    } catch (e) { return null; }
+  }
+  function zoneElement() { const ri = Z && Z.ri; return ri === 6 ? 'burning' : ri === 3 ? 'poisoned' : ri === 5 ? 'frozen' : null; }
+  function healFx(n) { bfx('heal', heroAt, { palette: PAL.life }, 0.6); const w = bcv.width, h = bcv.height; for (let i = 0; i < 14; i++) B.parts.push({ x: w * (HX + (Math.random() - 0.5) * 0.12), y: h * GY - Math.random() * h * 0.1, vx: 0, vy: -60 - Math.random() * 60, g: 0, life: 0.9, max: 0.9, c: '#7dff9a', kind: 'plus' }); B.nums.push({ x: HX, y: 0.44, txt: '+' + n, c: '#7dff9a', t: 0, kind: 'heal' }); }
 
   const MOVE_NAME = { strike: 'Strike', smash: 'Smash', quick: 'Flurry', guard: 'Guard' };
   function lore(def) { R.lore = R.lore || {}; return (R.lore[def.lore] = R.lore[def.lore] || {}); }
@@ -1726,9 +1801,9 @@
       B.shield = Math.min(1, amt / 30); const counter = Math.round(amt * 0.25 * pw * B.sharp * B.momNow);
       H.pose = 'guard'; tw(H, { sy: 0.88, sx: 1.1 }, 0.12); at(0.12, () => tw(H, { sy: 1, sx: 1 }, 0.3, 'back'));
       tw(B, { shieldVis: B.shield }, 0.4, 'back'); snd('guard'); buzz('medium');
-      B.fx.push({ img: 'fxRing', x: HX, y: GY - 0.08, t: 0, n: 5, sc: 1.5 });
+      bfx('shieldBlock', heroAt, { palette: PAL.guard }, 0.45, { img: 'fxRing', x: HX, y: GY - 0.08, t: 0, n: 5, sc: 1.5 });
       at(0.65, () => {
-        if (counter > 0) { H.pose = 'dash'; tw(H, { ox: 0.3 }, 0.11, 'in'); snd('whoosh', 1.2); at(0.11, () => { H.pose = 'strike'; H.swing = { a: -1.2, b: 1.9, d: 0.08, t: 0 }; }); at(0.15, () => impact(counter, false, { fx: 'fxSpark' })); at(0.3, () => { if (B.phase === 'end') return; H.pose = 'recover'; tw(H, { ox: 0 }, 0.3, 'io'); }); at(0.75, () => { if (B.phase !== 'end') { H.pose = 'guard'; afterHero(); } }); }
+        if (counter > 0) { H.pose = 'dash'; tw(H, { ox: 0.3 }, 0.11, 'in'); snd('whoosh', 1.2); at(0.11, () => { H.pose = 'strike'; H.swing = { a: -1.2, b: 1.9, d: 0.08, t: 0 }; bfx('swordSlash', heroAt, { palette: PAL.guard }); }); at(0.15, () => impact(counter, false, { fx: 'fxSpark' })); at(0.3, () => { if (B.phase === 'end') return; H.pose = 'recover'; tw(H, { ox: 0 }, 0.3, 'io'); }); at(0.75, () => { if (B.phase !== 'end') { H.pose = 'guard'; afterHero(); } }); }
         else afterHero();
       });
       return;
@@ -1741,14 +1816,14 @@
     const tw0 = big ? 0.3 : 0.15;
     if (big) {
       at(tw0, () => { H.pose = 'jump'; tw(H, { ox: 0.3, sx: 0.9, sy: 1.14 }, 0.22, 'out'); tw(H, { oy: -0.2 }, 0.2, 'out'); snd('whoosh', 0.8); });
-      at(tw0 + 0.22, () => { H.pose = 'strike'; tw(H, { oy: 0, sx: 1.22, sy: 0.78 }, 0.07, 'in'); H.swing = { a: -2.4, b: 1.7, d: 0.07, t: 0 }; });
+      at(tw0 + 0.22, () => { H.pose = 'strike'; tw(H, { oy: 0, sx: 1.22, sy: 0.78 }, 0.07, 'in'); H.swing = { a: -2.4, b: 1.7, d: 0.07, t: 0 }; bfx('hammerSmash', heroAt, { palette: rolls[0].crit ? PAL.gold : PAL.earth, stone: '#6b4128', life: 1.3 }); });
       at(tw0 + 0.29, () => { impact(rolls[0].dmg, rolls[0].crit, { fx: mv.fx, big: true }); groundSlam(); });
       at(tw0 + 0.5, recover);
     } else {
       let t0 = tw0;
       rolls.forEach((r, i) => {
         at(t0, () => { if (B.phase === 'end') return; H.pose = 'dash'; tw(H, { ox: 0.31, sx: 1.12, sy: 0.9 }, 0.11, 'in'); snd('whoosh', 1 + i * 0.2); });
-        at(t0 + 0.11, () => { if (B.phase === 'end') return; H.pose = 'strike'; H.swing = i % 2 ? { a: 2.0, b: -1.3, d: 0.08, t: 0 } : { a: -1.3, b: 2.0, d: 0.08, t: 0 }; tw(H, { sx: 1, sy: 1 }, 0.12); });
+        at(t0 + 0.11, () => { if (B.phase === 'end') return; H.pose = 'strike'; H.swing = i % 2 ? { a: 2.0, b: -1.3, d: 0.08, t: 0 } : { a: -1.3, b: 2.0, d: 0.08, t: 0 }; tw(H, { sx: 1, sy: 1 }, 0.12); if (mv.id === 'quick') { if (i === 0) bfx('daggerFlurry', heroAt, { palette: PAL.steel }); } else bfx('swordSlash', heroAt, { palette: r.crit ? PAL.gold : PAL.steel }); });
         at(t0 + 0.15, () => impact(r.dmg, r.crit, { fx: mv.fx, combo: i }));
         if (i < hits - 1) at(t0 + 0.25, () => { if (B.phase !== 'end') tw(H, { ox: 0.2 }, 0.08, 'out'); });
         t0 += i < hits - 1 ? 0.33 : 0.3;
@@ -1759,7 +1834,7 @@
   function recover() { if (!B || B.phase === 'end') return; const H = B.hero; H.pose = 'recover'; tw(H, { ox: 0, oy: 0, sx: 1, sy: 1 }, 0.34, 'io'); at(0.42, () => { if (B.phase === 'end') return; H.pose = 'idle'; afterHero(); }); }
   function groundSlam() {
     const w = bcv.width, h = bcv.height;
-    B.fx.push({ img: 'fxRing', x: EX - 0.02, y: GY - 0.02, t: 0, n: 5, sc: 2.4 });
+    if (!window.PFX) B.fx.push({ img: 'fxRing', x: EX - 0.02, y: GY - 0.02, t: 0, n: 5, sc: 2.4 });
     spark(w * (EX - 0.05), h * GY, '#c8b49a', 18, 260, 'dust'); snd('thud');
   }
   function impact(d, crit, o = {}) {
@@ -1769,8 +1844,10 @@
     F.flash = 1; tw(F, { flash: 0 }, 0.2, 'lin');
     const kb = (o.big ? 0.06 : crit ? 0.05 : 0.03) * (B.def.boss ? 0.5 : 1);
     F.ox = kb; tw(F, { ox: 0 }, 0.4, 'out'); F.sx = 0.82; F.sy = 1.14; tw(F, { sx: 1, sy: 1 }, 0.35, 'back');
-    B.fx.push({ img: o.fx || 'fxHit', x: EX, y: GY - 0.1, t: 0, n: o.fx === 'fxSlash' || o.fx === 'fxCross' ? 4 : 5, sc: o.big ? 2.1 : crit ? 1.9 : 1.5 });
-    spark(w * EX, h * (GY - 0.1), crit ? '#ffd23f' : '#ffffff', crit ? 22 : o.big ? 16 : 9, crit ? 520 : 380);
+    const old = { img: o.fx || 'fxHit', x: EX, y: GY - 0.1, t: 0, n: o.fx === 'fxSlash' || o.fx === 'fxCross' ? 4 : 5, sc: o.big ? 2.1 : crit ? 1.9 : 1.5 };
+    const fp = [EX, GY - 0.02];
+    if (crit) bfx('critHit', fp, { palette: PAL.gold }, 0.45, old); else if (o.big || o.ally) bfx('bluntHit', fp, {}, o.ally ? 0.4 : 0.55, old); else bfx('hitSpark', fp, {}, 0.5, old);
+    spark(w * EX, h * (GY - 0.1), crit ? '#ffd23f' : '#ffffff', crit ? 14 : o.big ? 10 : 5, crit ? 520 : 380);
     const weakHit = !o.ally && B.aff > 1, resHit = !o.ally && B.aff < 1;
     B.nums.push({ x: EX + (o.combo ? 0.05 : 0), y: 0.36 - (o.combo ? 0.05 : 0), txt: String(d), c: crit ? '#ffd23f' : o.ally ? '#9be7ff' : weakHit ? '#7dff9a' : resHit ? '#c9b6a4' : '#ffffff', t: 0, kind: crit ? 'crit' : o.big || weakHit ? 'big' : 'hit' });
     if (weakHit && !crit) { hitStop(40); shake(3); }
@@ -1787,7 +1864,7 @@
     hitStop(160); slowmo(0.3, 650); B.flashW = 0.55; tw(B, { flashW: 0 }, 0.3, 'lin');
     tw(B.cam, { z: 1.2, fx: 0.68, fy: 0.55 }, 0.2, 'out'); snd('finish'); shake(9); buzz('heavy');
     B.nums.push({ x: 0.5, y: 0.2, txt: B.def.boss ? 'BOSS DOWN' : 'FINISH', c: '#ffd23f', t: 0, kind: 'stamp' });
-    at(0.18, () => { shatter(); F.alpha = 0; B.fx.push({ img: 'fxSmoke', x: EX, y: GY - 0.08, t: 0, n: 6, sc: 2.2 * Math.min(1.6, B.def.sc || 1) }); sfx('kill', 0.5); });
+    at(0.18, () => { shatter(); F.alpha = 0; const ks = Math.min(1.6, B.def.sc || 1); bfx('poof', [EX, GY], { palette: PAL.smoke }, 0.55 * ks, { img: 'fxSmoke', x: EX, y: GY - 0.08, t: 0, n: 6, sc: 2.2 * ks }); if (B.def.boss) bfx('darkExplosion', [EX, GY], {}, 0.4); sfx('kill', 0.5); });
     at(0.45, () => { tw(B.cam, { z: 1, fx: 0.5, fy: 0.55 }, 0.45, 'io'); H.pose = 'victory'; tw(H, { ox: 0, oy: -0.07, sx: 1, sy: 1 }, 0.16, 'out'); at(0.16, () => tw(H, { oy: 0 }, 0.18, 'in')); });
     at(0.75, victory);
   }
@@ -1834,7 +1911,9 @@
     at(wind + 0.1, () => {
       if (!B) return;
       let d = it.dmg; const blocked = Math.round(d * B.shield); d -= blocked;
-      B.fx.push({ img: blocked && !d ? 'fxRing' : 'fxClaw', x: HX + 0.02, y: GY - 0.1, t: 0, n: 5, sc: 1.6 });
+      const oldFx = { img: blocked && !d ? 'fxRing' : 'fxClaw', x: HX + 0.02, y: GY - 0.1, t: 0, n: 5, sc: 1.6 };
+      if (blocked && !d) bfx('shieldBlock', heroAt, { palette: PAL.guard }, 0.45, oldFx); else bfx('clawSwipe', foeAt, { flip: true }, 0.45 * Math.min(1.5, B.def.sc || 1), oldFx);
+      const el = d > 0 && zoneElement(); if (el) { const ha = heroActor(); if (ha) B.status = bfx(el, heroAt, { life: 1.8, actor: ha }, 1); if (B.status) B.nums.push({ x: HX, y: 0.26, txt: el === 'burning' ? 'SCORCHED' : el === 'poisoned' ? 'POISONED' : 'CHILLED', c: el === 'burning' ? '#ff8a2a' : el === 'poisoned' ? '#7dff9a' : '#8fd3ff', t: 0, kind: 'status' }); }
       if (blocked) { spark(w * (HX + 0.06), h * (GY - 0.1), '#8fd3ff', 16, 420); snd('clang'); hitStop(70); B.nums.push({ x: HX, y: 0.3, txt: `BLOCK ${blocked}`, c: '#8fd3ff', t: 0, kind: 'status' }); }
       if (d > 0) {
         R.hp = Math.max(0, R.hp - d); H.flash = 1; tw(H, { flash: 0 }, 0.3, 'lin'); H.pose = 'hurt'; H.ox = -0.045; tw(H, { ox: 0 }, 0.4, 'out');
@@ -1850,7 +1929,7 @@
   function nextTurn() { if (!B || B.phase === 'end') return; pickIntent(); B.phase = 'player'; B.restUntil = Date.now() + 20000; renderBattleUi(); if (B.intent.dmg >= 8) snd('warn'); }
   function bossIntro() {
     B.phase = 'intro'; renderBattleUi();
-    tw(B, { lb: 1 }, 0.4, 'out'); B.cam.z = 1.45; B.cam.fx = 0.72; B.cam.fy = 0.48; tw(B.cam, { z: 1.25 }, 1.8, 'lin'); snd('rumble'); shake(4);
+    tw(B, { lb: 1 }, 0.4, 'out'); B.cam.z = 1.45; B.cam.fx = 0.72; B.cam.fy = 0.48; tw(B.cam, { z: 1.25 }, 1.8, 'lin'); snd('rumble'); shake(4); bfx('spellCharge', foeAt, { palette: ['#2a0808', '#5c0f12', '#a51d1d', '#ff2a2a', '#ff8a2a', '#ffd23f', '#ffffff'], life: 1.9 }, 0.5 * Math.min(1.6, B.def.sc || 1));
     const d = B.def; const sub = d.world != null ? 'World Boss' : d.dungeonBoss != null ? `Lord of ${(DUN()[d.dungeonBoss] || {}).name || 'the deep'}` : `Master of ${REG()[d.region].name}`;
     const card = battleEl.querySelector('#rbBoss'); card.innerHTML = `<div class="bi-sub">${esc(sub)}</div><div class="bi-n">${esc(d.name)}</div>`; card.classList.add('on');
     let done = false;
@@ -2085,6 +2164,8 @@
     }
     // sprite fx
     for (let i = B.fx.length - 1; i >= 0; i--) { const f = B.fx[i]; f.t += sdt; const fr = Math.floor(f.t / 0.06); if (fr >= f.n) { B.fx.splice(i, 1); continue; } const im = IMG[f.img]; if (!im) continue; const sz = 32 * big * f.sc / 2.4; c.drawImage(im, fr * 32, 0, 32, 32, Math.round(w * f.x - sz / 2), Math.round(h * f.y - sz / 2), sz, sz); }
+    // pixelfx layer (vendored, local)
+    for (let i = B.pfx.length - 1; i >= 0; i--) { const f = B.pfx[i]; if (!pfxStep(f, sdt)) { B.pfx.splice(i, 1); continue; } const [px, py] = typeof f.pos === 'function' ? f.pos() : f.pos; pfxDraw(c, f, w * px, h * py, Math.max(1, Math.round(big * f.k)), f.a); }
     // particles
     for (let i = B.parts.length - 1; i >= 0; i--) {
       const p = B.parts[i]; p.life -= sdt || dt * 0.2; if (p.life <= 0) { B.parts.splice(i, 1); continue; }

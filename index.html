@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<!-- Privacy lock: the app may only load its own files and talk to the weather service. No third party (including vendored code) can send data anywhere else. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.open-meteo.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#090d12">
 <link rel="manifest" href="manifest.json">
@@ -4108,6 +4110,7 @@ setTimeout(checkAchievementsAndLevels, 500);
 <script src="herolife.js"></script>
 <script src="future.js"></script>
 <script src="tower.js"></script>
+<script src="vendor/pixelfx/pixelfx.js"></script>
 <script src="rpg.js"></script>
 <script src="nav.js"></script>
 <script src="boot.js"></script>
