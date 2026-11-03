@@ -7,6 +7,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#090d12">
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="vendor/uplot/uPlot.min.css">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -273,6 +274,13 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 /* Exercise grid category headers */
 .exgrid-head{grid-column:1/-1;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:6px 2px 0}
 .exgrid-head:first-child{margin-top:0}
+.ex-lib small{display:block;margin-top:2px;font-size:10px;color:var(--muted);font-weight:500}
+.howto{margin:10px 0 2px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:13px}
+.howto summary{cursor:pointer;font-weight:700;list-style:none}.howto summary::-webkit-details-marker{display:none}
+.howto summary span{display:block;font-weight:500;font-size:11px;color:var(--muted);margin-top:2px}
+.howto ol{margin:8px 0 0;padding-left:18px;line-height:1.45;color:#d9dee6}.howto li{margin:4px 0}
+.range-chips{display:flex;gap:6px;margin:0 0 8px}.range-chips button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer}.range-chips button.on{color:#07130d;background:var(--gold);border-color:var(--gold)}
+.uplot-wrap{width:100%}.uplot-wrap .u-legend{font-size:11px;color:#c7cdd8}.uplot-wrap .u-legend th{font-weight:600}.uplot-wrap .u-select{background:rgba(251,191,36,.12)}
 
 /* Manage customs list */
 .manage-custom{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
@@ -417,6 +425,7 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 <div class="card">
 <div class="cardhead"><h2>📈 Exercise Progress</h2></div>
 <select class="ex-select" id="progressExSelect" onchange="renderProgressChart()"></select>
+<div class="range-chips" id="progressRange"><button data-r="30" onclick="setProgressRange(30)">30 days</button><button data-r="90" onclick="setProgressRange(90)">90 days</button><button data-r="0" onclick="setProgressRange(0)">All</button></div>
 <div id="progressChart"></div>
 </div>
 
@@ -642,8 +651,9 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 <button onclick="quickReLogWithIncrement()">⬆️ +1 More</button>
 </div>
 
-<input class="search-box" id="exSearch" type="text" placeholder="🔍 Search exercises…" oninput="renderExercises()" style="margin-bottom:8px">
+<input class="search-box" id="exSearch" type="text" placeholder="🔍 Search 180+ exercises… e.g. press ups" oninput="renderExercises()" style="margin-bottom:8px">
 <div class="exgrid" id="exerciseGrid"></div>
+<div id="exHowTo"></div>
 <div id="customNameContainer" style="display:none;margin-top:10px;"><label>Custom Workout Name</label><input id="customNameInput" type="text" placeholder="e.g., Pull-ups, Yoga, Swimming"></div>
 <div class="fields">
 <div><label>Sets</label><input id="sets" type="number" inputmode="numeric" min="1" max="99" step="1" value="1" placeholder="1"></div>
@@ -1234,6 +1244,8 @@ function getCategoryForExercise(exercise, customCategory) {
   if (customCategory) return customCategory;
   const m = exMeta(exercise);
   if (m) return m.cat;
+  const lb = window.libFind && libFind(exercise);
+  if (lb && lb.c && lb.c !== 'custom') return lb.c;
   const lower = (exercise || '').toLowerCase();
   if (lower.includes('squat') || lower.includes('lunge') || lower.includes('leg') || lower.includes('calf')) return 'legs';
   if (lower.includes('press') || lower.includes('bench') || lower.includes('push') || lower.includes('chest') || lower.includes('dip')) return 'chest';
@@ -1557,7 +1569,7 @@ function closeModal() {
 function renderExercises() {
   const q = (document.getElementById("exSearch")?.value || "").trim().toLowerCase();
   let picks = pickableExercises();
-  if (q) picks = picks.filter(e => e.name.toLowerCase().includes(q));
+  if (q) picks = picks.filter(e => window.exMatches ? exMatches(e.name, q) : e.name.toLowerCase().includes(q));
   const catName = {};
   CATEGORIES.forEach(c => catName[c.id] = c.name);
   let html = "";
@@ -1569,9 +1581,12 @@ function renderExercises() {
       `<button class="ex ${selected === e.name ? "selected" : ""}" onclick="selectEx('${escAttr(e.name)}','${e.unit}')">${e.icon}<b>${esc(e.name)}</b></button>`
     ).join("");
   });
+  // the bodyweight exercise library (stored on the device) fills in anything the buttons don't have
+  if (q && window.libButtons) html += libButtons(q, new Set(picks.map(e => e.name)));
   if (!html && q) html = `<div class="exgrid-head">No matches for “${esc(q)}”</div>`;
   html += `<button class="ex ${selected === "Custom" ? "selected" : ""}" onclick="selectNewCustom()" style="grid-column:1/-1">➕ <b>New custom exercise</b></button>`;
   document.getElementById("exerciseGrid").innerHTML = html;
+  const how = document.getElementById("exHowTo"); if (how) how.innerHTML = window.howToHtml ? howToHtml(selected) : '';
   const customBox = document.getElementById("customNameContainer");
   const categorySelector = document.getElementById("categorySelector");
   if (selected === "Custom") {
@@ -1736,10 +1751,13 @@ function saveWorkout() {
   if (isPR) {
     haptic('success');
     playSound('pr');
-    setTimeout(() => alert(`🏆 NEW PR! ${name}: ${a} ${unit}`), 100);
+    if (window.pulseSfx) setTimeout(() => pulseSfx('pr'), 380);
+    // a pixel "NEW PR!" burst instead of a blocking alert (falls back to the alert if effects are unavailable)
+    if (window.pulseFx && pulseFx('levelUp', { x: .5, y: .4, w: .8, opts: { text: 'NEW PR!' } })) setTimeout(() => showToast(`🏆 NEW PR! ${name}: ${a} ${unit}`), 300);
+    else setTimeout(() => alert(`🏆 NEW PR! ${name}: ${a} ${unit}`), 100);
   } else {
     haptic('medium');
-    playSound('click');
+    if (window.pulseSfx && settings.sound) pulseSfx('log'); else playSound('click');
   }
 
   closeModal();
@@ -1756,6 +1774,7 @@ function removeWorkout(id) {
   lastDeleted = { item: workouts[idx], index: idx };
   workouts.splice(idx, 1);
   haptic('error');
+  if (window.pulseSfx) pulseSfx('del');
   persist();
   showToast('🗑️ Workout deleted', 'Undo', () => {
     workouts.splice(Math.min(lastDeleted.index, workouts.length), 0, lastDeleted.item);
@@ -1833,6 +1852,7 @@ function showUnlock(item) {
       <button onclick="this.closest('div[style]').parentElement.remove()" style="margin-top:16px;padding:10px 32px;border:0;border-radius:12px;background:var(--green);color:#07130d;font-weight:700;font-size:14px;cursor:pointer">Continue</button>
     </div>`;
   document.body.appendChild(overlay);
+  if (window.pulseFx) pulseFx('levelUp', { x: .5, y: .28, w: .8, opts: { text: item.type === 'title' ? 'NEW TITLE!' : item.type === 'cape' ? 'MASTERY!' : 'LEVEL UP!' } });
   triggerConfetti();
 }
 
@@ -1879,6 +1899,7 @@ function showAchievementPopup(achievement) {
   `;
   
   document.body.appendChild(overlay);
+  if (window.pulseFx) pulseFx('achievement', { x: .5, y: .13, w: .85 });
   triggerConfetti();
 }
 
@@ -1933,6 +1954,7 @@ function showLevelUpPopup(type, level, name) {
 }
 
 function triggerConfetti() {
+  if (window.pulseFx && pulseFx('confetti', { x: .5, y: .97 })) return; // pixel confetti (vendored pixelfx); DOM confetti is the fallback
   const colors = ['#fbbf24', '#6ee7a5', '#71b7ff', '#ff6b7a', '#a78bfa', '#fff'];
   for (let i = 0; i < 30; i++) {
     const el = document.createElement('div');
@@ -3313,6 +3335,7 @@ function getDailyQuests() {
 }
 
 function checkQuestProgress(quests) {
+  let questFxShown = false;
   const today = dateKey(new Date());
   const td = workouts.filter(w => w.date === today);
   const repsOf = (f) => td.filter(w => w.unit === 'reps' && f(w)).reduce((s, w) => s + w.amount * (w.sets || 1), 0);
@@ -3330,7 +3353,10 @@ function checkQuestProgress(quests) {
       case 'weight': q.progress = new Set(td.filter(w => w.weight).map(w => w.exercise)).size; break;
       case 'circuit': q.progress = (window.G && G.circuitState ? G.circuitState().history : []).filter(h => h.date === today).reduce((a, h) => a + h.rounds, 0); break;
     }
-    if (q.progress >= q.target) q.done = true;
+    if (q.progress >= q.target) {
+      if (!q.done && !questFxShown && window.pulseFx) { questFxShown = true; setTimeout(() => { pulseFx('questComplete', { x: .5, y: .2, w: .85 }); window.pulseSfx && pulseSfx('quest'); }, 900); }
+      q.done = true;
+    }
   });
 }
 
@@ -3741,6 +3767,7 @@ function renderProgressChart() {
   const unit = pts.length ? pts[pts.length - 1].unit : '';
   const max = Math.max(...pts.map(p => p.amount), 1);
   const best = Math.max(...entries.map(e => e.amount), 0);
+  if (window.uPlot && pts.length) { drawProgressPlot(container, ex, entries, unit, best); return; }
   container.innerHTML = `
     <div class="pchart">
       ${pts.map(p => `
@@ -3756,6 +3783,36 @@ function renderProgressChart() {
       <span>Best: <strong style="color:var(--gold)">${best} ${unit}</strong></span>
     </div>
   `;
+}
+
+// Smooth, zoomable progress chart (uPlot, MIT — vendored in vendor/uplot, runs fully offline)
+let progressRange = 90, progressPlot = null;
+function setProgressRange(r) { progressRange = r; haptic('light'); renderProgressChart(); }
+function drawProgressPlot(container, ex, entries, unit, best) {
+  document.querySelectorAll('#progressRange button').forEach(b => b.classList.toggle('on', Number(b.dataset.r) === progressRange));
+  // one point per day: the best single set (line) and the day's total (bars)
+  const days = {};
+  entries.forEach(w => { const d = days[w.date] || (days[w.date] = { best: 0, total: 0, pr: false }); d.best = Math.max(d.best, w.amount); d.total += w.amount * (w.sets || 1); d.pr = d.pr || !!w.isPR; });
+  let keys = Object.keys(days).sort();
+  if (progressRange) { const from = new Date(); from.setDate(from.getDate() - progressRange); const fk = dateKey(from); keys = keys.filter(k => k >= fk); }
+  if (!keys.length) { container.innerHTML = `<div class="empty">No ${esc(ex)} logs in this range — try “All”.</div>`; return; }
+  const xs = keys.map(k => new Date(k + 'T12:00:00').getTime() / 1000);
+  const bestS = keys.map(k => days[k].best), totS = keys.map(k => days[k].total);
+  const prs = keys.filter(k => days[k].pr).length;
+  if (progressPlot) { progressPlot.destroy(); progressPlot = null; }
+  container.innerHTML = '<div class="uplot-wrap"></div><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--muted)"><span>' + entries.length + ' log' + (entries.length > 1 ? 's' : '') + (prs ? ' · ' + prs + ' PR day' + (prs > 1 ? 's' : '') : '') + '</span><span>Best: <strong style="color:var(--gold)">' + best + ' ' + esc(unit) + '</strong></span></div>';
+  const wrap = container.querySelector('.uplot-wrap');
+  const w = Math.max(240, wrap.clientWidth || container.clientWidth || 320);
+  const ax = { stroke: '#8a94a6', grid: { stroke: 'rgba(255,255,255,.06)', width: 1 }, ticks: { stroke: 'rgba(255,255,255,.08)', width: 1 }, font: '10px system-ui, sans-serif' };
+  const bars = uPlot.paths && uPlot.paths.bars ? uPlot.paths.bars({ size: [0.6, 18] }) : undefined;
+  progressPlot = new uPlot({
+    width: w, height: 190, cursor: { drag: { x: true, y: false } }, legend: { live: true },
+    scales: { x: { time: true }, tot: { range: (u, mn, mx) => [0, Math.max(1, mx) * 1.15] }, best: { range: (u, mn, mx) => [0, Math.max(1, mx) * 1.15] } },
+    axes: [Object.assign({}, ax, { values: (u, v) => v.map(t => { const d = new Date(t * 1000); return d.getDate() + '/' + (d.getMonth() + 1); }) }), Object.assign({}, ax, { scale: 'best', size: 34 }), Object.assign({}, ax, { scale: 'tot', side: 1, grid: { show: false }, size: 34 })],
+    series: [{ value: (u, v) => v == null ? '—' : new Date(v * 1000).toLocaleDateString() },
+      { label: 'Day total', scale: 'tot', stroke: 'rgba(113,183,255,.0)', fill: 'rgba(113,183,255,.28)', paths: bars, points: { show: false }, value: (u, v) => v == null ? '—' : v + ' ' + unit },
+      { label: 'Best set', scale: 'best', stroke: '#fbbf24', width: 2, points: { size: 6, fill: '#fbbf24' }, value: (u, v) => v == null ? '—' : v + ' ' + unit }]
+  }, [xs, totS, bestS], wrap);
 }
 
 // ============================================
@@ -4096,6 +4153,12 @@ render();
 // Check achievements and levels on load
 setTimeout(checkAchievementsAndLevels, 500);
 </script>
+<script src="vendor/uplot/uPlot.iife.min.js"></script>
+<script src="vendor/exercise-db/bodyweight.js"></script>
+<script src="library.js"></script>
+<script src="vendor/zzfx/zzfx.js"></script>
+<script src="vendor/pixelarticons/icons.js"></script>
+<script src="celebrate.js"></script>
 <script src="fx.js"></script>
 <script src="loot.js"></script>
 <script src="rivals.js"></script>

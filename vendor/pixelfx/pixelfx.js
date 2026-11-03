@@ -210,10 +210,47 @@
     meta: () => meta24
   });
 
+  // ../vendor_src/pixelfx/src/fx/ui/confetti.js
+  var exports_confetti = {};
+  __export(exports_confetti, {
+    create: () => create18,
+    meta: () => meta25
+  });
+
+  // ../vendor_src/pixelfx/src/fx/ui/level-up.js
+  var exports_level_up = {};
+  __export(exports_level_up, {
+    act: () => act14,
+    create: () => create19,
+    meta: () => meta26
+  });
+
+  // ../vendor_src/pixelfx/src/fx/ui/achievement.js
+  var exports_achievement = {};
+  __export(exports_achievement, {
+    create: () => create20,
+    meta: () => meta27
+  });
+
+  // ../vendor_src/pixelfx/src/fx/ui/quest-complete.js
+  var exports_quest_complete = {};
+  __export(exports_quest_complete, {
+    create: () => create21,
+    meta: () => meta28
+  });
+
+  // ../vendor_src/pixelfx/src/fx/explosions/firework-burst.js
+  var exports_firework_burst = {};
+  __export(exports_firework_burst, {
+    create: () => create22,
+    meta: () => meta29
+  });
+
   // ../vendor_src/pixelfx/src/core/math.js
   var TAU = Math.PI * 2;
   var clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;
   var lerp = (a, b, t) => a + (b - a) * t;
+  var fract = (x) => x - Math.floor(x);
   var wrap = (x, m) => (x % m + m) % m;
   var seg = (t, t0, t1) => clamp((t - t0) / (t1 - t0));
   var smooth = (e0, e1, x) => {
@@ -389,6 +426,14 @@
         next.push([(ax + bx) / 2 + -dy / (L || 1) * off, (ay + by) / 2 + dx / (L || 1) * off], pts[i]);
       }
       pts = next;
+    }
+    return pts;
+  }
+  function star(cx, cy, r0, r1, n = 5, rot = -Math.PI / 2) {
+    const pts = [];
+    for (let i = 0;i < n * 2; i++) {
+      const a = rot + i * Math.PI / n, r = i % 2 ? r0 : r1;
+      pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
     }
     return pts;
   }
@@ -2839,7 +2884,7 @@
       return { a, len: L, w: R.range(w[0], w[1]) * (i % 2 ? Math.sqrt(jag) : 1) };
     });
   }
-  function star(p, x, y, list, sc, th, [rim, body, inner, core], a = 1, heart = 2.4) {
+  function star2(p, x, y, list, sc, th, [rim, body, inner, core], a = 1, heart = 2.4) {
     for (let pass = 0;pass < 3; pass++)
       for (const s of list) {
         const c = Math.cos(s.a), sn = Math.sin(s.a), L = s.len * sc;
@@ -3054,7 +3099,7 @@
         for (let i = 0;i < KEYS.length - 1; i++)
           if (t >= KEYS[i][0] && t < KEYS[i + 1][0]) {
             const [, sc, th, a, cols] = KEYS[i];
-            star(p, X, Y, sp, sc, th, cols.map((j) => C[j]), a, 2.6);
+            star2(p, X, Y, sp, sc, th, cols.map((j) => C[j]), a, 2.6);
           }
         const pop = Math.exp(-t / 0.05);
         if (pop > 0.02) {
@@ -3287,9 +3332,9 @@
           for (let x = CX;x <= CX + RX; x++)
             p.dot(x, 0, t < 0.05 ? WHITE : C[5], fade * (0.6 + 0.4 * ((x - CX) / RX)));
         if (t < 0.03)
-          star(p, hx, hy, sp, 1, 1, [S[3], S[0], S[1], WHITE], 1, 2);
+          star2(p, hx, hy, sp, 1, 1, [S[3], S[0], S[1], WHITE], 1, 2);
         else if (t < 0.06)
-          star(p, hx, hy, sp, 1.25, 0.55, [S[3], S[1], S[2], S[0]], 1, 2);
+          star2(p, hx, hy, sp, 1.25, 0.55, [S[3], S[1], S[2], S[0]], 1, 2);
         ps.draw(p);
         p.glow(CX + RX * 0.5, -RY * 0.45, RY * 0.9, C[4], 0.2 * (1 - smooth(GONE, GONE + 0.55, t)) + 0.35 * Math.exp(-t / 0.08));
         lights.draw(p);
@@ -3447,9 +3492,9 @@
         ps.draw(p, "front");
         if (t < 0.035) {
           p.ellipse(0, 0, 30, 4.5, (d) => d > 0.8 ? C[4] : d > 0.5 ? C[6] : WHITE);
-          star(p, 0, -1, burst, 1, 1, [C[4], C[6], WHITE, WHITE]);
+          star2(p, 0, -1, burst, 1, 1, [C[4], C[6], WHITE, WHITE]);
         } else if (t < 0.07)
-          star(p, 0, -1, burst, 1.25, 0.5, [C[3], C[5], C[6], WHITE]);
+          star2(p, 0, -1, burst, 1.25, 0.5, [C[3], C[5], C[6], WHITE]);
         if (t < 0.14)
           p.glowLine(-80, 0, 80, 0, 10, C[5], 0.55 * (1 - t / 0.14));
         const H = heat(t);
@@ -6935,6 +6980,1126 @@
     p.glow(hx, hy, 13, H[1], 0.3 * fl);
   }
 
+  // ../vendor_src/pixelfx/src/fx/ui/confetti.js
+  var meta25 = {
+    name: "Confetti",
+    desc: "Two party poppers bang one after the other: paper bits and curly streamers burst out, stall, then tumble and flutter down, flipping, and settle on the floor.",
+    tags: ["ui", "celebration", "confetti", "party", "reward", "one-shot"],
+    size: [200, 140],
+    origin: [100, 126],
+    duration: 3.4,
+    loop: false,
+    fps: 30,
+    bg: "ground",
+    options: { palette: ["#ff4a5a", "#ff9a2a", "#ffe03c", "#5ad84a", "#3cc8ff", "#7a6cff", "#f53cd1"], seed: 11 }
+  };
+  var POPPERS = [
+    { x: -74, y: -1, a: -Math.PI / 2 + 0.62, t: 0.1 },
+    { x: 74, y: -1, a: -Math.PI / 2 - 0.62, t: 0.26 }
+  ];
+  var INK4 = hex("#141019");
+  function popper(p, x, y, a, k, C, alpha) {
+    const ca = Math.cos(a), sa = Math.sin(a), bx = x - ca * k, by = y - sa * k;
+    p.shade(bx - 12, by - 12, bx + 12, by + 12, (px, py, o) => {
+      const dx = px - bx, dy = py - by, u = dx * ca + dy * sa, v = -dx * sa + dy * ca;
+      if (u < 0 || u > 11)
+        return;
+      const hw = 0.8 + u * 0.32;
+      if (Math.abs(v) > hw + 0.6)
+        return;
+      o.a = alpha;
+      if (Math.abs(v) > hw - 0.4 || u > 10.2 || u < 0.8)
+        return INK4;
+      const stripe = Math.floor((u + v * 0.6) / 2.2) % 2 === 0;
+      return stripe ? v < 0 ? C[2] : scale(C[2], 0.75) : v < 0 ? WHITE : hex("#c8c0d8");
+    });
+  }
+  function create18(o) {
+    const C = fit(o.palette, 7), R = new Rng(o.seed);
+    const ps = new Particles({ rng: R, ground: () => 0, sparks: ["#ffffff", "#fff3a6", "#ffc23d", "#ff8a2a"] }), lights = new Lights;
+    const bits = [], ribbons = [], fired = [false, false], end = meta25.duration - 0.05;
+    const kick = (t, pp) => t < pp.t ? 0 : 3 * Math.exp(-(t - pp.t) * 14);
+    function fire(pp) {
+      const mx = pp.x + Math.cos(pp.a) * 11, my = pp.y + Math.sin(pp.a) * 11;
+      lights.add(mx, my, 34, WHITE, 0.6, 0.12);
+      lights.add(mx, my, 50, C[2], 0.4, 0.4);
+      for (let i = 0;i < 6; i++)
+        ps.spawn(P.SMOKE, mx, my, Math.cos(pp.a) * R.range(20, 60) + R.range(-10, 10), Math.sin(pp.a) * R.range(20, 60), R.range(0.6, 1), hex("#5d5660"), R.range(2.5, 4));
+      for (let i = 0;i < 12; i++) {
+        const an = pp.a + R.range(-0.5, 0.5), sp = R.range(120, 260);
+        ps.spawn(P.SPARK, mx, my, Math.cos(an) * sp, Math.sin(an) * sp, R.range(0.1, 0.25));
+      }
+      for (let i = 0;i < 46; i++) {
+        const an = pp.a + R.range(-0.38, 0.38), sp = R.range(200, 380);
+        bits.push({ x: mx, y: my, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, c: R.pick(C), w: R.range(2, 3), h: R.range(3, 4.6), ang: R.range(0, TAU), spin: R.range(-14, 14), flip: R.range(0, TAU), fs: R.range(5, 13), ph: R.range(0, TAU), amp: R.range(5, 12), fw: R.range(2, 3.4), x0: 0, mode: 0, rest: 0, fall: R.range(26, 40) });
+      }
+      for (let i = 0;i < 4; i++) {
+        const an = pp.a + R.range(-0.25, 0.25), sp = R.range(220, 330), n = 11;
+        ribbons.push({ pts: Array.from({ length: n }, () => [mx, my]), vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, c: R.pick(C), ph: R.range(0, TAU), amp: R.range(6, 12), fw: R.range(1.5, 2.4), mode: 0, x0: 0, curl: R.range(0.7, 1.1), fall: R.range(22, 32) });
+      }
+    }
+    let t = 0;
+    return {
+      update(dt) {
+        t += dt;
+        POPPERS.forEach((pp, i) => !fired[i] && t >= pp.t && (fired[i] = true, fire(pp)));
+        for (const b of bits) {
+          if (b.mode === 2) {
+            b.rest += dt;
+            continue;
+          }
+          b.flip += b.fs * dt;
+          if (b.mode === 0) {
+            b.vx -= b.vx * 3.4 * dt;
+            b.vy -= b.vy * 3.4 * dt - 140 * dt;
+            b.x += b.vx * dt;
+            b.y += b.vy * dt;
+            b.ang += b.spin * dt;
+            if (Math.hypot(b.vx, b.vy) < 40)
+              b.mode = 1, b.x0 = b.x - Math.sin(b.ph) * b.amp;
+          } else {
+            b.ph += b.fw * dt;
+            b.x0 += b.vx * dt;
+            b.vx -= b.vx * 2 * dt;
+            b.x = b.x0 + Math.sin(b.ph) * b.amp;
+            b.y += b.fall * (0.4 + 0.9 * Math.abs(Math.cos(b.ph))) * dt;
+            b.ang = Math.cos(b.ph) * 0.9;
+            if (b.y >= -1)
+              b.y = -0.5, b.mode = 2, b.ang = R.range(-0.3, 0.3), b.flip = 0;
+          }
+        }
+        for (const r of ribbons) {
+          const h = r.pts[0];
+          if (r.mode === 0) {
+            r.vx -= r.vx * 3 * dt;
+            r.vy -= r.vy * 3 * dt - 120 * dt;
+            h[0] += r.vx * dt;
+            h[1] += r.vy * dt;
+            if (Math.hypot(r.vx, r.vy) < 35)
+              r.mode = 1, r.x0 = h[0] - Math.sin(r.ph) * r.amp;
+          } else if (h[1] < -1) {
+            r.ph += r.fw * dt;
+            r.x0 += r.vx * dt;
+            r.vx -= r.vx * 2 * dt;
+            h[0] = r.x0 + Math.sin(r.ph) * r.amp;
+            h[1] += r.fall * (0.5 + 0.7 * Math.abs(Math.cos(r.ph))) * dt;
+          }
+          for (let i = 1;i < r.pts.length; i++) {
+            const a = r.pts[i - 1], b = r.pts[i];
+            b[1] = Math.min(-0.5, b[1] + 20 * dt);
+            const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1;
+            if (d > 2.6)
+              b[0] = a[0] + dx / d * 2.6, b[1] = a[1] + dy / d * 2.6;
+          }
+        }
+        ps.update(dt);
+        lights.update(dt);
+      },
+      drawBack(p) {
+        ps.draw(p, "back");
+      },
+      draw(p) {
+        const fade = 1 - seg(t, end - 0.45, end - 0.05);
+        for (const pp of POPPERS) {
+          const k = kick(t, pp);
+          popper(p, pp.x, pp.y, pp.a, k, C, 1 - seg(t, 2.5, 2.9));
+          const ft = t - pp.t;
+          if (ft > 0 && ft < 0.12)
+            sparkle(p, pp.x + Math.cos(pp.a) * 13, pp.y + Math.sin(pp.a) * 13, 7 * (1 - ft / 0.12), WHITE, C[2], 0.7);
+        }
+        for (const r of ribbons) {
+          const pts = r.pts.map(([x, y], i) => [x + Math.sin(i * r.curl + t * 9 + r.ph) * (i ? 1.6 : 0), y]);
+          for (let i = 1;i < pts.length; i++) {
+            const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], front = Math.sin(i * r.curl + t * 9 + r.ph) > 0;
+            p.line(x0, y0, x1, y1, front ? r.c : scale(r.c, 0.6), fade);
+            p.line(x0 + 1, y0, x1 + 1, y1, front ? mix(r.c, WHITE, 0.35) : scale(r.c, 0.45), fade);
+          }
+        }
+        for (const b of bits) {
+          if (b.y > 1)
+            continue;
+          const fw = b.mode === 2 ? 1 : Math.cos(b.flip), w = Math.max(0.5, Math.abs(fw) * b.w), ca = Math.cos(b.ang), sa = Math.sin(b.ang);
+          const c = fw >= 0 ? b.c : scale(b.c, 0.62), a = fade;
+          if (b.mode === 2) {
+            p.dot(b.x, b.y, scale(b.c, 0.8), a);
+            p.dot(b.x + 1, b.y, scale(b.c, 0.6), a);
+            continue;
+          }
+          p.shade(b.x - 4, b.y - 4, b.x + 4, b.y + 4, (x, y, out) => {
+            const dx = x - b.x, dy = y - b.y, u = dx * ca + dy * sa, v = -dx * sa + dy * ca;
+            if (Math.abs(u) > w / 2 + 0.2 || Math.abs(v) > b.h / 2)
+              return;
+            out.a = a;
+            return Math.abs(fw) > 0.92 && v < -b.h / 2 + 1 ? WHITE : c;
+          });
+          if (Math.abs(fw) > 0.97)
+            p.glow(b.x, b.y, 5, mix(b.c, WHITE, 0.5), 0.35 * fade);
+        }
+        ps.draw(p, "front");
+        lights.draw(p);
+      }
+    };
+  }
+
+  // ../vendor_src/pixelfx/src/fx/ui/_lib.js
+  function spell(str, font = "big") {
+    const F = FONTS[font], letters = [];
+    let x = 0;
+    for (const ch of String(str)) {
+      const g = F.glyphs[ch] ?? F.glyphs[ch.toUpperCase()] ?? null;
+      const w = g ? g.w : F.space;
+      letters.push({ ch, g, x, w, h: F.h });
+      x += w + F.gap;
+    }
+    return { letters, w: Math.max(0, x - F.gap), h: F.h };
+  }
+  var ids = new Int16Array(4096);
+  var edges = new Uint8Array(4096);
+  function drawWord(p, items, st) {
+    if (!items.length)
+      return;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const it of items) {
+      const h = it.g.rows.length * it.sy, w = it.g.w * it.sx, sl = Math.abs(it.slant ?? 0) * it.g.rows.length;
+      x0 = Math.min(x0, it.x - sl);
+      x1 = Math.max(x1, it.x + w + sl);
+      y0 = Math.min(y0, it.y);
+      y1 = Math.max(y1, it.y + h);
+    }
+    const ow = st.ow ?? 1;
+    x0 = Math.floor(x0) - 1 - ow;
+    y0 = Math.floor(y0) - 1 - ow;
+    x1 = Math.ceil(x1) + 2 + ow;
+    y1 = Math.ceil(y1) + 3 + ow;
+    const W = x1 - x0, H = y1 - y0;
+    if (W * H > ids.length)
+      ids = new Int16Array(W * H * 2), edges = new Uint8Array(W * H * 2);
+    ids.fill(0, 0, W * H);
+    items.forEach((it, k) => {
+      const g = it.g, gh = g.rows.length, h = gh * it.sy, bot = it.y + h, sl = it.slant ?? 0;
+      for (let py = Math.floor(it.y);py < Math.ceil(bot); py++) {
+        const gy = Math.floor((py + 0.5 - it.y) / it.sy);
+        if (gy < 0 || gy >= gh)
+          continue;
+        const shift = Math.round((bot - py - 0.5) / it.sy * sl);
+        const ry = py + 0.5 - it.y - gy * it.sy, row = g.rows[gy];
+        for (let px = Math.floor(it.x + shift) - 1;px <= Math.ceil(it.x + shift + g.w * it.sx); px++) {
+          const fx = px + 0.5 - it.x - shift, gx = Math.floor(fx / it.sx);
+          if (gx < 0 || gx >= g.w || !row[gx])
+            continue;
+          const i = (py - y0) * W + (px - x0);
+          if (i < 0 || i >= W * H)
+            continue;
+          ids[i] = k + 1;
+          const rx = fx - gx * it.sx, up = gy > 0 ? g.rows[gy - 1] : null, dn = gy < gh - 1 ? g.rows[gy + 1] : null;
+          const open = (r) => !r || !r[gx] && !r[gx - 1] && !r[gx + 1];
+          edges[i] = (ry < 1 && open(up) ? 1 : 0) | (ry >= it.sy - 1 && open(dn) ? 2 : 0) | (rx < 1 && !(gx > 0 && row[gx - 1]) ? 4 : 0);
+        }
+      }
+    });
+    const at = (x, y) => x < x0 || y < y0 || x >= x1 || y >= y1 ? 0 : ids[(y - y0) * W + (x - x0)];
+    const F = st.fill, nF = F.length, shine = st.shine, glint = st.glint ?? WHITE, sy0 = st.shineY ?? y0;
+    for (let y = y0;y < y1; y++)
+      for (let x = x0;x < x1; x++) {
+        const id = at(x, y);
+        if (id) {
+          const it = items[id - 1], v = (y + 0.5 - it.y) / (it.g.rows.length * it.sy);
+          let i = Math.min(nF - 1, Math.max(0, Math.floor((1 - v) * nF)));
+          let c = F[i];
+          const e = edges[(y - y0) * W + (x - x0)];
+          if (e & 1)
+            c = st.edge ?? F[nF - 1];
+          else if (e & 2)
+            c = st.under ?? F[0];
+          else if (e & 4 && i < nF - 1)
+            c = F[i + 1];
+          if (shine !== undefined && shine !== null) {
+            const d = Math.abs(x + 0.5 - (y + 0.5 - sy0) * 0.6 - shine);
+            if (d < 1.1)
+              c = WHITE;
+            else if (d < 2.4)
+              c = glint;
+          }
+          if (it.flash > 0.6 || it.flash > 0.25 && v < 0.5)
+            c = WHITE;
+          p.dot(x, y, c, it.a ?? 1);
+          continue;
+        }
+        let n = 0;
+        for (let dy = -ow;dy <= ow && !n; dy++)
+          for (let dx = -ow;dx <= ow && !n; dx++)
+            if (ow < 2 || Math.abs(dx) + Math.abs(dy) < 4)
+              n = at(x + dx, y + dy);
+        if (n) {
+          p.dot(x, y, st.outline, items[n - 1].a ?? 1);
+          continue;
+        }
+        const s = at(x - ow, y - 1 - ow) || at(x + 1 - ow, y - 1 - ow) || at(x - ow, y - ow);
+        if (s && st.shadow)
+          p.dot(x, y, st.shadow, (items[s - 1].a ?? 1) * 0.9);
+      }
+  }
+  function tintActor(p, A, k, ramp) {
+    if (!A || k <= 0.12)
+      return;
+    const { mask: m, pixels: pix } = A, cut = k > 0.6 ? 0 : k > 0.3 ? 0.22 : 0.5;
+    for (let j = 0;j < m.h; j++)
+      for (let i = 0;i < m.w; i++) {
+        const q = j * m.w + i;
+        if (!m.data[q])
+          continue;
+        const l = pix ? luma(pix[q]) : 0.6;
+        if (l < cut)
+          continue;
+        p.px(A.x + i, A.y + j, l > 0.5 ? k > 0.8 ? WHITE : ramp[2] : l > 0.22 ? ramp[1] : ramp[0]);
+      }
+  }
+  function lightActor(p, A, c, k, rim = 0, t = 0) {
+    if (!A || k <= 0.01 && rim <= 0.01)
+      return;
+    const { mask: m, pixels: pix } = A, has = (i, j) => i >= 0 && j >= 0 && i < m.w && j < m.h && m.data[j * m.w + i];
+    for (let j = 0;j < m.h; j++)
+      for (let i = 0;i < m.w; i++) {
+        if (!m.data[j * m.w + i])
+          continue;
+        if (k > 0.01)
+          p.light(A.x + i, A.y + j, c, k * (1.1 - 0.5 * j / m.h));
+        if (rim <= 0.01 || !has(i - 1, j) || !has(i + 1, j) || !has(i, j - 1))
+          continue;
+        if (has(i - 2, j) && has(i + 2, j) && has(i, j - 2))
+          continue;
+        const f = rim * (0.75 + 0.35 * noise(j * 0.6 - t * 8, i * 3));
+        if (f > 0.25)
+          p.px(A.x + i, A.y + j, mix(pix ? pix[j * m.w + i] || c : c, c, Math.min(0.85, f)));
+      }
+  }
+  function haloActor(p, A, c, k, t = 0) {
+    if (!A || k <= 0.02)
+      return;
+    p.outline(A.mask, A.x, A.y, c, (mx, my) => k * (0.75 + 0.45 * noise(my * 0.45 - t * 7, mx * 3)));
+  }
+  function panel(p, x, y, w, h, col, { r = 3, a = 1, shine = null } = {}) {
+    if (w < 2 || h < 2)
+      return;
+    const X1 = x + w, Y1 = y + h;
+    p.shade(x, y, X1, Y1, (px, py, o) => {
+      const cx = Math.max(x + r - px, 0, px - (X1 - r)), cy = Math.max(y + r - py, 0, py - (Y1 - r));
+      const e = cx > 0 && cy > 0 ? r - Math.hypot(cx, cy) : Math.min(px - x, X1 - px, py - y, Y1 - py);
+      if (e < 0)
+        return;
+      o.a = a;
+      if (e < 1)
+        return col.outline;
+      if (py - y < 2)
+        return col.rim;
+      if (Y1 - py < 2)
+        return col.low;
+      if (shine !== null) {
+        const d = Math.abs(px - (py - y) * 0.6 - shine);
+        if (d < 1.3)
+          return WHITE;
+        if (d < 3)
+          return col.rim;
+      }
+      return py - y < h * 0.45 ? col.top : col.body;
+    });
+  }
+  function shake2(t, amp, t0 = 0, len = 0.3, seed = 1, hz = 32) {
+    if (t < t0 || t > t0 + len)
+      return [0, 0];
+    const k = 1 - (t - t0) / len;
+    return [Math.round(noise(t * hz, seed) * amp * k * 1.7), Math.round(noise(t * hz, seed + 7) * amp * k * 1.3)];
+  }
+
+  // ../vendor_src/pixelfx/src/fx/ui/level-up.js
+  var meta26 = {
+    name: "Level up",
+    desc: "Gold gathers at the feet and bursts up as a pillar of light round the hero; rings climb it, LEVEL UP! drops in letter by letter, a shine sweeps it, sparkles twinkle.",
+    tags: ["ui", "level", "reward", "text", "light", "one-shot"],
+    size: [176, 138],
+    origin: [88, 114],
+    duration: 3.2,
+    loop: false,
+    fps: 30,
+    bg: "ground",
+    actor: 2,
+    options: { palette: ["#2a1405", "#5c3008", "#9a5a0e", "#d48e18", "#f5b92c", "#ffde5e", "#fff4bc", "#ffffff"], text: "LEVEL UP!", seed: 5 }
+  };
+  var COIL = { turn: 0.9, crouch: 7, lean: 2, fx: -6, fy: -13, bx: 7, by: -13, ffx: -5, fbx: 6 };
+  var LEAP = { turn: 1.1, y: -16, crouch: -1, fx: -6, fy: -45, bx: 7, by: -44, ffx: -2, ffy: -8, fbx: 5, fby: -3, toeB: true };
+  var PUMP = { turn: 0.9, crouch: 0, fx: -6, fy: -45, bx: 9, by: -15, ffx: -3, fbx: 4 };
+  var act14 = {
+    onBody: true,
+    follow: 0,
+    poses: [
+      [-0.3, READY],
+      [0.28, COIL],
+      [0.3, LEAP, "snap"],
+      [0.46, { ...LEAP, y: -19 }],
+      [0.72, { ...LEAP, y: 0, ffy: -4, fby: -4 }, "in"],
+      [0.74, { ...COIL, crouch: 5 }, "snap"],
+      [0.95, PUMP, "out"],
+      [1.2, { ...PUMP, crouch: 1, fy: -43 }],
+      [1.45, PUMP],
+      [2.3, { ...PUMP, fy: -41 }],
+      [2.8, READY],
+      [3.2, READY]
+    ],
+    hits: [{ t: 0.28, stop: 0.05, shake: 0.14, amp: 2 }],
+    dust: [{ t: 0.3, x: 0, n: 7 }, { t: 0.74, x: 0, n: 6 }]
+  };
+  var REL2 = 0.28;
+  var RET = 1.02;
+  var GONE4 = 1.34;
+  var TOP3 = 100;
+  var TY = -68;
+  var DROP2 = 0.5;
+  var STAG = 0.05;
+  var LANDED = 1.06;
+  var SHINE = 1.24;
+  var EXIT = 2.3;
+  var STRANDS = Array.from({ length: 9 }, (_, i) => ({ x: (i / 8 - 0.5) * 1.5 + (rand(i, 1) - 0.5) * 0.16, sp: 170 + rand(i, 2) * 170, per: 10 + rand(i, 3) * 16, duty: 0.3 + rand(i, 4) * 0.35, ph: rand(i, 5), lvl: rand(i, 6) < 0.35 ? 1 : 2, end: 0.5 + rand(i, 7) * 0.42 }));
+  var widthAt = (t) => t < REL2 ? 0 : 12 * (1 + 0.4 * Math.exp(-(t - REL2) * 10)) * (1 - 0.82 * smooth(RET - 0.12, RET + 0.16, t));
+  function column(p, C, t) {
+    const a = t - REL2;
+    if (a < 0 || t > GONE4)
+      return;
+    const top = -TOP3 * ease.outExpo(clamp(a / 0.12)), bot = -TOP3 * ease.inCubic(seg(t, RET, GONE4)), W = widthAt(t), k = 1 - smooth(RET, GONE4, t);
+    p.glowLine(0, top, 0, Math.min(bot, -34), W * 1.6 + 6, C[5], 0.2 * k + 0.06);
+    p.glowLine(0, top, 0, Math.min(bot, -40), 5, WHITE, 0.18 * k);
+    if (a < 0.04) {
+      for (let y = Math.floor(top);y < bot; y++) {
+        const wr = W * 0.55 * (1 - 0.3 * (-y / TOP3));
+        for (let x = Math.floor(-wr);x <= Math.ceil(wr); x++)
+          p.dot(x, y, Math.abs(x + 0.5) < wr - 1.5 ? WHITE : C[6], clamp((y + TOP3) / 20) * 1.5);
+      }
+      return;
+    }
+    for (let y = Math.ceil(top);y < Math.ceil(bot); y++) {
+      const h = -y / TOP3, fade = clamp((y + TOP3) / 16) * (t < RET ? 1 : clamp((bot - y) / 10)), head = y - top < 3 && a < 0.16;
+      const wr = W * (1 - 0.3 * h) + 0.9 * noise2(y * 0.2, t * 12, 3);
+      for (const s of [-1, 1]) {
+        const run = fract(y * 0.06 + t * 3.4 + (s > 0 ? 0.5 : 0)) < 0.78, xw = s * wr;
+        p.dot(xw, y, head ? WHITE : run ? C[6] : C[5], fade * 1.4);
+        p.dot(xw + s, y, C[4], fade * (run ? 0.5 : 0.25));
+        if (run)
+          p.dot(xw - s, y, C[5], fade * 1.2);
+      }
+      p.dot(0, y, WHITE, fade * 1.6);
+      p.dot(-1, y, noise2(y * 0.3, t * 14, 5) > -0.2 ? WHITE : C[6], fade * 1.3);
+      if (noise2(y * 0.25, t * 9, 8) > 0.25)
+        p.dot(1, y, C[6], fade * 1.2);
+      for (const S of STRANDS) {
+        if (h > S.end)
+          continue;
+        const ph = fract((y + t * S.sp) / S.per + S.ph);
+        if (ph > S.duty)
+          continue;
+        const u = ph / S.duty;
+        p.px(S.x * wr, y, head || u < 0.2 ? WHITE : u < 0.65 ? C[7 - S.lvl] : C[6 - S.lvl]);
+      }
+    }
+  }
+  function plate(p, C, t, k) {
+    if (k <= 0.02)
+      return;
+    const rx = 9 + 9 * k + Math.sin(t * 9), ry = 2.2;
+    p.shade(-rx, -ry, rx, ry, (x, y, o) => {
+      const dx = x / rx, dy = y / ry, d = Math.sqrt(dx * dx + dy * dy);
+      if (d > 1)
+        return;
+      const u = d / Math.max(0.05, k);
+      o.c = u < 0.3 ? WHITE : u < 0.55 ? C[6] : u < 0.8 ? C[5] : C[4];
+      o.a = d < 0.6 * k ? 1 : k * (1 - d) * 2.2;
+    });
+    p.glow(0, -1, rx * 2.2, C[4], 0.35 * k);
+  }
+  function rays(p, C, t, k, cx, cy) {
+    if (k <= 0.02)
+      return;
+    for (let i = 0;i < 20; i++) {
+      const an = i / 20 * TAU + 0.08, ca = Math.cos(an), sa = Math.sin(an), long = i % 2 === 0;
+      if (Math.abs(sa) < 0.4)
+        continue;
+      const r0 = 1 / Math.sqrt((ca / 52) ** 2 + (sa / 12) ** 2) + 2 * k, len = (long ? 15 + 7 * rand(i, 9) : 7 + 4 * rand(i, 8)) * k;
+      if (len < 1)
+        continue;
+      const sh = 0.75 + 0.25 * Math.sin(t * 7 + i * 2.1), x0 = cx + ca * r0, y0 = cy + sa * r0;
+      p.line(x0, y0, x0 + ca * len, y0 + sa * len, (u) => u < 0.3 ? C[7] : u < 0.6 ? C[6] : C[5], (u) => sh * (u < 0.55 ? 1.3 : 1.3 * (1 - u) / 0.45));
+    }
+  }
+  function create19(o) {
+    const C = fit(o.palette, 8), R = new Rng(o.seed), A = o.actor, SHADOW = scale(C[0], 0.5);
+    const ps = new Particles({ rng: R, ground: () => 0, sparks: [C[7], C[6], C[5], C[3]] }), lights = new Lights;
+    const spawn = (k, x, y, vx, vy, life, ...rest) => ps.spawn(k, x, y, vx, vy, Math.min(life, meta26.duration - 0.05 - t), ...rest);
+    const word = spell(o.text), BASE = TY + 14, X0 = -word.w;
+    const lets = word.letters.filter((L) => L.g).map((L, i) => ({ g: L.g, w: L.w, cx: X0 + (L.x + L.w / 2) * 2, born: DROP2 + i * STAG, pop: EXIT + i * 0.04, off: -18, v: 60, sq: 0, flash: 0, on: false, landed: false, rest: false, burst: false }));
+    const right = X0 + word.w * 2;
+    const sats = Array.from({ length: 8 }, (_, i) => {
+      const s = i % 2 ? 1 : -1, x = s * R.range(20, 60), y = TY + 7 + (Math.abs(x) < 50 ? R.sign() * R.range(11, 18) : R.range(-14, 14));
+      return { x, y, t0: SHINE - 0.1 + i * 0.13 + R.range(0, 0.05), dur: R.range(0.32, 0.5), L: R.range(3, 6) };
+    });
+    const halos = [];
+    let t = 0, released = false, nextHalo = REL2 + 0.03, gather = 0;
+    const rush = [];
+    const drawRush = (p, back) => {
+      for (const m of rush) {
+        if (m.back !== back)
+          continue;
+        const sp = Math.hypot(m.vx, m.vy), ux = m.vx / sp, uy = m.vy / sp, L = m.len;
+        p.line(m.x - ux * L, m.y - uy * L, m.x - ux * L * 0.4, m.y - uy * L * 0.4, m.c);
+        p.line(m.x - ux * L * 0.35, m.y - uy * L * 0.35, m.x, m.y, WHITE);
+        p.glow(m.x, m.y, 4, C[5], 0.25);
+      }
+    };
+    return {
+      update(dt) {
+        t += dt;
+        for (gather += t < REL2 ? dt * 420 : 0;gather >= 1; gather--) {
+          const kind = R.next(), sp = R.range(140, 250) * (1 + t * 2);
+          let x, y, tx, ty;
+          if (kind < 0.42) {
+            const an = R.range(0, TAU), D = R.range(22, 70);
+            x = Math.cos(an) * D, y = -1 - Math.abs(Math.sin(an)) * D * 0.1, tx = Math.cos(an) * 3, ty = -1;
+          } else if (kind < 0.84) {
+            const an = R.range(0, TAU), D = R.range(34, 64);
+            x = Math.cos(an) * D, y = Math.min(-3, -20 + Math.sin(an) * D * 0.85), tx = Math.cos(an) * 11, ty = -20 + Math.sin(an) * 14;
+          } else {
+            if (t < REL2 * 0.4)
+              continue;
+            x = R.range(-9, 9), y = -1, tx = x * 0.7, ty = -R.range(26, 44);
+          }
+          const dx = tx - x, dy = ty - y, l = Math.hypot(dx, dy) || 1;
+          rush.push({ x, y, vx: dx / l * sp, vy: dy / l * sp, life: Math.min(l / sp, REL2 + 0.06 - t), len: R.range(5, 9), c: R.chance(0.45) ? C[6] : C[5], back: kind > 0.84 && R.chance(0.5) });
+        }
+        for (let i = rush.length - 1;i >= 0; i--) {
+          const m = rush[i];
+          if ((m.life -= dt) <= 0)
+            rush.splice(i, 1);
+          else
+            m.x += m.vx * dt, m.y += m.vy * dt;
+        }
+        if (t < REL2 && R.chance(0.12))
+          spawn(P.STAR, R.range(-30, 30), -R.range(0, 3), 0, -R.range(10, 30), R.range(0.3, 0.5), C[6], 0.6);
+        if (!released && t >= REL2) {
+          released = true;
+          lights.add(0, -24, 90, C[5], 0.6, 0.7);
+          lights.add(0, -8, 40, WHITE, 0.6, 0.12);
+          for (let i = 0;i < 22; i++) {
+            const an = i / 22 * TAU + R.range(-0.12, 0.12), sp = R.range(260, 460);
+            const y0 = -18 + Math.sin(an) * 8, vy = Math.sin(an) * sp * 0.8, life = Math.min(R.range(0.1, 0.2), vy > 0 ? -y0 / vy : vy < 0 ? (y0 + 104) / -vy : 1, 78 / Math.abs(Math.cos(an) * sp));
+            spawn(P.MOTE, Math.cos(an) * 6, y0, Math.cos(an) * sp, vy, life, R.chance(0.4) ? C[7] : C[6], 1, 0, an > 0.3 && an < Math.PI - 0.3 ? PF.BACK : 0);
+          }
+          for (let i = 0;i < 26; i++) {
+            const an = -Math.PI / 2 + R.range(-1.3, 1.3), sp = R.range(120, 290);
+            spawn(P.SPARK, R.range(-5, 5), -2, Math.cos(an) * sp, Math.sin(an) * sp, R.range(0.35, 0.8));
+          }
+          for (let i = 0;i < 16; i++)
+            spawn(P.STAR, R.range(-10, 10), R.range(-36, -4), R.range(-30, 30), -R.range(15, 60), R.range(0.6, 1.3), R.pick([C[7], C[6], C[5]]), R.chance(0.35) ? R.range(1.5, 2.6) : R.range(0.4, 0.9), 0, R.chance(0.4) ? PF.BACK : 0);
+        }
+        const W = widthAt(t);
+        if (t >= nextHalo && t < RET - 0.1)
+          halos.push(t), nextHalo += 0.16;
+        if (t > REL2 && t < RET + 0.1 && R.chance(0.5)) {
+          const s = R.sign();
+          const y = R.range(-4, -60), vy = -R.range(140, 260);
+          spawn(P.MOTE, s * R.range(0.75, 1.6) * W, y, 0, vy, Math.min(R.range(0.16, 0.32), (y + 96) / -vy), R.chance(0.5) ? C[7] : C[6], R.range(0.6, 1), 0, R.chance(0.5) ? PF.BACK : 0);
+        }
+        if (t > REL2 && t < 2.4 && R.chance(0.14 * (1 - seg(t, 1.6, 2.4)))) {
+          spawn(P.EMBER, R.range(-20, 20), -R.range(1, 30), R.range(-15, 15), -R.range(20, 55), R.range(0.8, 1.6), C[5], R.range(1, 2), 0, R.chance(0.4) ? PF.BACK : 0);
+        }
+        if (A && t > REL2 + 0.1 && t < 2.2 && R.chance(0.09)) {
+          const m = A.mask;
+          for (let n = 0;n < 12; n++) {
+            const i = R.int(0, m.w - 1), j = R.int(0, m.h - 1);
+            if (!m.data[j * m.w + i])
+              continue;
+            spawn(P.STAR, A.x + i + 0.5, A.y + j + 0.5, R.range(-8, 8), -R.range(14, 34), R.range(0.6, 1.1), R.pick([C[7], C[6], C[5]]), R.chance(0.2) ? 1.5 : 0.6, 0, R.chance(0.5) ? PF.BACK : 0);
+            break;
+          }
+        }
+        if (t > 1 && t < 2.5 && R.chance(0.13)) {
+          const up = R.chance(0.6), x = up ? R.range(-58, 58) : R.range(-20, 20), y = up ? TY + 7 + R.range(-16, 16) : R.range(-44, -6);
+          spawn(P.STAR, x, y, R.range(-6, 6), -R.range(4, 14), R.range(0.4, 0.8), R.pick([C[7], C[6], C[6], C[5]]), R.chance(0.3) ? R.range(1.5, 2.4) : 0.6, 0, R.chance(0.3) ? PF.BACK : 0);
+        }
+        for (const L of lets) {
+          if (t < L.born)
+            continue;
+          L.on = true;
+          if (!L.rest) {
+            L.v += 1700 * dt;
+            L.off += L.v * dt;
+            if (L.off >= 0 && L.v > 0) {
+              L.off = 0;
+              if (L.v > 110) {
+                L.sq = 1;
+                if (!L.landed) {
+                  L.landed = true;
+                  L.flash = 1;
+                  lights.add(L.cx, BASE - 7, 18, C[5], 0.55, 0.25);
+                  for (const s of [-1, 1])
+                    spawn(P.STAR, L.cx + s * L.w, BASE - R.range(0, 3), s * R.range(15, 40), -R.range(5, 25), R.range(0.25, 0.45), C[6], R.range(0.5, 1.2));
+                }
+                L.v = -L.v * 0.3;
+              } else
+                L.v = 0, L.rest = true;
+            }
+          }
+          L.sq = Math.max(0, L.sq - dt / 0.1);
+          L.flash = Math.max(0, L.flash - dt / 0.12);
+          if (!L.burst && t >= L.pop + 0.06) {
+            L.burst = true;
+            for (let i = 0;i < 3; i++) {
+              const an = R.range(0, TAU), sp = R.range(20, 55);
+              spawn(P.STAR, L.cx + R.range(-3, 3), BASE - 7 + R.range(-4, 4), Math.cos(an) * sp, Math.sin(an) * sp - 15, R.range(0.3, 0.6), R.pick([C[7], C[6]]), i ? 0.6 : R.range(1.2, 2));
+            }
+          }
+        }
+        ps.update(dt);
+        lights.update(dt);
+      },
+      drawBack(p) {
+        rays(p, C, t, ease.outExpo(seg(t, LANDED, LANDED + 0.2)) * (1 - ease.inQuad(seg(t, EXIT - 0.15, EXIT + 0.1))), 0, TY + 7);
+        if (t < REL2) {
+          const k = seg(t, 0.02, REL2);
+          band(p, 0, 0, 4 + 52 * (1 - ease.inQuad(k)), 0.2, 1.5, k * 1.1, C, (g) => Math.sin(g) < 0);
+        }
+        for (const [d, r1, th] of [[0, 72, 4], [0.08, 46, 2.5]]) {
+          const k = (t - REL2 - d) / 0.55;
+          if (k > 0 && k < 1)
+            band(p, 0, 0, 5 + r1 * ease.outCubic(k), 0.2, Math.max(1, th * (1 - k)), 1.15 - k, C, (g) => Math.sin(g) < 0, k < 0.15);
+        }
+        for (const h0 of halos) {
+          const k = (t - h0) / 0.6;
+          if (k > 0 && k < 1)
+            band(p, 0, -2 - 72 * ease.outQuad(k), (widthAt(t) * 1.45 + 4) * (1 - 0.4 * k), 0.3, 1.5, (1 - k) * 1.4, C, (g) => Math.sin(g) < 0, k < 0.12);
+        }
+        column(p, C, t);
+        plate(p, C, t, t < REL2 ? 0.55 * seg(t, 0.05, REL2) : 1 - smooth(RET - 0.1, GONE4 + 0.2, t));
+        ps.draw(p, "back");
+        drawRush(p, true);
+      },
+      draw(p) {
+        if (t < REL2) {
+          const k = seg(t, 0.02, REL2);
+          band(p, 0, 0, 4 + 52 * (1 - ease.inQuad(k)), 0.2, 1.5, k * 1.1, C, (g) => Math.sin(g) >= 0);
+        }
+        for (const [d, r1, th] of [[0, 72, 4], [0.08, 46, 2.5]]) {
+          const k = (t - REL2 - d) / 0.55;
+          if (k > 0 && k < 1)
+            band(p, 0, 0, 5 + r1 * ease.outCubic(k), 0.2, Math.max(1, th * (1 - k)), 1.15 - k, C, (g) => Math.sin(g) >= 0, k < 0.15);
+        }
+        for (const h0 of halos) {
+          const k = (t - h0) / 0.6;
+          if (k > 0 && k < 1)
+            band(p, 0, -2 - 72 * ease.outQuad(k), (widthAt(t) * 1.45 + 4) * (1 - 0.4 * k), 0.3, 1.5, (1 - k) * 1.4, C, (g) => Math.sin(g) >= 0, k < 0.12);
+        }
+        const lit = smooth(REL2 - 0.02, REL2 + 0.04, t) * (1 - smooth(RET, 2.5, t));
+        tintActor(p, A, t < REL2 ? 0 : t < REL2 + 0.06 ? 1 : Math.exp(-(t - REL2 - 0.06) / 0.07), [C[4], C[5], C[6]]);
+        lightActor(p, A, C[5], 0.1 * seg(t, 0.05, REL2) * (1 - lit) + 0.06 * lit, 0.6 * lit, t);
+        haloActor(p, A, C[5], 0.85 * lit * (1 - smooth(RET, GONE4 + 0.3, t)) + 0.3 * lit, t);
+        if (t < REL2) {
+          const k = seg(t, 0.05, REL2), beat = 1 + 0.4 * Math.exp(-((t - REL2 * 0.6) ** 2) / 0.001);
+          sparkle(p, 0, -2, (1 + 4 * k * k) * beat, C[6], C[5], 0.3 + 0.4 * k);
+        } else if (t < REL2 + 0.22) {
+          const a = (t - REL2) / 0.22;
+          flare(p, 0, -4, 28 * Math.pow(1 - a, 1.5), 1 - a, C);
+          p.glow(0, -16, 48, WHITE, 0.3 * (1 - a));
+        }
+        ps.draw(p, "front");
+        drawRush(p, false);
+        const items = [], done = (t - LANDED) / 0.12;
+        for (const L of lets) {
+          if (!L.on)
+            continue;
+          let sx = 2, sy = 2, flash = L.flash;
+          if (!L.landed && L.v > 150)
+            sx = 1.8, sy = 2.3;
+          if (L.sq > 0)
+            sx = 2 * (1 + 0.22 * L.sq), sy = 2 * (1 - 0.22 * L.sq);
+          const pu = (t - L.pop) / 0.07, hop = seg(t, L.pop - 0.1, L.pop);
+          if (pu >= 1)
+            continue;
+          if (hop > 0 && pu <= 0)
+            sx = 2 * (1 - 0.1 * hop), sy = 2 * (1 + 0.15 * hop);
+          if (pu > 0)
+            sx = sy = 2 * (1 + 0.3 * pu), flash = 1;
+          flash = Math.max(flash, done > 0 && done < 1 ? 1 - done : 0);
+          const h = 7 * sy, w = L.w * sx;
+          items.push({ g: L.g, x: L.cx - w / 2, y: BASE + L.off - h - 3 * ease.outQuad(hop), sx, sy, a: clamp((t - L.born) / 0.05), flash });
+        }
+        const sh = seg(t, SHINE, SHINE + 0.34), shine = sh > 0 && sh < 1 ? X0 - 14 + (right - X0 + 30) * ease.inOutSine(sh) : null;
+        drawWord(p, items, { fill: [C[3], C[4], C[5], C[6]], edge: WHITE, under: C[2], outline: C[0], shadow: SHADOW, shine, shineY: TY, glint: C[6] });
+        if (shine !== null && shine > X0 && shine < right)
+          p.glowLine(shine, TY, shine + 8.4, BASE, 9, C[6], 0.3);
+        const hold = smooth(0.9, 1.2, t) * (1 - smooth(EXIT, EXIT + 0.4, t));
+        if (hold > 0)
+          p.glow(0, TY + 7, 50, C[5], 0.22 * hold + (done > 0 && done < 1 ? 0.3 * (1 - done) : 0));
+        for (const L of lets) {
+          const u = (t - L.pop - 0.07) / 0.16;
+          if (u > 0 && u < 1)
+            sparkle(p, L.cx, BASE - 7, 6 * (1 - u) * (1 - u), C[6], C[5], 0.5);
+        }
+        const g = (t - SHINE - 0.3) / 0.26;
+        if (g > 0 && g < 1)
+          sparkle(p, right - 2, TY + 1, 7 * Math.sin(g * Math.PI), C[6], C[5], 0.6);
+        for (const s of sats) {
+          const u = (t - s.t0) / s.dur;
+          if (u > 0 && u < 1)
+            sparkle(p, s.x, s.y, s.L * Math.pow(Math.sin(u * Math.PI), 0.7), C[6], C[5], 0.5);
+        }
+        lights.draw(p);
+      }
+    };
+  }
+
+  // ../vendor_src/pixelfx/src/fx/ui/achievement.js
+  var meta27 = {
+    name: "Achievement",
+    desc: "A toast slides in on speed lines and settles; a gold medal pops onto it in a burst of sparkles, a shine sweeps the whole toast, then it slides away.",
+    tags: ["ui", "achievement", "toast", "medal", "reward", "text", "one-shot"],
+    size: [220, 72],
+    origin: [110, 36],
+    duration: 2.4,
+    loop: false,
+    fps: 30,
+    bg: "dark",
+    options: {
+      palette: ["#2a1405", "#5c3008", "#9a5a0e", "#d48e18", "#f5b92c", "#ffde5e", "#fff4bc", "#ffffff"],
+      ribbon: ["#0c1430", "#1f3a7a", "#2f66c4", "#5aa0f0", "#a6d4ff"],
+      title: "ACHIEVEMENT",
+      text: "UNLOCKED",
+      seed: 9
+    }
+  };
+  var PW = 130;
+  var PH = 34;
+  var PX = -PW / 2;
+  var PY = -PH / 2;
+  var IN = 0.2;
+  var MEDAL = 0.26;
+  var SHINE2 = 0.95;
+  var OUT3 = 1.92;
+  var MX = PX + 17;
+  var MY = 2;
+  var INK5 = { outline: hex("#0d0a14"), rim: hex("#5a4f74"), top: hex("#2a2338"), body: hex("#211b2d"), low: hex("#15111c") };
+  function medal(p, G, B, x, y, s, white, shine) {
+    const r = 10 * s;
+    for (const sd of [-1, 1]) {
+      p.poly([[x + sd * 2 * s, y - r + 2], [x + sd * 7 * s, y - r + 2], [x + sd * 9 * s, PY + 1], [x + sd * 4 * s, PY + 1]], (px) => Math.abs(px - x) < 4.5 * s ? B[2] : B[3]);
+      p.line(x + sd * 2 * s, y - r + 2, x + sd * 4 * s, PY + 1, B[0]);
+      p.line(x + sd * 7 * s, y - r + 2, x + sd * 9 * s, PY + 1, B[0]);
+    }
+    const st = star(x, y + 0.5, 2.8 * s, 6.5 * s, 5);
+    const inStar = (px, py) => {
+      let inside = false;
+      for (let i = 0, j = st.length - 1;i < st.length; j = i++) {
+        const [xi, yi] = st[i], [xj, yj] = st[j];
+        if (yi > py !== yj > py && px < (xj - xi) * (py - yi) / (yj - yi) + xi)
+          inside = !inside;
+      }
+      return inside;
+    };
+    p.shade(x - r - 1, y - r - 1, x + r + 1, y + r + 1, (px, py) => {
+      const dx = px - x, dy = py - y, d = Math.hypot(dx, dy);
+      if (d > r)
+        return;
+      if (white)
+        return r - d < 1 ? G[6] : WHITE;
+      if (r - d < 1)
+        return G[0];
+      const l = -(dx * 0.6 + dy * 0.8) / r;
+      if (shine !== null && Math.abs(dx - dy * 0.6 - shine) < 1.2)
+        return WHITE;
+      if (r - d < 2.5)
+        return l > 0.2 ? G[6] : l > -0.3 ? G[4] : G[3];
+      if (inStar(px, py))
+        return !inStar(px + 1, py) || !inStar(px - 1, py) || !inStar(px, py + 1) || !inStar(px, py - 1) ? G[2] : dx + dy < 0 ? G[7] : G[6];
+      return l > 0.4 ? G[5] : l > -0.2 ? G[4] : G[3];
+    });
+  }
+  function create20(o) {
+    const G = fit(o.palette, 8), B = fit(o.ribbon, 5), R = new Rng(o.seed);
+    const ps = new Particles({ rng: R, sparks: [G[7], G[6], G[5], G[3]] }), lights = new Lights;
+    const title = spell(o.title, "mini"), sub = spell(o.text, "mini"), TX = PX + 34;
+    let t = 0, popped = false;
+    const end = meta27.duration - 0.05;
+    const xAt = (t) => t < IN ? 30 * Math.pow(1 - t / IN, 3) : t < OUT3 ? -3 * Math.exp(-(t - IN) * 12) * Math.sin((t - IN) * 30) : seg(t, OUT3, OUT3 + 0.06) < 1 ? -3 * seg(t, OUT3, OUT3 + 0.06) : -3 + 33 * ease.inQuad(seg(t, OUT3 + 0.06, OUT3 + 0.24));
+    return {
+      update(dt) {
+        t += dt;
+        if (!popped && t >= MEDAL + 0.06) {
+          popped = true;
+          lights.add(MX, MY, 36, G[5], 0.7, 0.4);
+          for (let i = 0;i < 12; i++) {
+            const an = i / 12 * TAU + R.range(-0.2, 0.2), sp = R.range(40, 90);
+            ps.spawn(P.STAR, MX + Math.cos(an) * 9, MY + Math.sin(an) * 9, Math.cos(an) * sp, Math.sin(an) * sp * 0.6, R.range(0.25, 0.45), R.pick([G[7], G[6], G[5]]), i % 3 ? 0.6 : R.range(1.2, 1.8));
+          }
+        }
+        if (t > 0.5 && t < OUT3 && R.chance(0.05))
+          ps.spawn(P.STAR, MX + R.range(-11, 11), MY + R.range(-11, 9), 0, -R.range(4, 10), Math.min(R.range(0.3, 0.5), end - t), G[6], R.chance(0.3) ? 1.4 : 0.6);
+        ps.update(dt);
+        lights.update(dt);
+      },
+      draw(p) {
+        const x = xAt(t), out = t > OUT3 + 0.06, a = t < 0.05 ? 0.5 : out ? 1 - seg(t, OUT3 + 0.12, OUT3 + 0.24) : 1;
+        if (a <= 0)
+          return;
+        const moving = t < IN * 0.8 || out;
+        if (moving)
+          for (let i = 0;i < 8; i++) {
+            const y = PY + 3 + rand(Math.floor(t * 30), i, 1) * (PH - 6), L = 10 + rand(Math.floor(t * 30), i, 2) * 26, x0 = x + PW / 2 + 2 + rand(i, 3) * 6;
+            p.line(x0, y, Math.min(106, x0 + L), y, (u) => u < 0.3 ? WHITE : u < 0.6 ? G[6] : G[4], (u) => a * (1.1 - u));
+          }
+        const sh = seg(t, SHINE2, SHINE2 + 0.36), shine = sh > 0 && sh < 1 ? PX - 12 + (PW + 30) * ease.inOutSine(sh) : null;
+        panel(p, PX + x, PY, PW, PH, INK5, { r: 4, a, shine: shine === null ? null : shine + x });
+        p.line(PX + x + 4, PY + 1, PX + x + PW - 5, PY + 1, G[4], a);
+        p.px(PX + x + 3, PY + 1, G[2]);
+        const ti = title.letters.filter((L) => L.g).map((L) => ({ g: L.g, x: TX + x + L.x * 2, y: PY + 5, sx: 2, sy: 2, a }));
+        drawWord(p, ti, { fill: [G[4], G[5], G[6]], edge: G[7], under: G[3], outline: INK5.outline, shadow: 0, shine: shine === null ? null : shine + x, shineY: PY, glint: G[7] });
+        const si = sub.letters.filter((L) => L.g).map((L) => ({ g: L.g, x: TX + x + L.x * 2, y: PY + 19, sx: 2, sy: 2, a }));
+        drawWord(p, si, { fill: [hex("#9a94b0"), hex("#d8d4e6"), WHITE], edge: WHITE, under: hex("#6e6886"), outline: INK5.outline, shadow: 0, shine: shine === null ? null : shine + x, shineY: PY });
+        const mk = t - MEDAL;
+        if (mk > 0) {
+          const s = mk < 0.035 ? 1.5 : 1 + 0.35 * Math.exp(-mk * 16) * Math.cos(mk * 28);
+          medal(p, G, B, MX + x, MY, s, mk < 0.07, shine === null ? null : shine - MX + 4);
+          p.glow(MX + x, MY, 20, G[5], 0.3 * a + (mk < 0.15 ? 0.5 * (1 - mk / 0.15) : 0));
+          const g = (t - 1.5) % 0.9 / 0.9;
+          if (t > 1.5 && g < 0.25)
+            sparkle(p, MX + x - 4, MY - 4, 4 * Math.sin(g / 0.25 * Math.PI), G[7], G[6], 0.5);
+        }
+        ps.draw(p);
+        lights.draw(p);
+      }
+    };
+  }
+
+  // ../vendor_src/pixelfx/src/fx/ui/quest-complete.js
+  var meta28 = {
+    name: "Quest complete",
+    desc: "A stitched ribbon unrolls from the middle, QUEST COMPLETE types on letter by letter, a gold seal stamps down and ticks, stars pop; then it all rolls away.",
+    tags: ["ui", "quest", "banner", "reward", "text", "one-shot"],
+    size: [204, 92],
+    origin: [102, 46],
+    duration: 2.6,
+    loop: false,
+    fps: 30,
+    bg: "dark",
+    options: {
+      palette: ["#2a1405", "#5c3008", "#9a5a0e", "#d48e18", "#f5b92c", "#ffde5e", "#fff4bc", "#ffffff"],
+      ribbon: ["#1e0608", "#45101a", "#7a1a26", "#ad2632", "#d8433f", "#f27a5e", "#ffb79a"],
+      text: "QUEST COMPLETE",
+      seed: 8
+    }
+  };
+  var L = 66;
+  var BH2 = 8;
+  var OPEN = 0.32;
+  var TYPE = 0.2;
+  var STEP = 0.036;
+  var STAMP = 0.95;
+  var SX = 64;
+  var SY2 = 4;
+  var POPSEAL = 2;
+  var ROLL = 2.08;
+  function ribbon(p, Rb, G, l, tails, t) {
+    if (l < 1)
+      return;
+    if (tails > 0.02)
+      for (const s of [-1, 1]) {
+        const drop = 6 * tails, x0 = s * (l - 8), x1 = s * (l + 16 * tails);
+        p.shade(Math.min(x0, x1) - 1, -BH2 + drop - 1, Math.max(x0, x1) + 1, BH2 + drop + 1, (x, y) => {
+          const u = (x - x0) / (x1 - x0), v = y - drop;
+          if (u < 0 || u > 1 || Math.abs(v) > BH2)
+            return;
+          if (u > 1 - 0.3 * (BH2 - Math.abs(v)) / BH2)
+            return;
+          const e = Math.min(BH2 - Math.abs(v), (1 - u) * (x1 - x0) * s);
+          if (e < 1 || u < 0.02)
+            return Rb[0];
+          return v < -BH2 + 2 ? Rb[3] : v < 0 ? Rb[2] : Rb[1];
+        });
+        p.tri(s * (l - 8), BH2, s * (l - 1), BH2, s * (l - 8), BH2 + drop, Rb[0]);
+      }
+    p.shade(-l - 1, -BH2 - 1, l + 1, BH2 + 1, (x, y) => {
+      const ax = Math.abs(x), v = y;
+      if (ax > l || Math.abs(v) > BH2)
+        return;
+      const e = Math.min(l - ax, BH2 - Math.abs(v));
+      if (e < 1)
+        return Rb[0];
+      if (v < -BH2 + 2)
+        return Rb[5];
+      if (v > BH2 - 2)
+        return Rb[1];
+      if ((Math.abs(v + BH2 - 2.5) < 0.5 || Math.abs(v - BH2 + 3.5) < 0.5) && Math.floor(x + 0.5) % 3 !== 0 && ax < l - 3)
+        return G[3];
+      return v < -1 ? Rb[4] : Rb[3];
+    });
+    if (tails < 0.02)
+      for (const s of [-1, 1]) {
+        const x = s * l;
+        p.rect(Math.round(x) - 2, -BH2 - 2, 4, BH2 * 2 + 4, Rb[0]);
+        p.rect(Math.round(x) - 1, -BH2 - 1, 1, BH2 * 2 + 2, Rb[4]);
+        p.rect(Math.round(x), -BH2 - 1, 1, BH2 * 2 + 2, Rb[2]);
+        p.px(Math.round(x) - 1, -BH2 - 1, Rb[6]);
+      }
+  }
+  function seal(p, G, x, y, r, sx, sy, white, k) {
+    const M = r * 1.25 + 2;
+    p.shade(x - M * sx, y - M * sy, x + M * sx, y + M * sy, (px, py) => {
+      const dx = (px - x) / sx, dy = (py - y) / sy, d = Math.hypot(dx, dy), an = Math.atan2(dy, dx), edge = r * (1 + 0.09 * Math.cos(an * 14));
+      if (d > edge)
+        return;
+      if (white)
+        return edge - d < 1 ? G[5] : WHITE;
+      if (edge - d < 1)
+        return G[0];
+      const l = -(dx * 0.6 + dy * 0.8) / r;
+      if (edge - d < 3)
+        return l > 0.3 ? G[6] : l > -0.3 ? G[5] : G[3];
+      if (Math.abs(d - r * 0.66) < 0.5)
+        return l > 0 ? G[3] : G[2];
+      return l > 0.45 ? G[7] : l > 0.1 ? G[6] : l > -0.35 ? G[5] : G[4];
+    });
+    if (white || k <= 0)
+      return;
+    const pts = [[-5, 0], [-1.5, 3.5], [5.5, -4.5]].map(([a, b]) => [x + a * sx, y + b * sy]);
+    const len1 = Math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]), len2 = Math.hypot(pts[2][0] - pts[1][0], pts[2][1] - pts[1][1]);
+    const done = k * (len1 + len2), segs = [[pts[0], pts[1], Math.min(1, done / len1)], [pts[1], pts[2], clamp((done - len1) / len2)]];
+    for (const [w, c] of [[4.2, G[0]], [2.4, WHITE]])
+      for (const [a, b, u] of segs)
+        if (u > 0)
+          p.beam(a[0], a[1], a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, w, c);
+  }
+  function create21(o) {
+    const G = fit(o.palette, 8), Rb = fit(o.ribbon, 7), R = new Rng(o.seed);
+    const ps = new Particles({ rng: R, sparks: [G[7], G[6], G[5], G[3]] }), lights = new Lights;
+    const word = spell(o.text, "mini"), TS = 2, TW = word.w * TS, TX = -TW / 2 - 4, TY = -5;
+    const glyphs = word.letters.filter((Lt) => Lt.g);
+    const sats = Array.from({ length: 7 }, (_, i) => ({ x: (i / 6 - 0.5) * 140 + R.range(-6, 6), y: (i % 2 ? 1 : -1) * R.range(15, 22), t0: STAMP + 0.12 + i * 0.12 + R.range(0, 0.04), dur: R.range(0.3, 0.45), L: R.range(3, 6) }));
+    let t = 0, stamped = false, popped = false;
+    const end = meta28.duration - 0.05;
+    return {
+      update(dt) {
+        t += dt;
+        if (!stamped && t >= STAMP) {
+          stamped = true;
+          lights.add(SX, SY2, 40, G[5], 0.7, 0.35);
+          lights.add(SX, SY2, 18, WHITE, 0.7, 0.1);
+          for (let i = 0;i < 12; i++) {
+            const an = i / 12 * TAU + R.range(-0.2, 0.2), sp = R.range(40, 80) * (Math.cos(an) > 0 ? 0.6 : 1);
+            ps.spawn(P.STAR, SX + Math.cos(an) * 11, SY2 + Math.sin(an) * 11, Math.cos(an) * sp, Math.sin(an) * sp * 0.7, R.range(0.25, 0.45), R.pick([G[7], G[6], G[5]]), i % 3 ? 0.6 : R.range(1.2, 1.8));
+          }
+        }
+        if (t > STAMP && t < POPSEAL && R.chance(0.08))
+          ps.spawn(P.STAR, R.range(-L, L), R.range(-BH2, BH2), R.range(-5, 5), -R.range(8, 20), Math.min(R.range(0.4, 0.8), end - t), R.pick([G[6], G[5]]), 0.6);
+        if (!popped && t >= POPSEAL + 0.05) {
+          popped = true;
+          lights.add(SX, SY2, 30, G[6], 0.6, 0.2);
+          for (let i = 0;i < 8; i++) {
+            const an = R.range(0, TAU), sp = R.range(40, 90);
+            ps.spawn(P.STAR, SX + Math.cos(an) * 6, SY2 + Math.sin(an) * 6, Math.cos(an) * sp, Math.sin(an) * sp, Math.min(R.range(0.25, 0.4), end - t), R.pick([G[7], G[6]]), i % 2 ? 0.6 : 1.5);
+          }
+        }
+        ps.update(dt);
+        lights.update(dt);
+      },
+      draw(p) {
+        const [jx, jy] = shake2(t, 2, STAMP, 0.18, o.seed);
+        const l = L * (t < ROLL ? ease.outCubic(seg(t, 0, OPEN)) : 1 - ease.inCubic(seg(t, ROLL, ROLL + 0.26)));
+        const tails = seg(t, OPEN - 0.02, OPEN + 0.12) * (t < ROLL ? 1 : 0);
+        const sh = seg(t, 1.2, 1.5), shine = sh > 0 && sh < 1 ? -L - 10 + (2 * L + 20) * sh : null;
+        ribbon(p, Rb, G, l, ease.outBack(tails, 2), t);
+        if (shine !== null)
+          for (let y = -BH2 + 1;y < BH2; y++) {
+            const x = shine + (y + BH2) * 0.6;
+            if (Math.abs(x) < l - 2)
+              p.px(x, y, Rb[6]), p.px(x + 1, y, Rb[5]);
+          }
+        const items = [];
+        glyphs.forEach((Lt, i) => {
+          const u = t - (TYPE + i * STEP), x = TX + Lt.x * TS + jx;
+          if (u < 0 || Math.abs(x + Lt.w) > l - 3)
+            return;
+          const s = u < 0.035 ? 2.6 : TS;
+          items.push({ g: Lt.g, x: x - (s - TS) * Lt.w / 2, y: TY + jy - (s - TS) * 5 / 2, sx: s, sy: s, flash: u < 0.07 ? 1 : 0 });
+        });
+        drawWord(p, items, { fill: [G[4], G[5], G[6], G[7]], edge: WHITE, under: G[3], outline: Rb[0], shadow: Rb[1] });
+        const dk = seg(t, STAMP - 0.12, STAMP), pk = t - POPSEAL;
+        if (dk > 0 && pk < 0.08) {
+          const fall = 1 - ease.inQuad(dk), sq = Math.exp(-(t - STAMP) * 30) * (t >= STAMP ? 1 : 0);
+          let s = 1 + 0.8 * fall, sx = s * (1 + 0.2 * sq), sy = s * (1 - 0.2 * sq);
+          if (pk > 0)
+            sx = sy = 1 + 0.3 * (pk / 0.08);
+          const white = t >= STAMP && t < STAMP + 0.05 || pk > 0;
+          if (dk < 1)
+            p.ellipse(SX, SY2 + 12, 10 * (1 - 0.3 * fall), 2, Rb[0], 0.5 * dk);
+          seal(p, G, SX + jx, SY2 - 14 * fall + jy, 11, sx, sy, white, seg(t, STAMP + 0.08, STAMP + 0.24));
+          p.glow(SX, SY2, 22, G[5], 0.3 + (white ? 0.4 : 0));
+        }
+        const rk = (t - STAMP) / 0.3;
+        const rr = 12 + 13 * ease.outCubic(rk);
+        if (rk > 0 && rk < 1)
+          p.ellipse(SX, SY2, rr * 1.15, rr, rk < 0.3 ? WHITE : G[5], (d) => d > 1 - 1.4 / rr ? 1.2 - rk : 0);
+        for (const s of sats) {
+          const u = (t - s.t0) / s.dur;
+          if (u > 0 && u < 1)
+            sparkle(p, s.x, s.y, s.L * Math.pow(Math.sin(u * Math.PI), 0.7), G[6], G[5], 0.5);
+        }
+        ps.draw(p);
+        p.glow(0, 0, 76, G[4], 0.2 * seg(t, 0.2, 0.5) * (1 - seg(t, ROLL, ROLL + 0.2)));
+        lights.draw(p);
+      }
+    };
+  }
+
+  // ../vendor_src/pixelfx/src/fx/explosions/firework-burst.js
+  var meta29 = {
+    name: "Firework burst",
+    desc: "A shell climbs, slows and bursts into a sphere of coloured trailing stars round a gold core; they droop, crackle into white pops and fade, leaving glitter.",
+    tags: ["firework", "celebration", "sparkle", "sky", "burst", "one-shot"],
+    size: [240, 248],
+    origin: [120, 100],
+    duration: 3.6,
+    loop: false,
+    fps: 30,
+    bg: "sky",
+    options: {
+      palette: ["#3d0a33", "#701560", "#b0228f", "#f53cd1", "#ff86e6", "#ffd2f6", "#ffffff"],
+      core: ["#4a2c08", "#86520c", "#c48412", "#f0b424", "#ffe066", "#fff6c4", "#ffffff"],
+      seed: 9
+    }
+  };
+  var RISE = 0.42;
+  var Y02 = 72;
+  var DRAG = 2.6;
+  var G2 = 88;
+  var TRAIL = 0.34;
+  var TURN = 0.22;
+  function create22(o) {
+    const C = fit(o.palette, 7), K = fit(o.core, 7), R = new Rng(o.seed);
+    const ps = new Particles({ rng: R, sparks: [K[6], K[5], K[4], K[3]] }), lights = new Lights;
+    const stars = [], pops = [];
+    let t = 0, burst = false;
+    const shell = (n, speed, ramp, life, first) => {
+      for (let i = 0;i < n; i++) {
+        const z = R.range(-1, 1), a = R.range(0, TAU), s = Math.sqrt(1 - z * z), v = speed * R.range(0.93, 1.05);
+        stars.push({ x: 0, y: 0, vx: Math.cos(a) * s * v, vy: Math.sin(a) * s * v, life: R.range(life[0], life[1]), age: 0, ramp, first, big: R.chance(0.2), pts: [], acc: R.next(), seed: R.range(0, 100) });
+      }
+    };
+    return {
+      update(dt) {
+        t += dt;
+        if (t < RISE) {
+          const y = Y02 * (1 - ease.outCubic(t / RISE));
+          if (R.chance(50 * dt))
+            ps.spawn(P.SPARK, R.range(-0.5, 0.5), y + 2, R.range(-25, 25), R.range(20, 70), R.range(0.15, 0.35));
+          if (R.chance(14 * dt))
+            ps.spawn(P.VAPOUR, R.range(-1, 1), y + 3, R.range(-3, 3), R.range(5, 15), R.range(0.5, 0.8), hex("#4a4458"), R.range(1.5, 2.5));
+        }
+        if (!burst && t >= RISE) {
+          burst = true;
+          lights.add(0, 0, 110, C[4], 0.6, 1.5);
+          lights.add(0, 0, 30, WHITE, 0.5, 0.07);
+          shell(66, 236, C, [1.35, 1.9], K);
+          shell(26, 120, K, [1, 1.4], K);
+          for (let i = 0;i < 7; i++) {
+            const a = R.range(0, TAU), d = R.range(0, 8);
+            ps.spawn(P.VAPOUR, Math.cos(a) * d, Math.sin(a) * d, Math.cos(a) * R.range(10, 30), Math.sin(a) * R.range(10, 30), R.range(2.2, 3), hex("#4a4458"), R.range(6, 11));
+          }
+          for (let i = 0;i < 24; i++) {
+            const a = R.range(0, TAU), sp = R.range(40, 140);
+            ps.spawn(P.SPARK, 0, 0, Math.cos(a) * sp, Math.sin(a) * sp, R.range(0.15, 0.35));
+          }
+        }
+        for (let i = stars.length - 1;i >= 0; i--) {
+          const s = stars[i];
+          s.age += dt;
+          const k = s.age / s.life;
+          if (k >= 1) {
+            for (let j = 0;j < 2 + (s.big ? 1 : 0); j++)
+              pops.push({ x: s.x + R.range(-3, 3), y: s.y + R.range(-3, 3), t0: t + R.range(0, 0.18), life: R.range(0.06, 0.12), c: R.chance(0.6) ? WHITE : s.ramp[5] });
+            stars.splice(i, 1);
+            continue;
+          }
+          s.vx -= s.vx * DRAG * dt;
+          s.vy -= s.vy * DRAG * dt - G2 * dt;
+          s.x += s.vx * dt;
+          s.y += s.vy * dt;
+          s.pts.push(s.x, s.y, t);
+          while (s.pts.length > 3 && t - s.pts[2] > TRAIL)
+            s.pts.splice(0, 3);
+          for (s.acc += dt * (k < 0.25 ? 4 : 11);s.acc > 1; s.acc--)
+            ps.spawn(P.STAR, s.x, s.y, s.vx * 0.15 + R.range(-6, 6), s.vy * 0.15 + R.range(0, 10), R.range(0.35, 0.8), R.chance(0.5) ? K[5] : WHITE, R.chance(0.15) ? R.range(1, 1.6) : 0.5);
+        }
+        for (let i = pops.length - 1;i >= 0; i--)
+          if (t > pops[i].t0 + pops[i].life)
+            pops.splice(i, 1);
+        ps.update(dt);
+        lights.update(dt);
+      },
+      drawBack(p) {
+        ps.draw(p, "back");
+      },
+      draw(p) {
+        if (t < RISE) {
+          const u = t / RISE, y = Y02 * (1 - ease.outCubic(u));
+          p.line(0, y, 0, y + 3 + 6 * (1 - u), (q) => q < 0.3 ? K[5] : K[3]);
+          p.px(0, y, WHITE);
+          p.glow(0, y, 7, K[4], 0.5);
+        }
+        for (const s of stars) {
+          const k = s.age / s.life, P2 = s.pts, n = P2.length / 3;
+          for (let j = n - 1;j > 0; j--) {
+            const u = (t - P2[j * 3 + 2]) / TRAIL;
+            if (u >= 1)
+              break;
+            const ramp = s.age - (t - P2[j * 3 + 2]) < TURN ? s.first : s.ramp;
+            const c = u < 0.3 ? ramp[5] : u < 0.6 ? ramp[4] : ramp[3];
+            p.line(P2[j * 3], P2[j * 3 + 1], P2[j * 3 - 3], P2[j * 3 - 2], c, Math.pow(1 - u, 0.8) * (1.3 - k * 0.6));
+          }
+          if (k > 0.72 && Math.sin(t * 60 + s.seed) < -0.2)
+            continue;
+          const ramp = s.age < TURN ? s.first : s.ramp, head = s.age < 0.04 ? WHITE : k < 0.55 ? ramp[s.age < TURN ? 5 : 6] : ramp[5];
+          p.px(s.x, s.y, head);
+          if (s.big && k < 0.6 && s.age > 0.06)
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]])
+              p.px(s.x + dx, s.y + dy, ramp[5]);
+          p.glow(s.x, s.y, s.big ? 7 : 5, ramp[4], (s.big ? 0.7 : 0.5) * (1 - k * 0.6) * Math.min(1, s.age / 0.2));
+        }
+        for (const q of pops) {
+          const u = (t - q.t0) / q.life;
+          if (u < 0 || u > 1)
+            continue;
+          sparkle(p, q.x, q.y, 2.6 * Math.sin(Math.PI * u), q.c, mix(q.c, C[3], 0.5), 0.5);
+        }
+        const b = t - RISE;
+        if (b >= 0 && b < 0.28) {
+          const u = b / 0.28, L = 32 * Math.pow(1 - u, 1.3);
+          flareRays(p, 0, 0, L, u * 0.6, C, K);
+          if (b < 0.07)
+            p.circle(0, 0, 2.6 - b * 20, WHITE);
+        }
+        ps.draw(p, "front");
+        lights.draw(p);
+      }
+    };
+  }
+  function flareRays(p, x, y, L, ang, C, K) {
+    if (L < 1)
+      return;
+    for (let i = 0;i < 8; i++) {
+      const diag = i % 2 === 1, an = ang + i * TAU / 8, len = diag ? L * 0.42 : L, ca = Math.cos(an), sa = Math.sin(an);
+      for (let d = 0;d <= len; d += 0.5) {
+        const u = d / len;
+        p.dot(x + ca * d, y + sa * d, diag ? u < 0.5 ? K[5] : K[4] : u < 0.3 ? WHITE : u < 0.65 ? C[5] : C[4], u < 0.7 ? 1 : 1 - (u - 0.7) / 0.35);
+      }
+    }
+    p.glow(x, y, 4 + L * 1.2, C[4], 0.3);
+    p.glow(x, y, 2 + L * 0.3, WHITE, 0.25);
+  }
+
   // entry.js
   window.PFX = { createFx, createFrame, clearFrame, composite, FX: {
     swordSlash: exports_sword_slash,
@@ -6960,6 +8125,11 @@
     darkExplosion: exports_dark_explosion,
     frostNova: exports_frost_nova,
     acidSplash: exports_acid_splash,
-    fireball: exports_fireball
+    fireball: exports_fireball,
+    confetti: exports_confetti,
+    levelUp: exports_level_up,
+    achievement: exports_achievement,
+    questComplete: exports_quest_complete,
+    fireworkBurst: exports_firework_burst
   } };
 })();

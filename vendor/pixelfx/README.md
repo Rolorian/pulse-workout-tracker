@@ -1,6 +1,6 @@
 # pixelfx (vendored, curated)
 
-Pulse Realm uses 24 pixel-art effects from [pixelfx](https://github.com/patch-gg/pixelfx) (MIT) for combat,
+Pulse Realm uses 29 pixel-art effects from [pixelfx](https://github.com/patch-gg/pixelfx) (MIT) for combat,
 status, spawn and weather visuals.
 
 ## What is here

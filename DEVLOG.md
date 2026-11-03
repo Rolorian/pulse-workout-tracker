@@ -174,3 +174,25 @@
   - Battles in Mistmarsh and the Volcano Forge with every move, the enemy turn, guard and the finisher.
   - rpg_test, rpg3_test and rpg4_test show 0 errors, and there were 0 requests to anything but the app itself.
   - Frame rate: 60 fps in the world with rain, and 55–60 fps in battle during Smash (headless software rendering).
+
+## 2026-11-03 · App-wide upgrade: exercise library, celebrations, sounds, charts, pixel icons
+All of these are local copies of open-source code. See `vendor/README.md` for each one's license and audit. The page makes no requests to anything but itself, and the Content-Security-Policy enforces this.
+
+- **Exercise library:** 188 bodyweight moves from free-exercise-db (public domain).
+  - Type in the log sheet's search, e.g. "press ups", "star jumps", "squat jump" or "glutes". Your own buttons match first, then a "📚 Exercise library" section lists variations with level and main muscle.
+  - Search understands UK/US names (press-up and push-up, star jump and jumping jack), plurals, hyphens and word order.
+  - Picking a library move that equals a built-in one (for example Pushups) logs it as the built-in (Press-ups), so PRs and history stay together. Other moves log under their own name with the right category.
+  - Any chosen move shows a collapsible "📖 How to do it" card with level, muscles and steps.
+- **Celebrations (pixelfx):**
+  - Pixel confetti replaces the CSS confetti.
+  - Level-ups get a LEVEL UP! / NEW TITLE! / MASTERY! light pillar.
+  - Achievements get a sliding "Achievement unlocked" banner.
+  - Quests get a QUEST COMPLETE ribbon.
+  - A **NEW PR!** pillar plus a toast replaces the old blocking `alert()`.
+  - Effects respect the reduced-motion setting, and at most 4 play at once.
+- **Sounds (ZzFX):** a coin blip when a set is logged, a sparkle layered on the PR jingle, a quest chime, and a delete thud. They play through the app's own audio and follow the sound toggle.
+- **Stats chart (uPlot):** Exercise Progress is now a zoomable chart.
+  - Best set is a gold line; the day's total is shown as bars.
+  - There are 30-day, 90-day and All ranges, plus a live legend. The old bars remain as a fallback.
+- **Pixel icons (Pixelarticons):** the bottom navigation uses pixel icons that match the Realm.
+- **Tested:** game, nav, battle, hero, rpg, rpg3, rpg4, pfx and library suites show 0 errors and 0 non-local requests. SW cache is now `pulse-v21`.

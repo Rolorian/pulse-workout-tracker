@@ -424,6 +424,7 @@
 .navbtn .nb-ic{font-size:21px;filter:grayscale(.7);transition:transform .15s,filter .15s}
 .navbtn .nb-l{font:800 9.5px var(--mono);letter-spacing:.6px;text-transform:uppercase}
 .navbtn.on{color:var(--accent)}.navbtn.on .nb-ic{filter:none;transform:translateY(-2px) scale(1.12)}
+.navbtn .nb-ic.px{display:inline-flex;height:24px;align-items:center;filter:none;color:var(--muted)}.navbtn .nb-ic.px svg{width:24px;height:24px;display:block}.navbtn.on .nb-ic.px{color:var(--accent)}
 .navbtn.on::before{content:"";position:absolute;top:-6px;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--accent);box-shadow:var(--glow)}
 .nbadge,.sbadge{display:none;position:absolute;top:2px;right:calc(50% - 22px);min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font:800 9px/16px var(--mono);text-align:center}
 .sbadge{position:relative;top:-6px;right:auto;margin-left:3px}

@@ -24,7 +24,12 @@ import * as darkExplosion from "./src/fx/shadow/dark-explosion.js";
 import * as frostNova from "./src/fx/ice/frost-nova.js";
 import * as acidSplash from "./src/fx/nature/acid-splash.js";
 import * as fireball from "./src/fx/fire/fireball.js";
+import * as confetti from "./src/fx/ui/confetti.js";
+import * as levelUp from "./src/fx/ui/level-up.js";
+import * as achievement from "./src/fx/ui/achievement.js";
+import * as questComplete from "./src/fx/ui/quest-complete.js";
+import * as fireworkBurst from "./src/fx/explosions/firework-burst.js";
 window.PFX = { createFx, createFrame, clearFrame, composite, FX: {
   swordSlash, hammerSmash, daggerFlurry, clawSwipe, hitSpark, critHit, bluntHit, shieldBlock, groundSlam,
   burning, poisoned, frozen, poof, shatterDeath, soulRise, collectBurst, rain, snow, heal, spellCharge,
-  darkExplosion, frostNova, acidSplash, fireball } };
+  darkExplosion, frostNova, acidSplash, fireball, confetti, levelUp, achievement, questComplete, fireworkBurst } };

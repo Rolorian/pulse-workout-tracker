@@ -83,7 +83,7 @@
     // ---------- bottom bar ----------
     const old = document.querySelector('.bottom'); if (old) old.style.display = 'none';
     const nav = el('nav', 'navbar'); nav.id = 'navbar';
-    nav.innerHTML = TABS.map((t) => `<button class="navbtn" data-nav="${t.id}"><span class="nb-ic">${t.icon}</span><span class="nb-l">${t.name}</span><span class="nbadge" data-nbadge="${t.id}"></span></button>`).join('');
+    nav.innerHTML = TABS.map((t) => `<button class="navbtn" data-nav="${t.id}"><span class="nb-ic${window.PXI && PXI[t.id] ? ' px' : ''}">${(window.PXI && PXI[t.id]) || t.icon}</span><span class="nb-l">${t.name}</span><span class="nbadge" data-nbadge="${t.id}"></span></button>`).join('');
     nav.querySelectorAll('[data-nav]').forEach((b) => (b.onclick = () => { G.nav(b.dataset.nav); }));
     const fab = el('button', 'fab', '＋'); fab.id = 'fab'; fab.setAttribute('aria-label', 'Log workout'); fab.onclick = () => { openAdd(); };
     document.body.append(nav, fab);
