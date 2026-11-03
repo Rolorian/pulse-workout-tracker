@@ -21,3 +21,6 @@ The combat, status, weather and pickup effects come from [pixelfx](https://githu
 - Includes adapted work from Sprite Fusion's pixel art VFX (Hugo Duprez, MIT) and Hollow Crown (rehan-remade, MIT).
 
 A curated subset is copied into `vendor/pixelfx/` with its LICENSE and NOTICE. It is recoloured at runtime to the Pulse palette. The Patch Pixel font is not included.
+
+## Chiptune soundtrack
+The six chiptune tracks in `chiptunes.js` are original compositions written for Pulse. They are rendered on the device with ZzFXM (Keith Clark & Frank Force, MIT) and ZzFX (Frank Force, MIT), both vendored in `vendor/`.

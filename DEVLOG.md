@@ -196,3 +196,28 @@ All of these are local copies of open-source code. See `vendor/README.md` for ea
   - There are 30-day, 90-day and All ranges, plus a live legend. The old bars remain as a fallback.
 - **Pixel icons (Pixelarticons):** the bottom navigation uses pixel icons that match the Realm.
 - **Tested:** game, nav, battle, hero, rpg, rpg3, rpg4, pfx and library suites show 0 errors and 0 non-local requests. SW cache is now `pulse-v21`.
+
+## 2026-11-03 · Seven more libraries: smarter search, smooth lists, training calendar, tour, chiptunes, carved dungeons
+Every library is a local, audited copy (see `vendor/README.md`). The app still makes no requests to anything but itself.
+
+- **Typo-proof search (Fuse.js):** "pusups", "sqauts", "burpes" and "montain climber" all find the right move. Fuzzy matching only kicks in when nothing matches as typed, so normal searches stay tidy.
+- **Smooth lists (AutoAnimate):** the Today, History and Quests lists now morph: unchanged rows keep their place, new rows slide in, and removed rows fade out.
+- **Your Training Year:** a GitHub-style 53-week calendar in Stats.
+  - Gold levels show daily volume (sets).
+  - Tap a day to see its sets and exercises.
+  - It auto-scrolls to this week.
+- **What's new tour (Driver.js):** a 4-step pixel-styled walkthrough that starts once, when nothing else is on screen. Settings → "What's new tour" replays it.
+- **Chiptune soundtrack (ZzFXM):** six original tracks: village, wilds, dungeon, battle, boss and a victory fanfare.
+  - They're rendered on the device in under 0.4 s each and normalised.
+  - Switch with ☰ → Soundtrack → "Built-in music: Classic / Chiptune". Your own uploaded tracks always play first.
+- **Carved dungeons (rot.js):**
+  - Each floor of each run is dug fresh with rooms and winding corridors (34×30).
+  - Start is near the top-left; stairs and the boss are in the farthest room by walking distance.
+  - The classic 3×3 layout remains as a fallback.
+  - If a saved position lands in a wall after re-carving, you appear at the entrance.
+- **Torchlight:** rot.js field of view with a radius of 6. What you see is clear, explored tiles stay dimly remembered, and the rest is dark. It fades softly as you move.
+- **Chasing monsters:** dungeon monsters that see you shout "!" and chase you around walls with rot.js A*. Guards and bosses hold their ground. If one catches you, the fight starts.
+- **Natural terrain (simplex-noise):** seeded two-tone ground patches and tree groves (pines cluster together, and so on). Paths, spawns and saves are unchanged.
+- **Tested:**
+  - rpg, rpg3, rpg4, pfx, game, nav, battle, hero, app-fx, library, ux and realm2 suites show 0 errors and 0 non-local requests.
+  - 60 fps in dungeons with fog and in regions; 58–59 fps during battle Smash. SW cache is now `pulse-v22`.

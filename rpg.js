@@ -104,7 +104,9 @@
     const chain = chainOf(slot);
     const custom = chain.find((s) => customHas[s]);
     const def = chain.find((s) => DEFAULT_TRACK[s]);
-    const fallback = () => (def ? fetchBuf('music/' + def + '.mp3') : Promise.resolve(null));
+    const mp3 = () => (def ? fetchBuf('music/' + def + '.mp3') : Promise.resolve(null));
+    // your own files always win; then the chiptune soundtrack (made on the device with ZzFXM) or the bundled MP3s
+    const fallback = () => (R.musicStyle === 'chip' && window.PulseChip ? PulseChip.chipBuffer(slot, actx()).then((b) => b || mp3()) : mp3());
     return custom ? customBuf(custom).then((b) => b || fallback()) : fallback();
   }
   function sfx(name, vol = 0.55, rate = 1) {
@@ -314,7 +316,11 @@
     const W = 36, H = 48; const rg = REG()[ri] || { name: 'Wilds', boss: ['Boss'] }; const B = BIOME[ri] || BIOME[0];
     const r = rng('region' + ri);
     const z = newZone('r' + ri, W, H, { name: rg.name, ri, music: 'wilds', grade: B.grade, fog: B.fog, snow: B.snow, embers: B.embers });
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) z.ground[zat(z, x, y)] = smooth(x + ri * 7, y) > 0.58 ? B.g[1] : B.g[0];
+    // organic ground patches & tree groves from seeded simplex noise (vendored simplex-noise.js, MIT); hash noise if unavailable
+    const sx = window.SimplexNoise && !OFF.simplex ? SimplexNoise.createNoise2D(rng('simplex' + ri)) : null;
+    const patch = (x, y) => (sx ? sx(x * 0.11, y * 0.11) * 0.7 + sx(x * 0.31 + 40, y * 0.31) * 0.3 > 0.18 : smooth(x + ri * 7, y) > 0.58);
+    const grove = (x, y) => (sx ? (sx(x * 0.07 + 90, y * 0.07 - 30) + 1) / 2 * 0.85 + noise(x + ri, y) * 0.15 : noise(x + ri, y));
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) z.ground[zat(z, x, y)] = patch(x, y) ? B.g[1] : B.g[0];
     // carve a meandering trail + clearings
     const mask = new Uint8Array(W * H); z.pathMask = mask;
     const carve = (cx, cy, rad) => { for (let y = cy - rad; y <= cy + rad; y++) for (let x = cx - rad; x <= cx + rad; x++) if (zin(z, x, y) && x > 1 && x < W - 2 && y > 0 && y < H - 1 && (x - cx) ** 2 + (y - cy) ** 2 <= rad * rad + 1) mask[zat(z, x, y)] = 1; };
@@ -333,7 +339,8 @@
       const ox = xx + ((y >> 1) % 2 ? 1 : 0);
       let free = true; for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) if (zin(z, ox + dx, y + dy) && mask[zat(z, ox + dx, y + dy)]) free = false;
       if (!free) continue;
-      zplace(z, B.trees[Math.floor(noise(ox + ri, y) * B.trees.length)] === 'pond' ? 'bigbush' : B.trees[Math.floor(noise(ox + ri, y) * B.trees.length)], ox, y);
+      const ti = Math.min(B.trees.length - 1, Math.floor(grove(ox, y) * B.trees.length));
+      zplace(z, B.trees[ti] === 'pond' ? 'bigbush' : B.trees[ti], ox, y);
     }
     for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) z.block[zat(z, xx, y)] = mask[zat(z, xx, y)] ? 0 : 1;
     z.noDecoOn = (g) => g === B.path;
@@ -361,15 +368,45 @@
   function pathX(z, y) { for (let x = 2; x < z.w - 2; x++) if (z.pathMask[zat(z, x, y)] && z.pathMask[zat(z, x + 1, y)] && z.pathMask[zat(z, x - 1, y)]) return x; return 18; }
 
   // ---------- dungeons: three floors of stone rooms below each region ----------
+  // Each run (R.dg counts clears) carves a fresh layout with rot.js's Digger (vendored, BSD-3): rooms of varied size joined
+  // by winding corridors. If rot.js isn't available it falls back to the classic 3×3 room grid.
+  function digRooms(z, r, W, H, FLOOR) {
+    if (!window.ROT || !ROT.Map || !ROT.Map.Digger) return null;
+    try {
+      ROT.RNG.setSeed(Math.floor(r() * 2147483646) + 1);
+      for (let attempt = 0; attempt < 6; attempt++) {
+        z.ground.fill(null); z.block.fill(1);
+        const dig = new ROT.Map.Digger(W, H, { roomWidth: [5, 9], roomHeight: [4, 7], corridorLength: [2, 6], dugPercentage: 0.34, timeLimit: 400 });
+        dig.create((x, y, wall) => { if (!wall && x > 0 && y > 0 && x < W - 1 && y < H - 1) { z.ground[zat(z, x, y)] = FLOOR; z.block[zat(z, x, y)] = 0; } });
+        let rooms = dig.getRooms().map((rm) => ({ x: rm.getLeft(), y: rm.getTop(), w: rm.getRight() - rm.getLeft() + 1, h: rm.getBottom() - rm.getTop() + 1 })).filter((rm) => rm.w >= 5 && rm.h >= 4);
+        if (rooms.length < 5) continue;
+        // start in the room nearest the top-left; the way down is in the room farthest away by walking distance
+        rooms.sort((a, b) => (a.x + a.y * 1.2) - (b.x + b.y * 1.2));
+        const c = (rm) => [rm.x + (rm.w >> 1), rm.y + (rm.h >> 1)];
+        const dist = new Int32Array(W * H).fill(-1); const [sx, sy] = c(rooms[0]); const q = [sy * W + sx]; dist[q[0]] = 0;
+        for (let qi = 0; qi < q.length; qi++) { const i = q[qi], x = i % W, y = (i / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const n = (y + dy) * W + x + dx; if (x + dx < 0 || x + dx >= W || y + dy < 0 || y + dy >= H || dist[n] >= 0 || z.block[n]) continue; dist[n] = dist[i] + 1; q.push(n); } }
+        const reach = (rm) => { const [x, y] = c(rm); return dist[y * W + x]; };
+        if (rooms.some((rm) => reach(rm) < 0)) continue;
+        const rest = rooms.slice(1).sort((a, b) => reach(a) - reach(b));
+        rooms = [rooms[0]].concat(rest); // index 0 = start … last = farthest (stairs / boss)
+        z.carved = 'rot';
+        return rooms;
+      }
+    } catch (e) { console.warn('realm dungeon', e); }
+    return null;
+  }
   function buildDungeon(ri, floor) {
-    const W = 30, H = 26; const dg = DUN()[ri] || { name: 'Dungeon', boss: ['Guardian'] }; const B = BIOME[ri] || BIOME[0];
+    const W = 34, H = 30; const dg = DUN()[ri] || { name: 'Dungeon', boss: ['Guardian'] }; const B = BIOME[ri] || BIOME[0];
     const r = rng('dg' + ri + '-' + floor + '-' + (R.dg[ri] || 0));
     const z = newZone(`d${ri}-${floor}`, W, H, { name: `${dg.name} · ${['', 'I', 'II', 'III'][floor]}`, ri, floor, dungeon: true, music: 'dungeon', grade: [200, 190, 215], dark: true });
     z.ground.fill(null); z.block.fill(1);
-    // 3×3 grid of rooms, linked by a random spanning tree
-    const rooms = []; const CW = 10, CH = 8;
-    for (let gy = 0; gy < 3; gy++) for (let gx = 0; gx < 3; gx++) { const w = 6 + Math.floor(r() * 3), h = 5 + Math.floor(r() * 2); rooms.push({ gx, gy, x: gx * CW + 1 + Math.floor((CW - 1 - w) / 2), y: gy * CH + 1 + Math.floor((CH - 1 - h) / 2), w, h }); }
     const FLOOR = ['inf', 13, 13];
+    let rooms = OFF.rot ? null : digRooms(z, r, W, H, FLOOR);
+    if (!rooms) {
+    // classic: 3×3 grid of rooms, linked by a random spanning tree
+    z.ground.fill(null); z.block.fill(1);
+    rooms = []; const CW = 10, CH = 8;
+    for (let gy = 0; gy < 3; gy++) for (let gx = 0; gx < 3; gx++) { const w = 6 + Math.floor(r() * 3), h = 5 + Math.floor(r() * 2); rooms.push({ gx, gy, x: gx * CW + 1 + Math.floor((CW - 1 - w) / 2), y: gy * CH + 1 + Math.floor((CH - 1 - h) / 2), w, h }); }
     const room = (rm) => { for (let y = rm.y; y < rm.y + rm.h; y++) for (let x = rm.x; x < rm.x + rm.w; x++) { z.ground[zat(z, x, y)] = FLOOR; z.block[zat(z, x, y)] = 0; } };
     rooms.forEach(room);
     const link = (a, b) => {
@@ -380,8 +417,9 @@
     const seen = new Set([0]); const order = [0];
     while (seen.size < 9) { const a = order[Math.floor(r() * order.length)]; const ra = rooms[a]; const nb = rooms.map((x, i) => i).filter((i) => !seen.has(i) && Math.abs(rooms[i].gx - ra.gx) + Math.abs(rooms[i].gy - ra.gy) === 1); if (!nb.length) continue; const b = nb[Math.floor(r() * nb.length)]; link(ra, rooms[b]); seen.add(b); order.push(b); }
     if (r() < 0.6) link(rooms[4], rooms[r() < 0.5 ? 2 : 6]);
+    }
     z.wallStyle = ri % 2 ? 'green' : 'brown';
-    const start = rooms[0], end = rooms[8];
+    const start = rooms[0], end = rooms[rooms.length - 1]; const LAST = rooms.length - 2;
     zplace(z, 'ladder', start.x + 1, start.y);
     z.exits.push({ x: start.x + 1, y: start.y + 1, w: 1, h: 1, to: floor === 1 ? 'r' + ri : `d${ri}-${floor - 1}`, tx: floor === 1 ? null : 0, ty: 0, up: true, label: () => (floor === 1 ? 'Back to the surface' : 'Up a floor') });
     if (floor < 3) { zplace(z, 'stairs', end.x + end.w - 3, end.y + end.h - 3, { solid: 0 }); z.exits.push({ x: end.x + end.w - 3, y: end.y + end.h - 1, w: 2, h: 1, to: `d${ri}-${floor + 1}`, tx: 0, ty: 0, down: true, label: () => 'Deeper', locked: () => (z.spawns.some((s) => s.guard && alive(z, s)) ? 'The stairs are guarded' : null) }); }
@@ -389,10 +427,10 @@
     const mobs = B.mobs.concat(['skeleton', 'bat']); const lvl = 4 + ri * 5 + floor;
     rooms.slice(1).forEach((rm, i) => {
       const cx = rm.x + (rm.w >> 1), cy = rm.y + (rm.h >> 1);
-      if (i === 7 && floor === 3) z.spawns.push({ id: 'dboss', dboss: ri, x: cx, y: cy, r: 0, lvl: lvl + 8 });
-      else if (i === 7) z.spawns.push({ id: 'guard', mob: mobs[Math.floor(r() * mobs.length)], x: cx, y: cy - 1, r: 1, lvl: lvl + 2, elite: true, guard: true });
+      if (i === LAST && floor === 3) z.spawns.push({ id: 'dboss', dboss: ri, x: cx, y: cy, r: 0, lvl: lvl + 8 });
+      else if (i === LAST) z.spawns.push({ id: 'guard', mob: mobs[Math.floor(r() * mobs.length)], x: cx, y: cy - 1, r: 1, lvl: lvl + 2, elite: true, guard: true });
       else if (r() < 0.75) z.spawns.push({ id: 'g' + i, mob: mobs[Math.floor(r() * mobs.length)], x: cx, y: cy, r: 2, lvl });
-      if (r() < 0.35 && i !== 7) z.chests = (z.chests || []).concat([{ id: `c${floor}-${i}`, x: rm.x + 1 + Math.floor(r() * (rm.w - 2)), y: rm.y + rm.h - 1 }]);
+      if (r() < 0.35 && i !== LAST) z.chests = (z.chests || []).concat([{ id: `c${floor}-${i}`, x: rm.x + 1 + Math.floor(r() * (rm.w - 2)), y: rm.y + rm.h - 1 }]);
     });
     z.entry = [start.x + 2, start.y + 2]; z.exitDown = [end.x + end.w - 2, end.y + end.h - 2 < end.y + end.h - 1 ? end.y + 1 : end.y + 1];
     z.dungeonRooms = rooms;
@@ -869,6 +907,7 @@
     Z = zoneById(id); Z.enteredAt = Date.now();
     if (Z.dungeon && opts.fresh) Z.enteredAt = Date.now();
     if (tx == null || (Z.dungeon && opts.arrive)) { const sp = opts.up ? Z.exitDown : Z.entry || [18, 2]; tx = sp[0]; ty = sp[1]; }
+    if (!zin(Z, tx, ty) || Z.block[zat(Z, tx, ty)]) { const sp = Z.entry || [18, 2]; tx = sp[0]; ty = sp[1]; } // e.g. a dungeon re-carved since you saved
     R.zone = id; R.x = tx; R.y = ty; R.seen[id] = 1; save(true);
     if (!Z.canvas) buildGround(Z);
     spawnZone(); snapCam(); renderHud();
@@ -1000,6 +1039,7 @@
         if (e.work === 'smith') { for (let k = 0; k < 6; k++) parts.push({ x: fx, y: fy - 2, vx: (Math.random() - 0.5) * 40, vy: -20 - Math.random() * 30, life: 0.4, max: 0.4, c: '255,200,80', r: 1 }); if (Math.abs(e.tx - hero.tx) + Math.abs(e.ty - hero.ty) < 8) snd('clang'); }
         else for (let k = 0; k < 3; k++) parts.push({ x: fx, y: fy + 2, vx: (Math.random() - 0.5) * 10, vy: -5, life: 0.6, max: 0.6, c: '150,110,70', r: 1 }); }
       if (e.workA > 0) e.workA -= dt; return; }
+    if (chaseStep(e)) return;
     if (!e.wanderR) return;
     e.wander -= dt; if (e.wander > 0) return; e.wander = 1.5 + Math.random() * 3.5;
     const [hx, hy] = e.home; const x = hx + Math.round((Math.random() * 2 - 1) * e.wanderR), y = hy + Math.round((Math.random() * 2 - 1) * e.wanderR);
@@ -1007,6 +1047,39 @@
     if (Z.id === 'village' && e.enemy && y < 32) return;
     if (Z.id === 'village' && !e.enemy && y >= 30 && Z.gateClosed && Z.gateClosed()) return;
     const p = findPath(e.tx, e.ty, x, y, e); if (p && p.length < 8) e.path = p;
+  }
+  // ---------- dungeons by torchlight: rot.js field of view (vendored, BSD-3) ----------
+  // What you can see right now is clear, places you've been stay dimly remembered, the rest is darkness.
+  function updateFov() {
+    if (!Z || !Z.dungeon || !window.ROT || !ROT.FOV || OFF.fov) { if (Z) Z.vis = null; return; }
+    const k = hero.ty * Z.w + hero.tx; if (Z.fovAt === k && Z.vis) return; Z.fovAt = k;
+    if (!Z.seenT) { Z.seenT = new Uint8Array(Z.w * Z.h); Z.fogA = new Float32Array(Z.w * Z.h).fill(1); }
+    const fov = Z.fovObj || (Z.fovObj = new ROT.FOV.PreciseShadowcasting((x, y) => zin(Z, x, y) && !Z.block[zat(Z, x, y)]));
+    const vis = new Set();
+    fov.compute(hero.tx, hero.ty, 6, (x, y) => { if (!zin(Z, x, y)) return; const i = zat(Z, x, y); vis.add(i); Z.seenT[i] = 1; });
+    Z.vis = vis;
+  }
+  function drawFog(c, dt, vw, vh) {
+    updateFov(); if (!Z.vis) return;
+    const x0 = Math.max(0, Math.floor(cam.x / T) - 1), y0 = Math.max(0, Math.floor(cam.y / T) - 1), x1 = Math.min(Z.w - 1, Math.ceil((cam.x + vw) / T) + 1), y1 = Math.min(Z.h - 1, Math.ceil((cam.y + vh) / T) + 1);
+    const k = Math.min(1, dt * 7);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const i = zat(Z, x, y); const want = Z.vis.has(i) ? 0 : Z.seenT[i] ? 0.62 : 1;
+      const a = (Z.fogA[i] += (want - Z.fogA[i]) * k); if (a < 0.02) continue;
+      c.fillStyle = `rgba(6,3,12,${a.toFixed(2)})`; c.fillRect(x * T, y * T, T, T);
+    }
+  }
+  // dungeon monsters that spot you give chase, pathing round walls with rot.js A*
+  function chaseStep(e) {
+    if (!Z.dungeon || !Z.vis || !e.enemy || OFF.chase || (e.spawn && e.spawn.guard) || (e.def && e.def.boss) || !window.ROT || !ROT.Path) return false;
+    const d = Math.abs(e.tx - hero.tx) + Math.abs(e.ty - hero.ty);
+    if (!(Z.vis.has(zat(Z, e.tx, e.ty)) && d <= 6)) { if (e.chasing) { e.chasing = false; e.speed = 2; } return false; }
+    if (!e.chasing) { e.chasing = true; e.speed = 2.8; e.emote = { ch: '!', t: 0 }; }
+    if (d <= 2) { checkAggro(); return true; } // caught you
+    const astar = new ROT.Path.AStar(hero.tx, hero.ty, (x, y) => (x === e.tx && y === e.ty) || (x === hero.tx && y === hero.ty) || !solid(x, y, e), { topology: 4 });
+    const p = []; astar.compute(e.tx, e.ty, (x, y) => p.push([x, y]));
+    if (p.length > 2) e.path = [p[1]];
+    return true;
   }
   function checkAggro() {
     if (B || busy || dlgQ) return;
@@ -1111,6 +1184,7 @@
     }
     drawCritters(c, false);
     for (let i = WFX.length - 1; i >= 0; i--) { const f = WFX[i]; if (!pfxStep(f, dt)) { WFX.splice(i, 1); continue; } pfxDraw(c, f, f.wx, f.wy, 1); }
+    if (Z.dungeon) drawFog(c, dt, vw, vh);
     c.setTransform(1, 0, 0, 1, 0, 0);
     // light: zone palette by day, moonlit blue by night, warm pools around every lamp, torch and your lantern
     if (!OFF.light) lightPass(c, night, t);
@@ -1246,10 +1320,13 @@
     const vol = R.musicVol == null ? 1 : R.musicVol;
     showMenu(`<div class="rm-title">Soundtrack</div><div class="rm-sub">Give every place and fight its own music. Pick audio files you own from your phone; they're stored on this device only and work offline.</div>
       <label class="snd-vol">Music volume <input type="range" min="0" max="1" step="0.05" value="${vol}" data-vol></label>
+      <div class="snd-style"><span>Built-in music</span><button class="rm-mini ${R.musicStyle === 'chip' ? 'ghost' : ''}" data-style="mp3">Classic</button><button class="rm-mini ${R.musicStyle === 'chip' ? '' : 'ghost'}" data-style="chip">Chiptune</button></div>
+      <div class="rm-sub" style="margin-top:-2px">Chiptune is an original 8-bit soundtrack made on your phone — no files, no downloads. Your own tracks below always play first.</div>
       <div class="rm-sep">Places</div>${['village', 'wilds', 'r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8', 'r9', 'dungeon'].map(row).join('')}
       <div class="rm-sep">Fights</div>${['battle', 'elite', 'boss', 'worldboss', 'victory'].map(row).join('')}
       <button class="rm-item ghost" data-close>Done</button>`, (m) => {
       const keep = m.querySelector('.rm-box').scrollTop;
+      m.querySelectorAll('[data-style]').forEach((b) => (b.onclick = () => { R.musicStyle = b.dataset.style; save(); const cur = musicName || musicWant; stopMusic(); if (cur) setTimeout(() => music(cur), 120); reopenSound(); }));
       m.querySelector('[data-vol]').oninput = (e) => { R.musicVol = Number(e.target.value); save(); if (musicGain) { const ctx = actx(); musicGain.gain.setTargetAtTime(0.26 * 1.6 * R.musicVol, ctx.currentTime, 0.1); } };
       m.querySelectorAll('[data-snd]').forEach((inp) => (inp.onchange = () => {
         const f = inp.files && inp.files[0]; if (!f) return; const sl = inp.dataset.snd;

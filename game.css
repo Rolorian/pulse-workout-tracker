@@ -745,3 +745,5 @@ body.realm-on #fab{display:none}
 .snd-vol{display:flex;align-items:center;gap:8px;font:14px Pixelify,monospace;color:#1a1020;margin:6px 0 2px;text-transform:none;letter-spacing:0}.snd-vol input{flex:1;accent-color:#c2410c}
 .snd-vol input[type=range]{background:transparent;border:0;padding:0;height:26px;box-shadow:none;border-radius:0}
 .rb-intent{bottom:auto;top:calc(env(safe-area-inset-top) + 92px)}
+
+.snd-style{display:flex;align-items:center;gap:6px;margin:8px 0 6px}.snd-style span{flex:1;font-size:13px;font-weight:700}

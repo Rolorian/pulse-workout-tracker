@@ -1,4 +1,4 @@
-// Pulse — exercise library search.
+// Pulse — exercise library search (typo-tolerant via vendored Fuse.js).
 // The data (window.EXLIB) is the bodyweight subset of free-exercise-db, public domain, stored in vendor/exercise-db.
 // Everything happens on the device: no requests, nothing sent anywhere.
 (function () {
@@ -15,12 +15,27 @@
   function key(s) { let k = words(s).join(''); SYN.forEach(([a, b]) => (k = k.replace(a, b))); return k; }
   function toks(s) { return words(s).map((w) => { let k = w; SYN.forEach(([a, b]) => (k = k.replace(a, b))); return k; }); }
 
-  // Matches a name against what was typed: the whole phrase, or every word somewhere in it ("squat jump" finds "Jump Squat").
-  function exMatches(name, q) {
+  // Typo-tolerant matching with Fuse.js (vendored, Apache-2.0): "pusups", "sqauts", "burpes" still find the move.
+  let FUSE = null, FUSE_N = -1, FQ = null, FSET = new Set();
+  function fuzzySet(q) {
+    if (!window.Fuse) return FSET;
+    const qq = String(q || '').trim().toLowerCase(); if (qq === FQ) return FSET;
+    const names = LIB().map((e) => e.n).concat(typeof pickableExercises === 'function' ? pickableExercises().map((e) => e.name) : []);
+    if (!FUSE || FUSE_N !== names.length) { FUSE = new Fuse(names.map((n) => ({ n, k: words(n).join(' '), c: key(n) })), { keys: ['n', 'k', 'c'], threshold: 0.45, ignoreLocation: true, minMatchCharLength: 3, includeScore: true }); FUSE_N = names.length; }
+    FQ = qq;
+    // only when nothing matches as typed — a typo, not a broad search
+    const direct = qq.length < 4 || names.some((n) => exactish(n, qq));
+    FSET = new Set(direct ? [] : FUSE.search(key(qq), { limit: 12 }).concat(FUSE.search(words(qq).join(' '), { limit: 12 })).filter((r) => r.score == null || r.score < 0.45).map((r) => r.item.n));
+    return FSET;
+  }
+  // Matches a name against what was typed: the whole phrase, or every word somewhere in it ("squat jump" finds "Jump Squat"),
+  // and finally a fuzzy match for typos.
+  function exactish(name, q) {
     const nk = key(name), qk = key(q); if (!qk) return true;
     if (nk.includes(qk)) return true;
     const t = toks(q); return t.length > 1 && t.every((w) => nk.includes(w));
   }
+  function exMatches(name, q) { return exactish(name, q) || fuzzySet(q).has(name); }
 
   // Library moves that are the same as one of Pulse's built-in buttons log under the built-in name,
   // so your history, PRs and quests stay in one place.
@@ -42,10 +57,11 @@
   // Best matches first: exact, then starts-with, then contains, then all-words; beginners before experts.
   function libSearch(q, limit = 12) {
     const qk = key(q); if (!qk) return [];
-    const lv = { beginner: 0, intermediate: 1, expert: 2 };
+    const lv = { beginner: 0, intermediate: 1, expert: 2 }; const fz = fuzzySet(q);
     return LIB().map((e, i) => {
       const nk = key(e.n); let s = -1;
-      if (nk === qk) s = 0; else if (nk.startsWith(qk)) s = 1; else if (nk.includes(qk)) s = 2; else if (exMatches(e.n, q)) s = 3;
+      if (nk === qk) s = 0; else if (nk.startsWith(qk)) s = 1; else if (nk.includes(qk)) s = 2; else if (exactish(e.n, q)) s = 3;
+      else if (fz.has(e.n)) s = 6;
       else if (e.m.concat(e.s).some((m) => key(m).startsWith(qk)) && qk.length >= 3) s = 5; // "chest", "glutes"…
       return s < 0 ? null : { e, i, s: s * 10 + (lv[e.l] ?? 1) + (e.k === 'stretching' ? 3 : 0) };
     }).filter(Boolean).sort((a, b) => a.s - b.s || a.e.n.length - b.e.n.length).slice(0, limit);

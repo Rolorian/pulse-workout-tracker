@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#090d12">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="vendor/uplot/uPlot.min.css">
+<link rel="stylesheet" href="vendor/driver/driver.css">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -280,6 +281,19 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 .howto summary span{display:block;font-weight:500;font-size:11px;color:var(--muted);margin-top:2px}
 .howto ol{margin:8px 0 0;padding-left:18px;line-height:1.45;color:#d9dee6}.howto li{margin:4px 0}
 .range-chips{display:flex;gap:6px;margin:0 0 8px}.range-chips button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer}.range-chips button.on{color:#07130d;background:var(--gold);border-color:var(--gold)}
+.heat-scroll{overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.heat-scroll::-webkit-scrollbar{display:none}
+.heat-months{display:grid;grid-template-columns:repeat(53,12px);gap:3px;font-size:9px;color:var(--muted);margin-bottom:3px;width:max-content}.heat-months span{white-space:nowrap}
+.heat{display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;grid-auto-columns:12px;gap:3px;width:max-content}
+.heat b{width:12px;height:12px;border-radius:2px;background:#1b2330;cursor:pointer;image-rendering:pixelated}.heat b.fut{background:transparent;cursor:default}
+.heat b.l1,.heat-legend i.l1{background:#3b2a12}.heat b.l2,.heat-legend i.l2{background:#7a4f12}.heat b.l3,.heat-legend i.l3{background:#c2810f}.heat b.l4,.heat-legend i.l4{background:#fbbf24}
+.heat b.now{outline:1px solid #fff6;outline-offset:1px}
+.heat-legend{display:flex;align-items:center;justify-content:flex-end;gap:3px;margin-top:8px;font-size:10px;color:var(--muted)}.heat-legend i{width:10px;height:10px;border-radius:2px;background:#1b2330;display:inline-block}.heat-legend span{margin:0 3px}
+.set-btn{background:var(--panel2);border:1px solid var(--line);color:var(--text,#fff);border-radius:10px;padding:7px 14px;font-weight:700;font-size:12px;cursor:pointer}
+.driver-popover.pulse-tour{background:#140c1a;color:#f3e3c3;border:2px solid #fbbf24;border-radius:14px;box-shadow:0 10px 40px #000a;max-width:300px}
+.driver-popover.pulse-tour .driver-popover-title{font-size:16px;font-weight:800;color:#ffd23f}.driver-popover.pulse-tour .driver-popover-description{color:#e2d6c6;font-size:13px;line-height:1.45}
+.driver-popover.pulse-tour .driver-popover-progress-text{color:#9a90a8}.driver-popover.pulse-tour .driver-popover-footer button{background:#2c2033;color:#f3e3c3;border:1px solid #4a3755;text-shadow:none;border-radius:9px;padding:6px 12px;font-weight:700}
+.driver-popover.pulse-tour .driver-popover-next-btn{background:#fbbf24!important;color:#1a1020!important;border-color:#fbbf24!important}.driver-popover.pulse-tour .driver-popover-close-btn{color:#9a90a8}
+.driver-popover.pulse-tour .driver-popover-arrow{border-color:#fbbf24}
 .uplot-wrap{width:100%}.uplot-wrap .u-legend{font-size:11px;color:#c7cdd8}.uplot-wrap .u-legend th{font-weight:600}.uplot-wrap .u-select{background:rgba(251,191,36,.12)}
 
 /* Manage customs list */
@@ -4158,6 +4172,13 @@ setTimeout(checkAchievementsAndLevels, 500);
 <script src="library.js"></script>
 <script src="vendor/zzfx/zzfx.js"></script>
 <script src="vendor/pixelarticons/icons.js"></script>
+<script src="vendor/fuse/fuse.js"></script>
+<script src="vendor/autoanimate/autoanimate.js"></script>
+<script src="vendor/driver/driver.js"></script>
+<script src="vendor/zzfxm/zzfxm.js"></script>
+<script src="chiptunes.js"></script>
+<script src="vendor/rot/rot.js"></script>
+<script src="vendor/simplex-noise/simplex-noise.js"></script>
 <script src="celebrate.js"></script>
 <script src="fx.js"></script>
 <script src="loot.js"></script>
@@ -4177,5 +4198,6 @@ setTimeout(checkAchievementsAndLevels, 500);
 <script src="rpg.js"></script>
 <script src="nav.js"></script>
 <script src="boot.js"></script>
+<script src="ux.js"></script>
 </body>
 </html>

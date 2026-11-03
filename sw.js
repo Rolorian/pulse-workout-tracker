@@ -1,7 +1,7 @@
 /* Pulse Workout Tracker — service worker
    Cache-first for the app shell so it loads instantly and fully offline.
    Bump CACHE on every release so clients pick up the new files. */
-const CACHE = 'pulse-v21';
+const CACHE = 'pulse-v22';
 const SHELL = [
   './',
   './index.html',
@@ -34,6 +34,15 @@ const SHELL = [
   './vendor/zzfx/zzfx.js',
   './vendor/pixelarticons/icons.js',
   './celebrate.js',
+  './vendor/fuse/fuse.js',
+  './vendor/autoanimate/autoanimate.js',
+  './vendor/driver/driver.js',
+  './vendor/driver/driver.css',
+  './vendor/zzfxm/zzfxm.js',
+  './chiptunes.js',
+  './vendor/rot/rot.js',
+  './vendor/simplex-noise/simplex-noise.js',
+  './ux.js',
   './rpg.js',
   './nav.js',
   './assets/rpg/chars/c1.png',
