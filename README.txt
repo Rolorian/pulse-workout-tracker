@@ -1,3 +1,8 @@
+https://rolorian.github.io/pulse-workout-tracker/
+Quick steps, open on safari, add to homepage, done
+
+
+
 PULSE — WORKOUT TRACKER
 Polished offline-first personal workout tracker (PWA).
 
