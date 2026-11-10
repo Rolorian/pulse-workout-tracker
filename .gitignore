@@ -1,0 +1,30 @@
+# Pulse: keep personal data and local junk out of the public repo.
+
+# Your own exports from the app (workout history, backups, share images)
+pulse-workouts-*
+pulse-workouts-backup-*
+pulse-progress*.png
+*.backup.json
+
+# Your own music files: the Realm stores these on your phone, never in the repo
+my-music/
+*.m4a
+
+# Secrets, in case any are ever added
+.env
+.env.*
+*.pem
+*.key
+
+# Build tools and logs
+node_modules/
+*.log
+.npm/
+
+# OS and editor clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
