@@ -18,6 +18,7 @@ Each file was read and checked for `fetch`, `XMLHttpRequest`, `WebSocket`, `send
 | `driver/` | Driver.js (+ CSS) | MIT | The "what's new" tour, replayable from Settings |
 | `zzfxm/` | ZzFXM music renderer, wrapped to use the vendored ZzFX | MIT | The Realm's original chiptune soundtrack (`chiptunes.js`), made on the device |
 | `rot/` | rot.js subset: RNG, Map.Digger, FOV, Path.AStar | BSD-3-Clause | Freshly carved dungeons, torchlight field of view, and monsters that chase you |
+| `qrcode/` | qrcode-generator (SVG output only) | MIT | QR code for sharing your friend code |
 | `simplex-noise/` | simplex-noise.js | MIT | Organic ground patches and tree groves in Realm regions |
 
 Sources and commits:
@@ -32,5 +33,6 @@ Sources and commits:
 - ZzFXM — keithclark/ZzFXM @ cb07fa9
 - rot.js — ondras/rot.js @ 46782e2
 - simplex-noise.js — jwagner/simplex-noise.js @ 6bfff87
+- qrcode-generator — kazuhikoarase/qrcode-generator @ 83b7e8f
 
 The libraries written in TypeScript or ES modules were bundled once into plain browser scripts with `bun build --format=iife`. None of their install or build scripts were run.

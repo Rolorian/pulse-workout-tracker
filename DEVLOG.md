@@ -221,3 +221,13 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - **Tested:**
   - rpg, rpg3, rpg4, pfx, game, nav, battle, hero, app-fx, library, ux and realm2 suites show 0 errors and 0 non-local requests.
   - 60 fps in dungeons with fog and in regions; 58–59 fps during battle Smash. SW cache is now `pulse-v22`.
+
+## 2026-11-10 · Friend codes
+- **Friends card** in Adventure → League: a weekly XP race between you and your friends, with streak, total level and when each friend last updated. Tap a friend for a side-by-side comparison of weekly XP, streak, level, active days, total sets, Realm regions and the best lifts you both train.
+- **Share my code:** a ~200-character code, a QR code and a share link. The code holds name, levels, streak, this week's XP, top 8 best lifts, League and Realm regions. Nothing else.
+- **Add friend:** paste a code or a whole message, or open a shared link (`#f=…`; the part after `#` is never sent to a server). Re-adding a newer code updates that friend. Your own code, older codes, damaged codes and edited codes are refused.
+- **Privacy:** no accounts, no server, no uploads. A random player id is used only to match updates, and friends are stored on this phone only.
+- **Safety:** codes are untrusted input. They are size-capped and checksummed, every field is whitelisted, numbers are clamped and text is stripped of control characters. Everything is HTML-escaped when shown. Tested with a hostile name/HTML payload.
+- **Honest limit:** without a server, a determined player can fake their own numbers. The checksum only stops typos and casual edits.
+- `vendor/qrcode` (qrcode-generator, MIT) draws the QR as SVG. SW cache is now `pulse-v23`.
+- **Note:** `nav_test` reports `empty view adventure/battle`. This also happens before this change; the test still expects the old Battle sub-tab that was folded into the Realm.
