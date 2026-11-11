@@ -231,3 +231,14 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - **Honest limit:** without a server, a determined player can fake their own numbers. The checksum only stops typos and casual edits.
 - `vendor/qrcode` (qrcode-generator, MIT) draws the QR as SVG. SW cache is now `pulse-v23`.
 - **Note:** `nav_test` reports `empty view adventure/battle`. This also happens before this change; the test still expects the old Battle sub-tab that was folded into the Realm.
+
+## 2026-11-11 · Round 1 — Coach and safe saves
+- **Full backup and restore (`backup.js`):** Export now saves every Pulse save in one file (hero, Realm, loot, village, friends), not only workouts. Import checks every key and value before writing, keeps a copy to roll back if the write fails, and still accepts old workout-only backups. The app also asks the browser to keep its storage. Own music files are not included.
+- **Move to a new phone:** Settings → "Move to a new phone" sends the backup through the share menu; import it on the other device.
+- **Muscle balance (Stats):** weekly sets for push, pull, legs and core, with a warning for anything under 12% of the week.
+- **Recovery:** Fresh / Recovering / Tired per group, estimated from the last three days and the "tired/sore" feeling. An estimate, not a medical reading.
+- **Next-target nudges:** the log sheet shows the last session and a one-tap target (one more rep, or a repeat after a dip).
+- **Skill ladders (Today):** Push, Legs, Pull, Core and Shoulders. A step is passed by 3 sets at the target in one day. Passing pays coins and gems and adds +1% Realm damage per step (`G.dmgMods`).
+- **Today's plan:** 10, 20 or 30 minutes; picks the current ladder step for the least-trained, most-recovered groups, with targets from the nudges. One tap opens the log sheet prefilled.
+- **Rest-day quest:** on a rest day the plan becomes three stretches from the library; finishing them pays 30 coins. If everything is tired, the plan suggests a rest day.
+- SW cache `pulse-v24`.

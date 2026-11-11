@@ -28,3 +28,6 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# Full backups
+pulse-full-backup-*

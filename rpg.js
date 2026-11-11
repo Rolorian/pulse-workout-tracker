@@ -1886,7 +1886,7 @@
       return;
     }
     const hits = mv.hits || 1; const rolls = [];
-    for (let i = 0; i < hits; i++) { const r = G.rollDamage ? G.rollDamage(Math.max(1, Math.round(amt * mv.mult * B.sharp * B.aff * B.momNow / hits))) : { dmg: Math.round(amt * mv.mult / hits), crit: false }; if (hits > 1 && !r.crit && Math.random() < 0.15) { r.dmg *= 2; r.crit = true; } rolls.push(r); }
+    for (let i = 0; i < hits; i++) { const r = G.rollDamage ? G.rollDamage(Math.max(1, Math.round(amt * mv.mult * B.sharp * B.aff * B.momNow * (G.dmgMods ? G.dmgMods(mv, B) : 1) / hits))) : { dmg: Math.round(amt * mv.mult / hits), crit: false }; if (hits > 1 && !r.crit && Math.random() < 0.15) { r.dmg *= 2; r.crit = true; } rolls.push(r); }
     const big = mv.id === 'smash';
     // anticipation: lean back and coil
     H.pose = 'wind'; tw(H, { ox: -0.035, sx: 1.12, sy: 0.84 }, big ? 0.3 : 0.15, 'out'); snd('wind');
