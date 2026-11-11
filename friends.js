@@ -35,7 +35,7 @@
     let regions = 0; try { for (let i = 0; i < 10; i++) if (G.regionDone && G.regionDone(i)) regions++; } catch (e) { /* */ }
     let league = ''; try { league = G.rivalSummary ? G.rivalSummary().league : ''; } catch (e) { /* */ }
     let name = 'Player'; try { name = (G.heroState && G.heroState().name) || name; } catch (e) { /* */ }
-    return { v: 1, id: ME.id, n: name, t: Date.now(), wk, wx, tl: typeof getTotalLevel === 'function' ? getTotalLevel() : 0, st: typeof getStreak === 'function' ? getStreak() : 0, d: days, s: sets, rg: regions, lg: league, pr };
+    return { v: 1, id: ME.id, n: name, t: Date.now(), wk, wx, tl: typeof getTotalLevel === 'function' ? getTotalLevel() : 0, st: typeof getStreak === 'function' ? getStreak() : 0, d: days, s: sets, rg: regions, lg: league, pr, x: G.socialExtras ? G.socialExtras() : null };
   }
 
   // ---------------- encoding ----------------
@@ -44,7 +44,7 @@
   const b64e = (str) => btoa(String.fromCharCode(...new TextEncoder().encode(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const b64d = (s) => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)));
   function encode(snap) {
-    const body = JSON.stringify([snap.v, snap.id, snap.n, snap.t, snap.wk, snap.wx, snap.tl, snap.st, snap.d, snap.s, snap.rg, snap.lg, snap.pr]);
+    const body = JSON.stringify([snap.v, snap.id, snap.n, snap.t, snap.wk, snap.wx, snap.tl, snap.st, snap.d, snap.s, snap.rg, snap.lg, snap.pr, snap.x || null]);
     const p = b64e(body); return PFX + p + '.' + sum(p);
   }
   // only these fields, only these types, only sane ranges
@@ -63,12 +63,17 @@
     const t = num(a[3], Date.now() + 864e5);
     const wk = typeof a[4] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a[4]) ? a[4] : '';
     const pr = Array.isArray(a[12]) ? a[12].slice(0, 8).map((p) => (Array.isArray(p) ? [str(p[0], 30), num(p[1], 100000), UNITS.includes(p[2]) ? p[2] : 'reps'] : null)).filter((p) => p && p[0]) : [];
-    return { f: { id, n: str(a[2], 20) || 'Friend', t, wk, wx: num(a[5], 2e6), tl: num(a[6], 5000), st: num(a[7], 10000), d: num(a[8], 20000), s: num(a[9], 5e6), rg: num(a[10], 10), lg: str(a[11], 24), pr } };
+    // extras (challenge totals, raid damage, weekly dungeon depth): whitelisted and clamped like everything else
+    const xr = a[13] && typeof a[13] === 'object' && !Array.isArray(a[13]) ? a[13] : {}; const x = { c: {}, r: {}, d: 0 };
+    ['c', 'r'].forEach((k) => { if (xr[k] && typeof xr[k] === 'object') Object.keys(xr[k]).slice(0, 12).forEach((cid) => { if (/^[a-z0-9]{8}$/.test(cid)) x[k][cid] = num(xr[k][cid], 5e6); }); });
+    if (Array.isArray(xr.d) && xr.d[0] === wk) x.d = num(xr.d[1], 999);
+    return { f: { id, x, n: str(a[2], 20) || 'Friend', t, wk, wx: num(a[5], 2e6), tl: num(a[6], 5000), st: num(a[7], 10000), d: num(a[8], 20000), s: num(a[9], 5e6), rg: num(a[10], 10), lg: str(a[11], 24), pr } };
   }
   function link(code) { return location.origin + location.pathname + '#f=' + code; }
 
   // ---------------- friends list ----------------
   function addFriend(raw) {
+    if (typeof raw === 'string' && /PULSEC1-/.test(raw) && G.social) return G.social.accept(raw); // a challenge or raid invite
     const r = decode(raw); if (r.err) return r;
     const f = r.f; if (f.id === ME.id) return { err: 'That\'s your own code 🙂' };
     const i = F.list.findIndex((x) => x.id === f.id);
@@ -146,7 +151,7 @@
     const only = Object.keys(theirs).filter((k) => !mine[k]);
     const sh = sheet(`<h2>🧑 ${E(f.n)}</h2><div class="muted" style="margin-bottom:10px">Updated ${ago(f.t)}${f.lg ? ' · ' + E(f.lg) + ' League' : ''}${f.wk !== wk ? ' · from an earlier week — ask for a new code' : ''}</div>
       <div class="fc-head"><span>You</span><span></span><span>${E(f.n)}</span></div>
-      ${row('This week XP', me.wx, f.wk === wk ? f.wx : 0)}${row('Streak', me.st, f.st, 'd')}${row('Total level', me.tl, f.tl)}${row('Active days', me.d, f.d)}${row('Total sets', me.s, f.s)}${row('Realm regions', me.rg, f.rg, '/10')}
+      ${row('This week XP', me.wx, f.wk === wk ? f.wx : 0)}${row('Streak', me.st, f.st, 'd')}${row('Total level', me.tl, f.tl)}${row('Active days', me.d, f.d)}${row('Total sets', me.s, f.s)}${row('Realm regions', me.rg, f.rg, '/10')}${row('Weekly Depths', G.rpgWeekly ? G.rpgWeekly() : 0, (f.x && f.x.d) || 0)}
       ${shared.length ? `<div class="rm-sep fc-sep">Best lifts</div>${shared.map((k) => row(E(theirs[k][0]), mine[k][1], theirs[k][1], ' ' + E(theirs[k][2]))).join('')}` : ''}
       ${only.length ? `<div class="muted" style="margin-top:8px">${E(f.n)} also trains: ${only.map((k) => `${E(theirs[k][0])} (${fmt(theirs[k][1])} ${E(theirs[k][2])})`).join(', ')}</div>` : ''}
       <div class="fr-btns" style="margin-top:14px"><button class="gbtn ghost" id="frUpd">Paste update</button><button class="gbtn ghost fr-del" id="frDel">Remove</button></div>`);
@@ -164,7 +169,7 @@
   }
 
   window.addEventListener('hashchange', fromLink); // link opened while the app is already running
-  G.friends = { list: () => F.list.slice(), mySnapshot, encode, decode, add: addFriend, remove: removeFriend, render, openShare, openAdd, openCompare };
+  G.friends = { me: () => ME.id, sum, b64e, b64d, str, num, sheet, weekKey, list: () => F.list.slice(), mySnapshot, encode, decode, add: addFriend, remove: removeFriend, render, openShare, openAdd, openCompare };
   G.on && G.on('render', () => { try { render(); } catch (e) { console.warn('friends', e); } });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { render(); fromLink(); }); else { setTimeout(render, 0); fromLink(); }
 })();

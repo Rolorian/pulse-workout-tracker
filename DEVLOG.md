@@ -257,3 +257,11 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - **Hero mirrors training:** the hero sprite thins its legs when legs are under 12% of the week's sets, and broadens its shoulders after 18+ push and pull sets.
 - **Resting Vault:** starting the rest timer offers "Explore". A treasure dungeon with no monsters opens for exactly the rest time, with a countdown, then returns you to Home for the next set. Vault chests pay 12–25 coins each.
 - SW cache `pulse-v26`.
+
+## 2026-11-11 · Round 4 — Friends
+- **Friend challenges:** Adventure → League → Challenges & Raids. A seven-day "most of one exercise" contest. The invite code carries only the rules; paste it under Add friend. A daily cap on what counts (250 reps, 20 minutes of holds, 30 minutes, 20 km) keeps it about consistency. The winner gets 100 coins once at least one friend has reported.
+- **Co-op raids:** one boss with shared health (3,000, 6,000 or 12,000) and seven days. Everyone's training XP is damage, capped at 1,500 a day each. Defeating it pays 3 gems and 200 coins.
+- **How totals travel:** each player's challenge totals, raid damage and Weekly Depths record ride inside their normal friend code, so standings update when friends swap fresh codes. The extra fields are whitelisted and clamped like the rest of the code. Still self-reported.
+- **Weekly Depths** (Realm menu): an endless dungeon seeded by the week, so every player gets the same floors. Monsters grow two levels per depth, each new depth offers a boon (damage, healing or a potion), and your deepest floor shows in friend comparisons.
+- SW cache `pulse-v27`.
+- Tested: rpg, rpg3, rpg4, game, friends and the four round suites report 0 errors and 0 non-local requests; dungeons hold 60 fps. `nav_test` still expects the retired Battle sub-tab.

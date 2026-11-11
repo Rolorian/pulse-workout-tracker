@@ -395,10 +395,22 @@
     } catch (e) { console.warn('realm dungeon', e); }
     return null;
   }
+  // the Weekly Depths: the same endless dungeon for everyone each week (seeded by the week), so friends can compare how deep they got
+  function weekKey() { const d = new Date(); const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return dateKey(x); }
+  function weeklyState() { const wk = weekKey(); if (!R.weekly || R.weekly.wk !== wk) R.weekly = { wk, best: 0, boon: 0 }; return R.weekly; }
+  G.rpgWeekly = () => { try { return weeklyState().best; } catch (e) { return 0; } };
+  (G._dmgMods = G._dmgMods || []).push(() => (Z && /^w\d+$/.test(Z.id) && R.weekly ? 1 + 0.1 * (R.weekly.boon || 0) : 1));
+  function weeklyArrive(id, opts) {
+    if (!/^w\d+$/.test(id)) return; const n = Number(id.slice(1)); const w = weeklyState(); const kills = R.dead[id]; if (kills) { Object.keys(kills).forEach((k) => { if (Date.now() - kills[k] > 6 * 3600e3) delete kills[k]; }); }
+    if (n === 1) w.boon = 0;
+    const deeper = n > w.best; if (deeper) w.best = n; save();
+    if (n > 1 && deeper && !TEST()) setTimeout(() => say('elder', [{ text: `Depth ${n}. The dark offers a gift. Choose one.`, choices: [['Sharpen: +10% damage this run', () => { w.boon++; save(); hint('Sharpened'); }], ['Mend: restore half your hearts', () => { R.hp = Math.min(maxHp(), R.hp + Math.round(maxHp() / 2)); save(); renderHud(); }], ['Supplies: +1 potion', () => { R.potions++; save(); renderHud(); }]] }], null, 'c7', 'The Depths'), 700);
+    else if (deeper) hint(`Depth ${n} — your deepest this week`);
+  }
   function buildDungeon(ri, floor, o = {}) {
     const W = 34, H = 30; const dg = DUN()[ri] || { name: 'Dungeon', boss: ['Guardian'] }; const B = BIOME[ri] || BIOME[0];
-    const r = rng(o.vault ? 'vault' + o.vault + dk() : 'dg' + ri + '-' + floor + '-' + (R.dg[ri] || 0));
-    const z = newZone(o.vault ? 'vault' : `d${ri}-${floor}`, W, H, { name: o.vault ? 'The Resting Vault' : `${dg.name} · ${['', 'I', 'II', 'III'][floor]}`, ri, floor, dungeon: true, music: 'dungeon', grade: [200, 190, 215], dark: true });
+    const r = rng(o.vault ? 'vault' + o.vault + dk() : o.weekly ? 'weekly' + weekKey() + '-' + o.weekly : 'dg' + ri + '-' + floor + '-' + (R.dg[ri] || 0));
+    const z = newZone(o.vault ? 'vault' : o.weekly ? 'w' + o.weekly : `d${ri}-${floor}`, W, H, { name: o.vault ? 'The Resting Vault' : o.weekly ? `Weekly Depths · ${o.weekly}` : `${dg.name} · ${['', 'I', 'II', 'III'][floor]}`, ri, floor, dungeon: true, music: 'dungeon', grade: [200, 190, 215], dark: true });
     z.ground.fill(null); z.block.fill(1);
     const FLOOR = ['inf', 13, 13];
     let rooms = OFF.rot ? null : digRooms(z, r, W, H, FLOOR);
@@ -421,16 +433,16 @@
     z.wallStyle = ri % 2 ? 'green' : 'brown';
     const start = rooms[0], end = rooms[rooms.length - 1]; const LAST = rooms.length - 2;
     zplace(z, 'ladder', start.x + 1, start.y);
-    z.exits.push({ x: start.x + 1, y: start.y + 1, w: 1, h: 1, to: floor === 1 ? 'r' + ri : `d${ri}-${floor - 1}`, tx: floor === 1 ? null : 0, ty: 0, up: true, label: () => (floor === 1 ? 'Back to the surface' : 'Up a floor') });
-    if (floor < 3) { zplace(z, 'stairs', end.x + end.w - 3, end.y + end.h - 3, { solid: 0 }); z.exits.push({ x: end.x + end.w - 3, y: end.y + end.h - 1, w: 2, h: 1, to: `d${ri}-${floor + 1}`, tx: 0, ty: 0, down: true, label: () => 'Deeper', locked: () => (z.spawns.some((s) => s.guard && alive(z, s)) ? 'The stairs are guarded' : null) }); }
+    z.exits.push({ x: start.x + 1, y: start.y + 1, w: 1, h: 1, to: o.weekly ? 'village' : floor === 1 ? 'r' + ri : `d${ri}-${floor - 1}`, tx: floor === 1 ? null : 0, ty: 0, up: true, label: () => (o.weekly ? 'Leave the depths' : floor === 1 ? 'Back to the surface' : 'Up a floor') });
+    if (floor < 3) { zplace(z, 'stairs', end.x + end.w - 3, end.y + end.h - 3, { solid: 0 }); z.exits.push({ x: end.x + end.w - 3, y: end.y + end.h - 1, w: 2, h: 1, to: o.weekly ? 'w' + (o.weekly + 1) : `d${ri}-${floor + 1}`, tx: 0, ty: 0, down: true, label: () => 'Deeper', locked: () => (z.spawns.some((s) => s.guard && alive(z, s)) ? 'The stairs are guarded' : null) }); }
     // monsters & treasure
-    const mobs = B.mobs.concat(['skeleton', 'bat']); const lvl = 4 + ri * 5 + floor;
+    const mobs = B.mobs.concat(['skeleton', 'bat']); const lvl = 4 + ri * 5 + floor + (o.weekly ? o.weekly * 2 : 0);
     rooms.slice(1).forEach((rm, i) => {
       const cx = rm.x + (rm.w >> 1), cy = rm.y + (rm.h >> 1);
       if (i === LAST && floor === 3) z.spawns.push({ id: 'dboss', dboss: ri, x: cx, y: cy, r: 0, lvl: lvl + 8 });
       else if (i === LAST) z.spawns.push({ id: 'guard', mob: mobs[Math.floor(r() * mobs.length)], x: cx, y: cy - 1, r: 1, lvl: lvl + 2, elite: true, guard: true });
       else if (r() < 0.75) z.spawns.push({ id: 'g' + i, mob: mobs[Math.floor(r() * mobs.length)], x: cx, y: cy, r: 2, lvl });
-      if (r() < 0.35 && i !== LAST) z.chests = (z.chests || []).concat([{ id: `c${floor}-${i}`, x: rm.x + 1 + Math.floor(r() * (rm.w - 2)), y: rm.y + rm.h - 1 }]);
+      if (r() < 0.35 && i !== LAST) z.chests = (z.chests || []).concat([{ id: o.weekly ? `k${weekKey()}-${o.weekly}-${i}` : `c${floor}-${i}`, x: rm.x + 1 + Math.floor(r() * (rm.w - 2)), y: rm.y + rm.h - 1 }]);
     });
     z.entry = [start.x + 2, start.y + 2]; z.exitDown = [end.x + end.w - 2, end.y + end.h - 2 < end.y + end.h - 1 ? end.y + 1 : end.y + 1];
     z.dungeonRooms = rooms;
@@ -450,6 +462,7 @@
     else if (/^r\d+$/.test(id)) z = buildRegion(Number(id.slice(1)));
     else if (/^d\d+-\d+$/.test(id)) { const [a, b] = id.slice(1).split('-').map(Number); z = buildDungeon(a, b); }
     else if (id === 'vault') z = buildDungeon(0, 1, { vault: R.vaultN || 1 });
+    else if (/^w\d+$/.test(id)) { const n = Number(id.slice(1)); z = buildDungeon(Math.min(9, Math.floor((n - 1) / 3)), 1, { weekly: n }); }
     else z = buildVillage();
     ZCACHE[id] = z; return z;
   }
@@ -946,6 +959,7 @@
     R.zone = id; R.x = tx; R.y = ty; R.seen[id] = 1; save(true);
     if (!Z.canvas) buildGround(Z);
     spawnZone(); snapCam(); renderHud();
+    weeklyArrive(id, opts);
     music(zoneMusic());
     if (!opts.quiet) zoneBanner(Z.name, Z.dungeon ? 'Dungeon' : Z.ri != null ? `Region ${Z.ri + 1}${conquered(Z.ri) ? ' · conquered' : ''}` : 'Your village');
   }
@@ -1287,6 +1301,7 @@
       <div class="rm-grid"><button class="rm-item" data-m="travel">World map</button><button class="rm-item" data-m="moves">Moves</button>
         <button class="rm-item" data-m="party">${b ? 'Party: ' + esc(b.short) : 'Buddies'}</button><button class="rm-item" data-m="bonds">Villagers</button></div>
       ${worldEvent() ? `<div class="rm-sub" style="color:#b0392b"><b>${EVENT_INFO[worldEvent()][0]}</b> — ${EVENT_INFO[worldEvent()][1]}</div>${worldEvent() === 'merchant' ? '<button class="rm-item" data-m="merchant">Travelling merchant</button>' : ''}` : ''}
+      <button class="rm-item" data-m="weekly">Weekly Depths <b>${weeklyState().best ? 'BEST ' + weeklyState().best : 'NEW'}</b></button>
       <div class="rm-grid"><button class="rm-item" data-m="bestiary">Bestiary</button><button class="rm-item" data-m="stance">Stance: ${STANCES[stance()][0]}</button></div>
       <button class="rm-item" data-m="sound">Soundtrack</button>
       <button class="rm-item" data-m="shake">Screen shake <b>${['OFF', 'LOW', 'FULL'][R.shakeLvl == null ? 2 : R.shakeLvl]}</b></button>
@@ -1302,7 +1317,7 @@
         else if (k === 'joy') { R.joy = !R.joy; save(); renderHud(); openMenu(); }
         else if (k === 'art') { R.art = R.art === 'classic' ? 'pulse' : 'classic'; save(true); Object.keys(IMG).forEach((key) => { if (/^(c\d+|m\d+|dog)$/.test(key)) delete IMG[key]; }); heroSig = ''; Object.values(ZCACHE).forEach((z) => { z.canvas = null; }); if (Z) buildGround(Z); Object.keys(TINT).forEach((key) => delete TINT[key]); Object.keys(ARTC).forEach((key) => delete ARTC[key]); ents.forEach((e) => img(e.img)); img('c15'); openMenu(); }
         else if (k === 'shake') { R.shakeLvl = ((R.shakeLvl == null ? 2 : R.shakeLvl) + 1) % 3; save(); openMenu(); }
-        else if (k === 'bonds') openBonds(); else if (k === 'bestiary') openBestiary(); else if (k === 'stance') openStance(); else if (k === 'merchant') { closeMenu(); merchant(); }
+        else if (k === 'bonds') openBonds(); else if (k === 'bestiary') openBestiary(); else if (k === 'stance') openStance(); else if (k === 'merchant') { closeMenu(); merchant(); } else if (k === 'weekly') { closeMenu(); hint('Same dungeon for everyone this week — how deep can you go?'); travel('w1'); }
         else if (k === 'travel') openTravel(); else if (k === 'moves') openMoves(); else if (k === 'sound') openSound(); else if (k === 'party') openParty();
       }));
       m.querySelectorAll('[data-go]').forEach((x) => (x.onclick = () => { closeMenu(); G.nav && G.nav('adventure', x.dataset.go); }));
