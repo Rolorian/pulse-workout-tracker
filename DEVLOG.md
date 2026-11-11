@@ -249,3 +249,11 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - **Stances** (Realm menu): Balanced, Bulwark, Tempest and Breaker trade damage, defence and Guard strength; Breaker also breaks charges 50% faster.
 - **Pet companion:** your active pet follows you in the world and attacks after each of your moves. Its damage grows with the level of the skill it dropped from; golden pets hit 1.5× harder.
 - SW cache `pulse-v25`.
+
+## 2026-11-11 · Round 3 — Living world
+- **Real weather:** the app's existing weather lookup now also tells the Realm. Rain or snow where you are (reading at most 3 hours old) falls in every outdoor zone, and fights gain "Storm-forged" +10% damage. Offline it falls back to each region's own weather.
+- **World events:** one each weekend, chosen by the date so it works offline. Blood Moon (red sky, monsters hit 1 harder, fight coins +50%), Travelling Merchant (cheap potions, elixirs and whetstones from the Realm menu), Village Festival (bonds grow twice as fast, one free potion a day).
+- **Villager stories:** each of the eight villagers tells a two-part story, at bond 2 and bond 4, with a reward for each part. The Villagers list shows Story n/2.
+- **Hero mirrors training:** the hero sprite thins its legs when legs are under 12% of the week's sets, and broadens its shoulders after 18+ push and pull sets.
+- **Resting Vault:** starting the rest timer offers "Explore". A treasure dungeon with no monsters opens for exactly the rest time, with a countdown, then returns you to Home for the next set. Vault chests pay 12–25 coins each.
+- SW cache `pulse-v26`.

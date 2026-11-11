@@ -395,10 +395,10 @@
     } catch (e) { console.warn('realm dungeon', e); }
     return null;
   }
-  function buildDungeon(ri, floor) {
+  function buildDungeon(ri, floor, o = {}) {
     const W = 34, H = 30; const dg = DUN()[ri] || { name: 'Dungeon', boss: ['Guardian'] }; const B = BIOME[ri] || BIOME[0];
-    const r = rng('dg' + ri + '-' + floor + '-' + (R.dg[ri] || 0));
-    const z = newZone(`d${ri}-${floor}`, W, H, { name: `${dg.name} · ${['', 'I', 'II', 'III'][floor]}`, ri, floor, dungeon: true, music: 'dungeon', grade: [200, 190, 215], dark: true });
+    const r = rng(o.vault ? 'vault' + o.vault + dk() : 'dg' + ri + '-' + floor + '-' + (R.dg[ri] || 0));
+    const z = newZone(o.vault ? 'vault' : `d${ri}-${floor}`, W, H, { name: o.vault ? 'The Resting Vault' : `${dg.name} · ${['', 'I', 'II', 'III'][floor]}`, ri, floor, dungeon: true, music: 'dungeon', grade: [200, 190, 215], dark: true });
     z.ground.fill(null); z.block.fill(1);
     const FLOOR = ['inf', 13, 13];
     let rooms = OFF.rot ? null : digRooms(z, r, W, H, FLOOR);
@@ -434,6 +434,9 @@
     });
     z.entry = [start.x + 2, start.y + 2]; z.exitDown = [end.x + end.w - 2, end.y + end.h - 2 < end.y + end.h - 1 ? end.y + 1 : end.y + 1];
     z.dungeonRooms = rooms;
+    if (o.vault) { // no monsters, no doors: just rooms of treasure, and the clock
+      z.spawns = []; z.exits = []; z.chests = rooms.slice(1).map((rm, i) => ({ id: `v${o.vault}-${i}`, x: rm.x + (rm.w >> 1), y: rm.y + (rm.h >> 1), vault: 1 }));
+    }
     return z;
   }
 
@@ -446,6 +449,7 @@
     if (id === 'village') z = buildVillage();
     else if (/^r\d+$/.test(id)) z = buildRegion(Number(id.slice(1)));
     else if (/^d\d+-\d+$/.test(id)) { const [a, b] = id.slice(1).split('-').map(Number); z = buildDungeon(a, b); }
+    else if (id === 'vault') z = buildDungeon(0, 1, { vault: R.vaultN || 1 });
     else z = buildVillage();
     ZCACHE[id] = z; return z;
   }
@@ -485,7 +489,7 @@
     hero = mk('hero', 'c15', R.x, R.y, { dir: R.dir, speed: 5 });
     Z.npcs.forEach(([id, im, name, x, y, wr, talk, work]) => { if (id === 'bo') { x = R.q >= 2 ? 18 : 19; y = R.q >= 2 ? 29 : 30; } mk(id, im, x, y, { name, wanderR: wr, talk, work, dir: work === 'smith' ? 2 : work === 'farm' ? 3 : 0, speed: id === 'dog' ? 3.5 : 2.4 }); });
     Z.spawns.forEach((s) => { if (!alive(Z, s)) return; const d = enemyDef(s, Z); mk('s:' + s.id, d.spr, s.x, s.y, { name: d.name, spawn: s, def: d, enemy: true, wanderR: s.r, speed: d.boss ? 1.2 : 2, home: [s.x, s.y], scale: d.sc, tint: d.tint, crown: d.crown, lvl: s.lvl }); });
-    (Z.chests || []).forEach((c) => { const key = c.pip ? 'village-pip' : Z.id + (R.dg[Z.ri] || 0); if (!(R.chests[key] || {})[c.id]) mk('chest:' + c.id, 'chest', c.x, c.y, { chest: c, name: 'Chest' }); });
+    (Z.chests || []).forEach((c) => { const key = c.pip ? 'village-pip' : Z.id + (R.dg[Z.ri] || 0); if (c.vault || !(R.chests[key] || {})[c.id]) mk('chest:' + c.id, 'chest', c.x, c.y, { chest: c, name: 'Chest' }); });
     buddiesInZone().forEach((b, i) => { const sp = buddySpot(i); if (sp) mk('buddy:' + b.id, b.spr, sp[0], sp[1], { name: `${b.name}`, buddy: b, wanderR: 3, talk: talkBuddy, speed: 2.6 }); });
     if (R.party) { const b = buddyInfo(R.party); if (b && !ents.some((e) => e.buddy && e.buddy.id === b.id)) { const sp = freeNear(hero.tx, hero.ty); mk('buddy:' + b.id, b.spr, sp[0], sp[1], { name: b.name, buddy: b, follow: true, talk: talkBuddy, speed: 5 }); } }
     ents.forEach((e) => { if (e.buddy && R.party === e.buddy.id) { e.follow = true; e.wanderR = 0; } });
@@ -552,11 +556,25 @@
   // weather over the world: rain in Mistmarsh, ash over the Volcano Forge (Frostpeak keeps its own snowfall)
   let WX = null; const WFX = [];
   function wfx(name, x, y, o) { const f = pfx(name, o); if (f) { f.wx = x; f.wy = y; WFX.push(f); } }
-  function weatherFor() { if (!Z || Z.dungeon || Z.id === 'village' || Z.ri == null) return null; return Z.ri === 3 ? 'rain' : Z.ri === 6 ? 'ash' : null; }
+  // real weather: if it is raining or snowing where you are (from the app's own weather lookup, at most 3 hours old), it does here too
+  function realWx() {
+    if (R.realWx === false || OFF.realwx) return null; if (R.wxForce) return R.wxForce;
+    try { const w = JSON.parse(localStorage.getItem('pulse-wx') || 'null'); if (!w || Date.now() - w.t > 3 * 3600e3) return null; const c = w.code;
+      return (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95 ? 'rain' : (c >= 71 && c <= 77) || c === 85 || c === 86 ? 'snow' : null; } catch (e) { return null; }
+  }
+  // world events: decided by the date alone, so they work offline. One each weekend, rotating.
+  const EVENT_INFO = { bloodmoon: ['Blood Moon', 'Monsters hit 1 harder. Coins from fights +50%.'], merchant: ['Travelling Merchant', 'Cheap potions and elixirs from the Realm menu.'], festival: ['Village Festival', 'Bonds grow twice as fast and Mira hands out a free potion.'] };
+  function worldEvent() {
+    if (R.evForce) return EVENT_INFO[R.evForce] ? R.evForce : null;
+    const d = new Date(); const wd = d.getDay(); if (wd !== 0 && wd !== 6) return null;
+    const wk = Math.floor((d.getTime() / 864e5 + 3 - (wd === 0 ? 1 : 0)) / 7);
+    return ['bloodmoon', 'merchant', 'festival'][wk % 3];
+  }
+  function weatherFor() { if (!Z || Z.dungeon) return null; const rw = realWx(); if (rw) return rw; if (Z.id === 'village' || Z.ri == null) return null; return Z.ri === 3 ? 'rain' : Z.ri === 6 ? 'ash' : null; }
   function drawWeather(c, dt) {
     const k = OFF.weather ? null : weatherFor();
     if (!k) { WX = null; return; }
-    if (!WX || WX.k !== k) { const f = k === 'rain' ? pfx('rain') : pfx('snow', { palette: PAL.ash }); if (!f) return; WX = { k, f }; f.fx.update(4); }
+    if (!WX || WX.k !== k) { const f = k === 'rain' ? pfx('rain') : k === 'snow' ? pfx('snow') : pfx('snow', { palette: PAL.ash }); if (!f) return; WX = { k, f }; f.fx.update(4); }
     const f = WX.f; pfxStep(f, dt);
     const P = window.PFX; P.clearFrame(f.frame); f.fx.draw(f.frame); P.composite(f.frame, f.img.data); f.x.putImageData(f.img, 0, 0);
     // only the falling part: the effect's own ground strip (splashes, drifts) would show as a band where tiles meet
@@ -802,12 +820,29 @@
   // ---------- your equipment on your hero: the tabard takes your body armour's colour, a helm replaces the hair ----------
   let heroSig = '', heroCv = null;
   function gearOf(slot) { try { const S0 = G.state(); const inst = S0.items.find((i) => i.uid === S0.equip[slot]); return inst ? G.item(inst.id) : null; } catch (e) { return null; } }
+  // the hero's build follows your training: skip legs and they thin out; a big push/pull week broadens the shoulders
+  let mirAt = 0, mirVal = '';
+  function mirrorState() {
+    const now = Date.now(); if (now - mirAt < 30000) return mirVal; mirAt = now; mirVal = '';
+    try { if (R.mirror === false || !G.coachBalance) return mirVal; const b = G.coachBalance(); if (b.total >= 8 && b.sets.legs / b.total < 0.12) mirVal += 'T'; if (b.sets.push + b.sets.pull >= 18) mirVal += 'B'; } catch (e) { /* */ }
+    return mirVal;
+  }
+  function mirrorPixels(x, c, mir) {
+    if (!mir) return; const d = x.getImageData(0, 0, c.width, c.height), p = d.data, Wd = c.width;
+    const at = (xx, yy) => (yy * Wd + xx) * 4;
+    for (let cy = 0; cy + 16 <= c.height; cy += 16) for (let cx = 0; cx + 16 <= Wd; cx += 16) {
+      const span = (row) => { let l = -1, r = -1; for (let i = 0; i < 16; i++) if (p[at(cx + i, cy + row) + 3] > 100) { if (l < 0) l = i; r = i; } return [l, r]; };
+      if (mir.includes('B')) for (const row of [8, 9]) { const [l, r] = span(row); if (l > 0 && r < 15 && r - l >= 4) { for (const [src, dst] of [[l, l - 1], [r, r + 1]]) { const a = at(cx + src, cy + row), b2 = at(cx + dst, cy + row); p[b2] = p[a]; p[b2 + 1] = p[a + 1]; p[b2 + 2] = p[a + 2]; p[b2 + 3] = 255; } } }
+      if (mir.includes('T')) for (const row of [13, 14]) { const [l, r] = span(row); if (l >= 0 && r - l >= 5) { p[at(cx + l, cy + row) + 3] = 0; p[at(cx + r, cy + row) + 3] = 0; } }
+    }
+    x.putImageData(d, 0, 0);
+  }
   function heroImg() {
     if (!pulseArt() || !ready('c15')) return IMG.c15;
-    const body = gearOf('body'), helm = gearOf('helm'); const sig = (body ? body.id : '-') + '|' + (helm ? helm.id : '-');
+    const body = gearOf('body'), helm = gearOf('helm'); const mir = mirrorState(); const sig = (body ? body.id : '-') + '|' + (helm ? helm.id : '-') + '|' + mir;
     if (sig === heroSig && heroCv) return heroCv;
     heroSig = sig; const im = IMG.c15; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
-    if (!body && !helm) { heroCv = c; return c; }
+    if (!body && !helm) { mirrorPixels(x, c, mir); heroCv = c; return c; }
     const tc = (it, f) => { const h = (G.TIERS && G.TIERS[it.tier] ? G.TIERS[it.tier].color : '#8e2a22').replace('#', ''); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) * f); };
     const bc = body ? tc(body, 0.72) : null; const steel = [150, 158, 164]; const hc = helm ? tc(helm, 1).map((v, i) => v * 0.3 + steel[i] * 0.7) : null;
     const d = x.getImageData(0, 0, c.width, c.height); const px = d.data;
@@ -816,7 +851,7 @@
       if (bc && r > g + 45 && r > b + 45 && r < 200 && y >= 8) { const f = lum / 64; px[i] = Math.min(255, bc[0] * f); px[i + 1] = Math.min(255, bc[1] * f); px[i + 2] = Math.min(255, bc[2] * f); }
       else if (hc && y <= 7 && r < 125 && r > g && g > b && r - b > 30) { const f = 0.55 + lum / 120; px[i] = Math.min(255, hc[0] * f); px[i + 1] = Math.min(255, hc[1] * f); px[i + 2] = Math.min(255, hc[2] * f); }
     }
-    x.putImageData(d, 0, 0); heroCv = c; return c;
+    x.putImageData(d, 0, 0); mirrorPixels(x, c, mir); heroCv = c; return c;
   }
   // ================================================================== GROUND & WALL RENDERING
   function buildGround(z) {
@@ -922,7 +957,7 @@
     whenCore(() => {
       if (!Z) { try { enterZone(R.zone, R.x, R.y); } catch (e) { console.warn('realm zone', e); R.zone = 'village'; R.x = 20; R.y = 12; enterZone('village', 20, 12); } }
       else { if (G._village && Z.id === 'village') refreshVillage(); snapCam(); renderHud(); music(B ? B.music : zoneMusic()); }
-      regen(); checkBuddies();
+      regen(); checkBuddies(); announceWorld();
       if (!B) setTimeout(flushWorkouts, 300);
       if (R.hint < 1 && !TEST()) setTimeout(() => hint(R.joy ? 'Use the stick to walk · tap people to talk' : 'Tap anywhere to walk · tap people to talk'), 900);
     });
@@ -1144,6 +1179,7 @@
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (!open) return;
     const t = now / 1000;
+    tickVault();
     const ld = root.querySelector('#rlLoading');
     if (!coreReady || !Z || !Z.canvas) { ld.style.display = ''; ld.querySelector('i').style.width = Math.round(CORE.filter(ready).length / CORE.length * 100) + '%'; return; }
     ld.style.display = 'none';
@@ -1185,6 +1221,7 @@
     drawCritters(c, false);
     for (let i = WFX.length - 1; i >= 0; i--) { const f = WFX[i]; if (!pfxStep(f, dt)) { WFX.splice(i, 1); continue; } pfxDraw(c, f, f.wx, f.wy, 1); }
     drawWorldPet(c, dt, t);
+    if (!Z.dungeon && worldEvent() === 'bloodmoon') { c.fillStyle = 'rgba(150,18,28,.13)'; c.fillRect(cam.x - 2, cam.y - 2, vw + 4, vh + 4); }
     if (Z.dungeon) drawFog(c, dt, vw, vh);
     c.setTransform(1, 0, 0, 1, 0, 0);
     // light: zone palette by day, moonlit blue by night, warm pools around every lamp, torch and your lantern
@@ -1249,6 +1286,7 @@
       <div class="rm-sub">Hearts ${R.hp}/${maxHp()} · Potions ${R.potions} · Elixirs ${R.elixirs} · Wins ${R.wins}</div>
       <div class="rm-grid"><button class="rm-item" data-m="travel">World map</button><button class="rm-item" data-m="moves">Moves</button>
         <button class="rm-item" data-m="party">${b ? 'Party: ' + esc(b.short) : 'Buddies'}</button><button class="rm-item" data-m="bonds">Villagers</button></div>
+      ${worldEvent() ? `<div class="rm-sub" style="color:#b0392b"><b>${EVENT_INFO[worldEvent()][0]}</b> — ${EVENT_INFO[worldEvent()][1]}</div>${worldEvent() === 'merchant' ? '<button class="rm-item" data-m="merchant">Travelling merchant</button>' : ''}` : ''}
       <div class="rm-grid"><button class="rm-item" data-m="bestiary">Bestiary</button><button class="rm-item" data-m="stance">Stance: ${STANCES[stance()][0]}</button></div>
       <button class="rm-item" data-m="sound">Soundtrack</button>
       <button class="rm-item" data-m="shake">Screen shake <b>${['OFF', 'LOW', 'FULL'][R.shakeLvl == null ? 2 : R.shakeLvl]}</b></button>
@@ -1264,7 +1302,7 @@
         else if (k === 'joy') { R.joy = !R.joy; save(); renderHud(); openMenu(); }
         else if (k === 'art') { R.art = R.art === 'classic' ? 'pulse' : 'classic'; save(true); Object.keys(IMG).forEach((key) => { if (/^(c\d+|m\d+|dog)$/.test(key)) delete IMG[key]; }); heroSig = ''; Object.values(ZCACHE).forEach((z) => { z.canvas = null; }); if (Z) buildGround(Z); Object.keys(TINT).forEach((key) => delete TINT[key]); Object.keys(ARTC).forEach((key) => delete ARTC[key]); ents.forEach((e) => img(e.img)); img('c15'); openMenu(); }
         else if (k === 'shake') { R.shakeLvl = ((R.shakeLvl == null ? 2 : R.shakeLvl) + 1) % 3; save(); openMenu(); }
-        else if (k === 'bonds') openBonds(); else if (k === 'bestiary') openBestiary(); else if (k === 'stance') openStance();
+        else if (k === 'bonds') openBonds(); else if (k === 'bestiary') openBestiary(); else if (k === 'stance') openStance(); else if (k === 'merchant') { closeMenu(); merchant(); }
         else if (k === 'travel') openTravel(); else if (k === 'moves') openMoves(); else if (k === 'sound') openSound(); else if (k === 'party') openParty();
       }));
       m.querySelectorAll('[data-go]').forEach((x) => (x.onclick = () => { closeMenu(); G.nav && G.nav('adventure', x.dataset.go); }));
@@ -1307,6 +1345,39 @@
       const hard = typeof HARD_BODYWEIGHT !== 'undefined' && HARD_BODYWEIGHT.has(ex);
       return Object.assign({}, s, { ex, unit: m.unit, mult: s.timed ? 0 : s.mult * (hard ? 1.6 : 1), hard, name: `${s.name}: ${ex}` });
     });
+  }
+  function announceWorld() {
+    if (R.zone === 'vault' && !(restUntil > Date.now())) leaveVault(true);
+    const ev = worldEvent(); const day = dk();
+    if (ev && R.evSeen !== day + ev) { R.evSeen = day + ev; if (ev === 'festival' && R.evGift !== day) { R.evGift = day; R.potions++; } save(); setTimeout(() => hint(`${EVENT_INFO[ev][0]} this weekend · details in ☰`), 1400); }
+    else if (realWx() && R.wxSeen !== day) { R.wxSeen = day; save(); setTimeout(() => hint(`Real ${realWx()} today · Storm-forged +10% damage`), 1400); }
+  }
+  function merchant() {
+    const S0 = G.state ? G.state() : { coins: 0 };
+    say('mira', [{ text: `Passing through, friend. Weekend prices. You've got ${S0.coins.toLocaleString()} coins.`, choices: [['potion', 'Potion', 70], ['elixir', 'Elixir', 190], ['sharpen', 'Whetstone', 110]].map(([id, n, c]) => [`${n} · ${c}c`, () => {
+      if (!G.canPay || !G.canPay('coins', c)) { hint('Not enough coins'); return; }
+      G.pay('coins', c); if (id === 'potion') R.potions++; else if (id === 'elixir') R.elixirs++; else R.sharp = 1.25; save(); renderHud(); sfx('gold', 0.45); hint(`Bought ${n}`);
+    }]).concat([['Just looking', null]]) }], null, 'c12', 'Travelling Merchant');
+  }
+  // ---------- the Resting Vault: explore for exactly as long as your rest timer runs ----------
+  let restUntil = 0, restShown = -1;
+  function leaveVault(silent) {
+    restUntil = 0; const b = R.vaultBack || { zone: 'village', x: 20, y: 12 }; R.vaultBack = null; delete ZCACHE.vault;
+    if (Z && Z.id === 'vault') { Z = null; enterZone(b.zone, b.x, b.y, { quiet: true }); } else { R.zone = b.zone; R.x = b.x; R.y = b.y; save(true); }
+    if (!silent) { try { G.nav && G.nav('today'); } catch (e) { /* */ } if (typeof showToast === 'function') showToast('⏱️ Rest over — next set!', null, null, 3000); if (window.pulseSfx) pulseSfx('pr'); }
+  }
+  G.rpgRestRun = function (seconds) {
+    seconds = Math.max(10, Math.min(600, Math.round(seconds) || 60)); if (B) return false;
+    if (!R.vaultBack && R.zone !== 'vault') R.vaultBack = { zone: R.zone, x: hero ? hero.tx : R.x, y: hero ? hero.ty : R.y };
+    R.vaultN = (R.vaultN || 0) + 1; delete ZCACHE.vault; restUntil = Date.now() + seconds * 1000; restShown = -1; save();
+    G.nav && G.nav('adventure', 'realm');
+    whenCore(() => { const z = zoneById('vault'); enterZone('vault', z.entry[0], z.entry[1], { quiet: true }); hint(`The Resting Vault — grab what you can in ${seconds}s`); });
+    return true;
+  };
+  function tickVault() {
+    if (!restUntil || !Z || Z.id !== 'vault') return; const left = Math.ceil((restUntil - Date.now()) / 1000);
+    if (left <= 0) { leaveVault(false); return; }
+    if (left !== restShown) { restShown = left; const h = root.querySelector('#rlHint'); if (h) { h.textContent = `⏱️ ${left}s of rest left`; h.classList.add('on'); clearTimeout(hintT); } }
   }
   function openBestiary() {
     const L = R.lore || {}; const ids = Object.keys(L).filter((k) => L[k].n).sort((a, b) => (L[a].b || 0) - (L[b].b || 0) || String(L[a].n).localeCompare(L[b].n));
@@ -1570,7 +1641,7 @@
   function bond(id) { R.bonds = R.bonds || {}; return (R.bonds[id] = R.bonds[id] || { pts: 0, lvl: 0, day: null, fav: null, perk: null }); }
   function bondOf(id) { if (!VILLAGER[id]) return 0; const b = bond(id); let l = 0; BOND_AT.forEach((v, i) => { if (b.pts >= v) l = i; }); return l; }
   function addBond(id, n, why) {
-    const v = VILLAGER[id]; if (!v) return; const b = bond(id); const before = bondOf(id); b.pts += n; const after = bondOf(id); b.lvl = after; save();
+    const v = VILLAGER[id]; if (!v) return; const b = bond(id); const before = bondOf(id); if (worldEvent() === 'festival') n *= 2; b.pts += n; const after = bondOf(id); b.lvl = after; save();
     const e = ents.find((x) => x.id === id); if (e) e.emote = { ch: 'heart', t: 0 };
     snd('heart'); if (after > before) setTimeout(() => bondLevelUp(id, after), 400); else hint(`${v.name} ♥ +${n}${why ? ' · ' + why : ''}`);
   }
@@ -1609,8 +1680,25 @@
     let avg = 12; try { const ws = workouts.filter((w) => w.exercise === ex && w.unit === 'reps').slice(-12); if (ws.length) avg = ws.reduce((a, w) => a + w.amount, 0) / ws.length; } catch (e) {}
     return { ex, timed: hold, target: hold ? 40 : clamp(Math.round(avg * 0.8), 6, 25) };
   }
+  // each villager has a two-part story, told at bond 2 and bond 4
+  const STORY = {
+    elder: [['Sit a moment. I\'ll tell you why the bell matters.', 'My wife Ysolde cast it. Forty days at the forge, and she sang the whole time so the bronze would remember.', 'When the goblins took it, the mornings went quiet. I stopped getting up early. Then you arrived, clattering about at dawn. Thank you for that.'], ['I found the clapper. The goblins dropped it at the old well.', 'A bell needs a tower and a tower needs hands. Hana says she can cast a new one if the village keeps training the bellows.', 'Ysolde would have liked you. She said strength is just kindness with good posture. Keep this — it was hers.']],
+    mira: [['Can I tell you something? I never wanted the market.', 'It was my mother\'s stall. I wanted to map the roads past Goblin Woods. Then the roads closed and someone had to sell the flour.', 'Every region you open, I add to my map at night. Don\'t tell Tomas. He\'d want it on the tavern wall.'], ['I finished the map as far as you\'ve walked. Look — your boot prints are on it, sort of.', 'I\'m closing the stall one day a week to walk the first road myself. Slowly. With snacks.', 'Take the first copy. You earned the ink.']],
+    bo: [['I wasn\'t always gate guard. I ran, the night the goblins came. Left my post.', 'Nobody knows. I came back before dawn and stood here like I\'d never moved.', 'So I drill. Every day. So next time my legs know what to do before my head gets a vote.'], ['I told the Elder. About running. He already knew. He said the gate was still standing in the morning, and so was I.', 'I\'m training two of the farm kids on the gate now. First lesson: it\'s fine to be scared. Second lesson: push-ups.', 'Here. My old guard pin. I\'ve got a new one coming.']],
+    pip: [['Wanna know a secret? I hide the chests so you have to look.', 'My big sister used to hide things for me. She went to work in the city past the mountains. She writes, though!', 'She says if I get strong I can visit. So when I race you, I\'m actually training. Don\'t tell anyone it counts.'], ['My sister wrote! She\'s coming home for the festival!', 'I told her about you. I said you\'re sort of slow but you never, ever stop. She said that\'s the best kind.', 'I made you this. It\'s a medal. It\'s a bottle cap but it\'s a MEDAL.']],
+    hana: [['You want to know why I hit the anvil so hard? Oren taught me. Then his eyes went, and he handed me the hammer mid-swing.', 'First week I ruined eleven horseshoes. He kept every one. Hung them in the back like trophies.', 'I\'m not as good as he was. But I\'m louder.'], ['I\'m casting the bell. Oren doesn\'t know yet. Pip\'s been stealing me scrap bronze from who knows where.', 'It won\'t sound like Ysolde\'s. It\'ll sound like mine. I think that\'s allowed.', 'Take this whetstone from the first pour. It\'s ugly. It works.']],
+    tomas: [['The tavern was empty for a year. I kept the fire lit anyway. Felt daft, cooking stew for nobody.', 'Then you walked in, muddy, and ate three bowls without a word.', 'Best review I ever got.'], ['Full house last night. Ade sang. Badly. It was wonderful.', 'I\'m naming a stew after you. It\'s the one with too much pepper that people finish anyway.', 'On the house, always. And take this for the road.']],
+    ade: [['My father farmed these rows, and his mother before him. I nearly sold the field the winter the goblins burned the barn.', 'What stopped me was the beans. They came up anyway. Didn\'t ask anyone\'s permission.', 'So now I do lunges with them. Seems only fair.'], ['Best harvest in ten years. I counted twice.', 'I\'m giving the south row to the village kids. Let them ruin some beans and learn.', 'First basket\'s yours. And the hat. The hat is lucky.']],
+    lin: [['People think I came here to pray. I came here to stop running.', 'I was a courier once. Fast, proud, always somewhere else. Then one day I had nowhere I needed to be, and it frightened me.', 'Holding still is the hardest exercise I know. You\'re getting good at it.'], ['I ran yesterday. First time in years. Just to the river and back.', 'It didn\'t feel like escaping. It felt like visiting an old friend.', 'Take this cord. Couriers tie one on for luck. I think it\'s yours now.']]
+  };
   function villagerTalk(id, opener) {
     const v = VILLAGER[id]; if (!v) return; const b = bond(id); const lvl = bondOf(id);
+    const chap = lvl >= 4 ? 2 : lvl >= 2 ? 1 : 0;
+    if (STORY[id] && (b.story || 0) < chap && !opener) {
+      const n = b.story || 0; b.story = n + 1; save();
+      say(id, STORY[id][n], () => { if (n === 0) { R.potions++; G.reward && G.reward({ coins: 150 }, { quiet: true, noPopup: true }); hint(`${v.name}'s story, part 1 · +150 coins, +1 potion`); } else { G.reward && G.reward({ gems: 5, coins: 300 }, { quiet: true, noPopup: true }); hint(`${v.name}'s story complete · +5 gems, +300 coins`); } snd('chime'); renderHud(); }, v.face, v.name);
+      return;
+    }
     const first = b.day !== dk();
     const perk = first ? dailyPerks(id) : null;
     if (first) { b.day = dk(); save(); }
@@ -1695,7 +1783,7 @@
     showMenu(`<div class="rm-title">Pulsehaven</div><div class="rm-sub">Reputation: <b>${esc(reputation())}</b> · Prosperity ${prosperity()}</div>
       <div class="tv-list">${ids.map((id) => { const v = VILLAGER[id]; const b = bond(id); const l = bondOf(id); const nx = BOND_AT[l + 1]; const prevAt = BOND_AT[l];
         return `<div class="bd-row bond"><div class="rp-face" style="background-image:url(${faceUrl(v.face)})"></div><div class="tv-main"><span class="tv-n">${esc(v.name)} <span class="bl-hearts sm">${bondHearts(l)}</span></span>
-          <span class="tv-s">${l >= 3 ? 'Perk: ' + esc(v.perk) : `At bond 3: ${esc(v.perk)}`}</span>
+          <span class="tv-s">${l >= 3 ? 'Perk: ' + esc(v.perk) : `At bond 3: ${esc(v.perk)}`} · Story ${b.story || 0}/2${(b.story || 0) < (l >= 4 ? 2 : l >= 2 ? 1 : 0) ? ' — talk to hear more' : ''}</span>
           <span class="bd-bar"><i style="width:${nx ? Math.round((b.pts - prevAt) / (nx - prevAt) * 100) : 100}%"></i></span>
           <span class="tv-s">${b.day === dk() ? 'Visited today' : 'Say hello today'} · ${b.fav === dk() ? 'Favour done' : `Favour: ${esc(v.task)}`}</span></div></div>`; }).join('')}
       ${Object.keys(VILLAGER).filter((id) => !ids.includes(id)).map((id) => `<div class="bd-row locked"><div class="rp-face q"></div><div class="tv-main"><span class="tv-n">???</span><span class="tv-s">Moves in when the ${esc(((G._village && G._village.B.find((x) => x.id === VILLAGER[id].building)) || {}).name || 'building')} is rebuilt</span></div></div>`).join('')}</div>
@@ -1704,6 +1792,7 @@
 
   // ================================================================== CHESTS
   function openChestEnt(e) {
+    if (e.chest.vault) { const i0 = ents.indexOf(e); if (i0 >= 0) ents.splice(i0, 1); sfx('gold', 0.5); buzz('success'); const cz = 12 + Math.floor(Math.random() * 14); G.reward && G.reward({ coins: cz }, { quiet: true, noPopup: true }); hint(`+${cz} coins`); restShown = -1; wfx('collectBurst', e.x + 8, e.y + 14, { palette: PAL.gold }); return; }
     const key = e.chest.pip ? 'village-pip' : Z.id + (R.dg[Z.ri] || 0); R.chests[key] = R.chests[key] || {}; R.chests[key][e.chest.id] = 1; save();
     const i = ents.indexOf(e); if (i >= 0) ents.splice(i, 1);
     sfx('gold', 0.5); buzz('success');
@@ -1739,7 +1828,7 @@
     B = { ent, def, ehp: hp, emax: hp, shown: hp, phase: 'intro', intent: null, shield: 0, enrage: 0, logged: {}, turns: 0, fx: [], pfx: [], nums: [], parts: [], tw: [], q: [], clock: 0, stopUntil: 0, slowUntil: 0, slowScale: 1, shake: 0,
       hero: { ox: 0, oy: 0, sx: 1, sy: 1, pose: 'idle', ang: 0.55, trail: [], flash: 0, alpha: 1 }, foe: { ox: 0, oy: 0, sx: 1, sy: 1, flash: 0, alpha: 1, red: 0 },
       allyA: { ox: 0, oy: 0, pose: 'idle' }, cam: { z: 1, fx: 0.5, fy: 0.55 }, dim: 0, flashW: 0, lb: 0, shieldVis: 0,
-      pet: petInfo(), petA: { ox: 0, hop: 0 }, ally: party, music: def.world != null ? 'worldboss' : def.boss ? 'boss' : def.elite ? 'elite' : 'battle', sharp: (R.sharp ? (R.sharp > 1 ? R.sharp : 1.25) : 1) * (R.wellFed ? 1.2 : 1) };
+      pet: petInfo(), petA: { ox: 0, hop: 0 }, ally: party, music: def.world != null ? 'worldboss' : def.boss ? 'boss' : def.elite ? 'elite' : 'battle', sharp: (R.sharp ? (R.sharp > 1 ? R.sharp : 1.25) : 1) * (R.wellFed ? 1.2 : 1) * (realWx() ? 1.1 : 1) };
     R.sharp = 0; R.wellFed = 0; R.fights++; R.hp = Math.max(R.hp, 4); save();
     pickIntent();
     battleTransition(() => { buildBattle(); music(B.music); if (def.boss && !TEST()) bossIntro(); else { B.phase = 'player'; renderBattleUi(); } });
@@ -1748,7 +1837,7 @@
   function pickIntent() {
     const it = B.def.intents; let i = Math.floor(Math.random() * it.length); if (B.turns === 0 && !it[i][1]) i = 0;
     const raging = B.def.boss && B.ehp < B.emax / 2;
-    B.intent = { name: it[i][0], dmg: it[i][1] ? it[i][1] + B.enrage + (raging ? 3 : 0) : 0 };
+    B.intent = { name: it[i][0], dmg: it[i][1] ? it[i][1] + B.enrage + (raging ? 3 : 0) + (worldEvent() === 'bloodmoon' ? 1 : 0) : 0 };
     // boss mechanic: every third turn a boss charges its biggest attack. Guard it (a real hold) or deal enough damage to break it.
     B.chargeDmg = 0;
     if (B.def.boss && B.turns > 0 && B.turns % 3 === 2 && !OFF.charge) {
@@ -2169,6 +2258,8 @@
       if (Math.random() < 0.12) { R.potions++; notes.push('Found a potion'); }
     }
     if (B.ally) { const st = R.buddy[B.ally.id]; if (st) { st.xp += 15 + (ent.lvl || 1) * 3; const before = B.ally.lvl; const now = buddyInfo(B.ally.id); if (now && now.lvl > before) { st.lvl = now.lvl; notes.push(`${now.short} levelled up to Lv ${now.lvl}!`); } } }
+    if (worldEvent() === 'bloodmoon' && rewards.coins) { rewards.coins = Math.round(rewards.coins * 1.5); notes.push('Blood Moon: coins +50%'); }
+    if (realWx()) notes.push('Storm-forged: +10% damage for training through bad weather');
     if (rewards.coins || rewards.gems || rewards.items.length) G.reward && G.reward(rewards, { quiet: true, noPopup: true });
     const gained = (G.state ? G.state().coins : 0) - coins0;
     save(true);
@@ -2406,7 +2497,7 @@
     tp(x, y) { hero.tx = x; hero.ty = y; hero.x = x * T; hero.y = y * T; hero.path = []; snapCam(); },
     walk(x, y) { const p = findPath(hero.tx, hero.ty, x, y, hero); if (p) hero.path = p; return !!p; },
     talk(id) { const e = ents.find((x) => x.id === id); if (e) goTo(e); return !!e; },
-    go(id, x, y) { enterZone(id, x, y, { arrive: x == null }); },
+    go(id, x, y) { enterZone(id, x, y, { arrive: x == null }); }, R: () => R, vtalk: villagerTalk, closeMenu: () => closeMenu(), event: worldEvent, wx: realWx, heroImg: () => { heroSig = ''; mirAt = 0; return heroImg(); }, merchant,
     useExit(i) { useExit(Z.exits[i]); }, exits: () => Z.exits.map((e) => ({ to: e.to, x: e.x, y: e.y, locked: e.locked ? e.locked() : null })),
     menu: (k) => (k === 'bonds' ? openBonds() : k === 'travel' ? openTravel() : k === 'moves' ? openMoves() : k === 'sound' ? openSound() : k === 'party' ? openParty() : k === 'bounty' ? openBounties() : k === 'bestiary' ? openBestiary() : k === 'stance' ? openStance() : openMenu()),
     bond: (id, n) => (n != null ? addBond(id, n) : bondOf(id)), session: () => TS, tsSet(n) { if (TS) { if (TS.fav.timed) TS.acc = n; else TS.n = n; tsUpd(); } }, tsGo() { tsAct('go'); }, prosperity, reputation,

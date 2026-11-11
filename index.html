@@ -2242,6 +2242,7 @@ async function getWeather() {
     const d = await r.json();
     const t = Math.round(d.current.temperature_2m);
     const code = d.current.weather_code;
+    try { localStorage.setItem('pulse-wx', JSON.stringify({ code, t: Date.now() })); } catch (e) {} // the Realm mirrors real weather
     let emoji = '🌤️', msg = 'No excuses!';
     if (code === 0 || code === 1) { emoji = '☀️'; msg = 'Perfect weather!'; }
     else if (code === 2 || code === 3) { emoji = '☁️'; msg = 'Get after it!'; }
@@ -4209,5 +4210,6 @@ setTimeout(checkAchievementsAndLevels, 500);
 <script src="ux.js"></script>
 <script src="backup.js"></script>
 <script src="coach.js"></script>
+<script src="restrun.js"></script>
 </body>
 </html>
