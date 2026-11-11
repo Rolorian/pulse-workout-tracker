@@ -242,3 +242,10 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - **Today's plan:** 10, 20 or 30 minutes; picks the current ladder step for the least-trained, most-recovered groups, with targets from the nudges. One tap opens the log sheet prefilled.
 - **Rest-day quest:** on a rest day the plan becomes three stretches from the library; finishing them pays 30 coins. If everything is tired, the plan suggests a rest day.
 - SW cache `pulse-v24`.
+
+## 2026-11-11 · Round 2 — Combat
+- **Bestiary** (Realm menu): every creature met, with weakness and resistance once discovered in a fight, and times beaten.
+- **Boss mechanics:** every third turn a boss charges its biggest attack at 1.7× damage. A Guard hold of half strength or more becomes a Perfect Guard (full block). Dealing 12% of the boss's health in that turn interrupts it. Either one staggers the boss, so your next attack deals 1.5×. Bosses announce Phase 2 at half health.
+- **Stances** (Realm menu): Balanced, Bulwark, Tempest and Breaker trade damage, defence and Guard strength; Breaker also breaks charges 50% faster.
+- **Pet companion:** your active pet follows you in the world and attacks after each of your moves. Its damage grows with the level of the skill it dropped from; golden pets hit 1.5× harder.
+- SW cache `pulse-v25`.

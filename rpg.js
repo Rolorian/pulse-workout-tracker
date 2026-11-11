@@ -1184,6 +1184,7 @@
     }
     drawCritters(c, false);
     for (let i = WFX.length - 1; i >= 0; i--) { const f = WFX[i]; if (!pfxStep(f, dt)) { WFX.splice(i, 1); continue; } pfxDraw(c, f, f.wx, f.wy, 1); }
+    drawWorldPet(c, dt, t);
     if (Z.dungeon) drawFog(c, dt, vw, vh);
     c.setTransform(1, 0, 0, 1, 0, 0);
     // light: zone palette by day, moonlit blue by night, warm pools around every lamp, torch and your lantern
@@ -1248,6 +1249,7 @@
       <div class="rm-sub">Hearts ${R.hp}/${maxHp()} · Potions ${R.potions} · Elixirs ${R.elixirs} · Wins ${R.wins}</div>
       <div class="rm-grid"><button class="rm-item" data-m="travel">World map</button><button class="rm-item" data-m="moves">Moves</button>
         <button class="rm-item" data-m="party">${b ? 'Party: ' + esc(b.short) : 'Buddies'}</button><button class="rm-item" data-m="bonds">Villagers</button></div>
+      <div class="rm-grid"><button class="rm-item" data-m="bestiary">Bestiary</button><button class="rm-item" data-m="stance">Stance: ${STANCES[stance()][0]}</button></div>
       <button class="rm-item" data-m="sound">Soundtrack</button>
       <button class="rm-item" data-m="shake">Screen shake <b>${['OFF', 'LOW', 'FULL'][R.shakeLvl == null ? 2 : R.shakeLvl]}</b></button>
       <button class="rm-item" data-m="music">Music <b>${R.music ? 'ON' : 'OFF'}</b></button>
@@ -1262,7 +1264,7 @@
         else if (k === 'joy') { R.joy = !R.joy; save(); renderHud(); openMenu(); }
         else if (k === 'art') { R.art = R.art === 'classic' ? 'pulse' : 'classic'; save(true); Object.keys(IMG).forEach((key) => { if (/^(c\d+|m\d+|dog)$/.test(key)) delete IMG[key]; }); heroSig = ''; Object.values(ZCACHE).forEach((z) => { z.canvas = null; }); if (Z) buildGround(Z); Object.keys(TINT).forEach((key) => delete TINT[key]); Object.keys(ARTC).forEach((key) => delete ARTC[key]); ents.forEach((e) => img(e.img)); img('c15'); openMenu(); }
         else if (k === 'shake') { R.shakeLvl = ((R.shakeLvl == null ? 2 : R.shakeLvl) + 1) % 3; save(); openMenu(); }
-        else if (k === 'bonds') openBonds();
+        else if (k === 'bonds') openBonds(); else if (k === 'bestiary') openBestiary(); else if (k === 'stance') openStance();
         else if (k === 'travel') openTravel(); else if (k === 'moves') openMoves(); else if (k === 'sound') openSound(); else if (k === 'party') openParty();
       }));
       m.querySelectorAll('[data-go]').forEach((x) => (x.onclick = () => { closeMenu(); G.nav && G.nav('adventure', x.dataset.go); }));
@@ -1305,6 +1307,19 @@
       const hard = typeof HARD_BODYWEIGHT !== 'undefined' && HARD_BODYWEIGHT.has(ex);
       return Object.assign({}, s, { ex, unit: m.unit, mult: s.timed ? 0 : s.mult * (hard ? 1.6 : 1), hard, name: `${s.name}: ${ex}` });
     });
+  }
+  function openBestiary() {
+    const L = R.lore || {}; const ids = Object.keys(L).filter((k) => L[k].n).sort((a, b) => (L[a].b || 0) - (L[b].b || 0) || String(L[a].n).localeCompare(L[b].n));
+    const total = Object.keys(MOB).length + RBOSS.length + Object.keys(WBOSS).length;
+    const fam = (id) => { const f = MOB_FAM[id] || (id[0] === 'w' ? WB_FAM[id.slice(1)] : id[0] === 'b' || id[0] === 'd' ? BOSS_FAM[Number(id.slice(1))] : null); return f ? FAM[f] : null; };
+    showMenu(`<div class="rm-title">Bestiary</div><div class="rm-sub">${ids.length} of ${total}+ creatures met. Weaknesses appear once you find them in a fight.</div>
+      <div class="tv-list">${ids.length ? ids.map((id) => { const e = L[id], f = fam(id); return `<div class="bd-row"><div class="tv-main"><span class="tv-n">${e.b ? '👑 ' : ''}${esc(e.n)}</span><span class="tv-s">${f ? `${e.weak ? 'Weak to ' + MOVE_NAME[f[0]] : 'Weakness ???'} · ${e.resist ? 'resists ' + MOVE_NAME[f[1]] : 'resistance ???'}` : ''}${e.weak && f ? ' · ' + esc(f[2]) : ''}</span></div><span class="tv-s">${e.k ? '× ' + e.k : 'not beaten'}</span></div>`; }).join('') : '<div class="rm-sub">Nothing yet — pick a fight.</div>'}</div>
+      <button class="rm-item ghost" data-close>Close</button>`);
+  }
+  function openStance() {
+    showMenu(`<div class="rm-title">Stance</div><div class="rm-sub">How you fight. Switch any time outside battle.</div>
+      ${Object.keys(STANCES).map((k) => `<button class="rm-item ${stance() === k ? '' : 'ghost'}" data-st="${k}" style="text-align:left;display:block"><b style="display:block;float:none">${STANCES[k][0]}</b><div class="tv-s" style="white-space:normal;margin-top:2px">${STANCES[k][1]}</div></button>`).join('')}
+      <button class="rm-item ghost" data-close>Back</button>`, (m) => m.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => { R.stance = b.dataset.st; save(); sfx('power', 0.4); openStance(); })));
   }
   function openMoves() {
     const mv = moves(); let pool = []; try { pool = EXERCISES.filter((e) => typeof trainStyle !== 'function' || trainStyle() !== 'bodyweight' || isBodyweight(e.name)); } catch (e) {}
@@ -1720,10 +1735,11 @@
     const reps = Math.min(def.boss ? 160 : 60, def.hp + Math.floor(lv / 4));
     const hp = Math.round(reps * Math.pow(1 + pw / 100, 0.75));
     const party = R.party ? buddyInfo(R.party) : null;
+    if (def.lore) { const lk = lore(def); lk.n = def.name; lk.b = def.boss ? 1 : 0; lk.seen = 1; }
     B = { ent, def, ehp: hp, emax: hp, shown: hp, phase: 'intro', intent: null, shield: 0, enrage: 0, logged: {}, turns: 0, fx: [], pfx: [], nums: [], parts: [], tw: [], q: [], clock: 0, stopUntil: 0, slowUntil: 0, slowScale: 1, shake: 0,
       hero: { ox: 0, oy: 0, sx: 1, sy: 1, pose: 'idle', ang: 0.55, trail: [], flash: 0, alpha: 1 }, foe: { ox: 0, oy: 0, sx: 1, sy: 1, flash: 0, alpha: 1, red: 0 },
       allyA: { ox: 0, oy: 0, pose: 'idle' }, cam: { z: 1, fx: 0.5, fy: 0.55 }, dim: 0, flashW: 0, lb: 0, shieldVis: 0,
-      ally: party, music: def.world != null ? 'worldboss' : def.boss ? 'boss' : def.elite ? 'elite' : 'battle', sharp: (R.sharp ? (R.sharp > 1 ? R.sharp : 1.25) : 1) * (R.wellFed ? 1.2 : 1) };
+      pet: petInfo(), petA: { ox: 0, hop: 0 }, ally: party, music: def.world != null ? 'worldboss' : def.boss ? 'boss' : def.elite ? 'elite' : 'battle', sharp: (R.sharp ? (R.sharp > 1 ? R.sharp : 1.25) : 1) * (R.wellFed ? 1.2 : 1) };
     R.sharp = 0; R.wellFed = 0; R.fights++; R.hp = Math.max(R.hp, 4); save();
     pickIntent();
     battleTransition(() => { buildBattle(); music(B.music); if (def.boss && !TEST()) bossIntro(); else { B.phase = 'player'; renderBattleUi(); } });
@@ -1733,12 +1749,51 @@
     const it = B.def.intents; let i = Math.floor(Math.random() * it.length); if (B.turns === 0 && !it[i][1]) i = 0;
     const raging = B.def.boss && B.ehp < B.emax / 2;
     B.intent = { name: it[i][0], dmg: it[i][1] ? it[i][1] + B.enrage + (raging ? 3 : 0) : 0 };
+    // boss mechanic: every third turn a boss charges its biggest attack. Guard it (a real hold) or deal enough damage to break it.
+    B.chargeDmg = 0;
+    if (B.def.boss && B.turns > 0 && B.turns % 3 === 2 && !OFF.charge) {
+      const top = it.slice().sort((a, b) => b[1] - a[1])[0];
+      B.intent = { name: top[0], dmg: Math.round((top[1] + (raging ? 3 : 0)) * 1.7), charge: true, brk: Math.max(6, Math.round(B.emax * 0.12)) };
+    }
+  }
+  // builds: a stance changes how you fight, not just your numbers
+  const STANCES = { balanced: ['Balanced', 'No bonuses, no drawbacks.'], bulwark: ['Bulwark', 'Guard fills faster and counters hit 60% harder. Take 1 less damage. Attacks deal 10% less.'], tempest: ['Tempest', 'Flurry deals 25% more. Smash deals 15% less. Take 1 more damage.'], breaker: ['Breaker', 'Smash deals 30% more and breaks boss charges easier. Flurry deals 15% less.'] };
+  const stance = () => (STANCES[R.stance] ? R.stance : 'balanced');
+  function stanceMult(mv) { const st = stance(); return st === 'bulwark' ? 0.9 : st === 'tempest' ? (mv.id === 'quick' ? 1.25 : mv.id === 'smash' ? 0.85 : 1) : st === 'breaker' ? (mv.id === 'smash' ? 1.3 : mv.id === 'quick' ? 0.85 : 1) : 1; }
+  // companion: your active pet fights beside you; it grows with the skill it came from
+  function petInfo() {
+    try {
+      const p = G.activePet && G.activePet(); if (!p) return null;
+      const map = typeof getSkillXPMap === 'function' ? getSkillXPMap() : {}; let lvl = 1;
+      if (p.match && p.match.ex) p.match.ex.forEach((n) => { lvl = Math.max(lvl, getLevelFromXP(map[n] || 0)); }); else if (typeof getTotalLevel === 'function') lvl = Math.max(1, Math.round(getTotalLevel() / 8));
+      return { id: p.id, name: p.nick || p.name, icon: p.icon, golden: !!p.golden, lvl };
+    } catch (e) { return null; }
+  }
+  const PETSPR = {};
+  function petSprite(icon) {
+    if (PETSPR[icon]) return PETSPR[icon];
+    const c = document.createElement('canvas'); c.width = 16; c.height = 16; const x = c.getContext('2d');
+    x.font = '13px serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(icon, 8, 9);
+    return (PETSPR[icon] = c);
+  }
+  let petPos = null, petKey = '', petCache = null, petAt = 0;
+  function worldPet() { const now = Date.now(); if (now - petAt > 3000) { petAt = now; petCache = petInfo(); } return petCache; }
+  function drawWorldPet(c, dt, t) {
+    const p = worldPet(); if (!p || !hero || OFF.pet) { petPos = null; return; }
+    const key = Z.id; const v = [[0, 1], [0, -1], [-1, 0], [1, 0]][hero.dir] || [0, 1];
+    const tx = hero.x - v[0] * 13 + (v[0] ? 0 : -9), ty = hero.y - v[1] * 11 + (v[1] ? 0 : 2);
+    if (!petPos || petKey !== key || Math.abs(petPos.x - tx) > 80 || Math.abs(petPos.y - ty) > 80) { petPos = { x: tx, y: ty }; petKey = key; }
+    const k = Math.min(1, dt * 5); const moving = Math.abs(tx - petPos.x) + Math.abs(ty - petPos.y) > 1.5;
+    petPos.x += (tx - petPos.x) * k; petPos.y += (ty - petPos.y) * k;
+    const hop = moving ? Math.abs(Math.sin(t * 9)) * 2 : Math.sin(t * 2.4) * 0.6;
+    c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(Math.round(petPos.x + 8), Math.round(petPos.y + 14), 4, 1.6, 0, 0, 7); c.fill();
+    c.drawImage(petSprite(p.icon), 0, 0, 16, 16, Math.round(petPos.x + 2), Math.round(petPos.y + 3 - hop), 12, 12);
   }
   function buildBattle() {
     battleEl = document.createElement('div'); battleEl.className = 'rb'; battleEl.id = 'rlBattle';
     battleEl.innerHTML = `<div class="rb-stage"><canvas id="rbCv"></canvas>
         <div class="rb-bar rb-e"><div class="rb-n">${esc(B.def.name)} <span class="rb-lv">Lv ${B.ent.lvl || 1}</span></div><div class="rb-hp"><i class="trail" id="rbEHpT"></i><i id="rbEHp"></i></div><div class="rb-hpn" id="rbEHpN"></div><div class="rb-aff" id="rbAff"></div></div>
-        <div class="rb-bar rb-h"><div class="rb-n">${esc(heroName())}</div><div class="rl-hearts" id="rbHearts"></div>${B.ally ? `<div class="rb-ally">+ ${esc(B.ally.short)} Lv ${B.ally.lvl}</div>` : ''}</div>
+        <div class="rb-bar rb-h"><div class="rb-n">${esc(heroName())}</div><div class="rl-hearts" id="rbHearts"></div>${B.ally ? `<div class="rb-ally">+ ${esc(B.ally.short)} Lv ${B.ally.lvl}</div>` : ''}${B.pet ? `<div class="rb-ally">${B.pet.icon} ${esc(B.pet.name)} Lv ${B.pet.lvl}</div>` : ''}</div>
         <div class="rb-intent" id="rbIntent"></div><div class="rb-banner" id="rbBanner"></div><div class="rb-boss" id="rbBoss"></div></div>
       <div class="rb-ui" id="rbUi"></div><div class="rb-reps" id="rbReps"></div>`;
     root.appendChild(battleEl);
@@ -1756,7 +1811,7 @@
     battleEl.querySelector('#rbHearts').innerHTML = heartsHtml(R.hp, maxHp()) + (B.shield ? `<span class="rb-sh">GUARD ${Math.round(B.shield * 100)}%</span>` : '');
     const it = battleEl.querySelector('#rbIntent');
     const heavy = B.intent && B.intent.dmg >= 8;
-    it.innerHTML = B.phase === 'player' && B.intent ? (B.intent.dmg ? `<b>${esc(shortName())}</b> readies <b>${esc(B.intent.name)}</b> <span class="dmg">${B.intent.dmg}</span>${heavy ? ' <span class="warn">HEAVY</span>' : ''}` : `<b>${esc(shortName())}</b> — ${esc(B.intent.name)} (no attack)`) : '';
+    it.innerHTML = B.phase === 'player' && B.intent ? (B.intent.charge ? `⚠ <b>${esc(shortName())}</b> charges <b>${esc(B.intent.name)}</b> <span class="dmg">${B.intent.dmg}</span> <span class="warn">GUARD or deal ${Math.max(0, B.intent.brk - (B.chargeDmg || 0))}</span>` : B.intent.dmg ? `<b>${esc(shortName())}</b> readies <b>${esc(B.intent.name)}</b> <span class="dmg">${B.intent.dmg}</span>${heavy ? ' <span class="warn">HEAVY</span>' : ''}` : `<b>${esc(shortName())}</b> — ${esc(B.intent.name)} (no attack)`) : '';
     it.classList.toggle('on', !!it.innerHTML); it.classList.toggle('heavy', !!heavy);
     const ui = battleEl.querySelector('#rbUi');
     if (B.phase === 'intro') { ui.innerHTML = '<div class="rb-wait"></div>'; return; }
@@ -1875,7 +1930,9 @@
     log(mv.ex, amt);
     const H = B.hero; const pw = 1 + Math.max(0, G.stats ? G.stats().power : 0) / 100;
     if (mv.timed) {
-      B.shield = Math.min(1, amt / 30); const counter = Math.round(amt * 0.25 * pw * B.sharp * B.momNow);
+      const bul = stance() === 'bulwark';
+      B.shield = Math.min(1, amt / (bul ? 20 : 30)); const counter = Math.round(amt * 0.25 * (bul ? 1.6 : 1) * pw * B.sharp * B.momNow);
+      if (B.intent && B.intent.charge && B.shield >= 0.5) { B.shield = 1; B.stag = 1; B.nums.push({ x: HX, y: 0.22, txt: 'PERFECT GUARD', c: '#8fd3ff', t: 0, kind: 'status' }); }
       H.pose = 'guard'; tw(H, { sy: 0.88, sx: 1.1 }, 0.12); at(0.12, () => tw(H, { sy: 1, sx: 1 }, 0.3, 'back'));
       tw(B, { shieldVis: B.shield }, 0.4, 'back'); snd('guard'); buzz('medium');
       bfx('shieldBlock', heroAt, { palette: PAL.guard }, 0.45, { img: 'fxRing', x: HX, y: GY - 0.08, t: 0, n: 5, sc: 1.5 });
@@ -1886,7 +1943,8 @@
       return;
     }
     const hits = mv.hits || 1; const rolls = [];
-    for (let i = 0; i < hits; i++) { const r = G.rollDamage ? G.rollDamage(Math.max(1, Math.round(amt * mv.mult * B.sharp * B.aff * B.momNow * (G.dmgMods ? G.dmgMods(mv, B) : 1) / hits))) : { dmg: Math.round(amt * mv.mult / hits), crit: false }; if (hits > 1 && !r.crit && Math.random() < 0.15) { r.dmg *= 2; r.crit = true; } rolls.push(r); }
+    for (let i = 0; i < hits; i++) { const r = G.rollDamage ? G.rollDamage(Math.max(1, Math.round(amt * mv.mult * B.sharp * B.aff * B.momNow * (G.dmgMods ? G.dmgMods(mv, B) : 1) * stanceMult(mv) * (B.stag ? 1.5 : 1) / hits))) : { dmg: Math.round(amt * mv.mult / hits), crit: false }; if (hits > 1 && !r.crit && Math.random() < 0.15) { r.dmg *= 2; r.crit = true; } rolls.push(r); }
+    if (B.stag) { B.stag = 0; B.nums.push({ x: EX, y: 0.2, txt: 'STAGGERED ×1.5', c: '#ffd23f', t: 0, kind: 'status' }); }
     const big = mv.id === 'smash';
     // anticipation: lean back and coil
     H.pose = 'wind'; tw(H, { ox: -0.035, sx: 1.12, sy: 0.84 }, big ? 0.3 : 0.15, 'out'); snd('wind');
@@ -1918,6 +1976,11 @@
     if (!B || B.phase === 'end') return;
     const F = B.foe; const w = bcv.width, h = bcv.height;
     B.ehp -= d; const lethal = B.ehp <= 0;
+    if (!lethal && B.intent && B.intent.charge) {
+      B.chargeDmg = (B.chargeDmg || 0) + d * (stance() === 'breaker' ? 1.5 : 1);
+      if (B.chargeDmg >= B.intent.brk) { B.intent = { name: 'Staggered', dmg: 0 }; B.stag = 1; B.nums.push({ x: EX, y: 0.18, txt: 'INTERRUPTED!', c: '#7dff9a', t: 0, kind: 'status' }); snd('clang'); shake(6); }
+    }
+    if (!lethal && B.def.boss && !B.p2 && B.ehp < B.emax / 2) { B.p2 = 1; B.nums.push({ x: EX, y: 0.14, txt: 'PHASE 2 — ENRAGED', c: '#ff7a5a', t: 0, kind: 'status' }); snd('growl'); shake(8); B.foe.red = 1; tw(B.foe, { red: 0.3 }, 0.8); }
     F.flash = 1; tw(F, { flash: 0 }, 0.2, 'lin');
     const kb = (o.big ? 0.06 : crit ? 0.05 : 0.03) * (B.def.boss ? 0.5 : 1);
     F.ox = kb; tw(F, { ox: 0 }, 0.4, 'out'); F.sx = 0.82; F.sy = 1.14; tw(F, { sx: 1, sy: 1 }, 0.35, 'back');
@@ -1959,6 +2022,15 @@
   }
   function afterHero() {
     if (!B || B.phase === 'end') return;
+    if (B.pet && !OFF.pet) {
+      const d = Math.max(1, Math.round((2 + B.pet.lvl * 0.25) * (B.pet.golden ? 1.5 : 1) * (0.8 + Math.random() * 0.4)));
+      B.say = `${B.pet.name} pounces!`; renderBattleUi(); tw(B.petA, { ox: 0.5 }, 0.14, 'in'); snd('whoosh', 1.6);
+      at(0.14, () => impact(d, false, { fx: 'fxHit', ally: true })); at(0.26, () => tw(B.petA, { ox: 0 }, 0.28, 'io'));
+      at(0.5, afterHero2);
+    } else afterHero2();
+  }
+  function afterHero2() {
+    if (!B || B.phase === 'end') return;
     if (B.ally) {
       const A = B.allyA; const d = Math.max(1, Math.round((3 + B.ally.lvl * 1.2) * (0.8 + Math.random() * 0.4)));
       B.say = `${B.ally.short} follows up!`; renderBattleUi();
@@ -1987,7 +2059,7 @@
     at(wind, () => { tw(F, { ox: -0.31, sx: 1.16, sy: 0.88 }, 0.1, 'in'); snd('whoosh', 0.7); });
     at(wind + 0.1, () => {
       if (!B) return;
-      let d = it.dmg; const blocked = Math.round(d * B.shield); d -= blocked;
+      let d = it.dmg + (stance() === 'tempest' ? 1 : stance() === 'bulwark' ? -1 : 0); if (it.dmg > 0) d = Math.max(1, d); const blocked = Math.round(d * B.shield); d -= blocked;
       const oldFx = { img: blocked && !d ? 'fxRing' : 'fxClaw', x: HX + 0.02, y: GY - 0.1, t: 0, n: 5, sc: 1.6 };
       if (blocked && !d) bfx('shieldBlock', heroAt, { palette: PAL.guard }, 0.45, oldFx); else bfx('clawSwipe', foeAt, { flip: true }, 0.45 * Math.min(1.5, B.def.sc || 1), oldFx);
       const el = d > 0 && zoneElement(); if (el) { const ha = heroActor(); if (ha) B.status = bfx(el, heroAt, { life: 1.8, actor: ha }, 1); if (B.status) B.nums.push({ x: HX, y: 0.26, txt: el === 'burning' ? 'SCORCHED' : el === 'poisoned' ? 'POISONED' : 'CHILLED', c: el === 'burning' ? '#ff8a2a' : el === 'poisoned' ? '#7dff9a' : '#8fd3ff', t: 0, kind: 'status' }); }
@@ -2003,7 +2075,7 @@
     at(wind + 0.32, () => { tw(F, { ox: 0, sx: 1, sy: 1, red: B.def.boss && B.ehp < B.emax / 2 ? 0.3 : 0 }, 0.38, 'io'); tw(B, { dim: 0 }, 0.4); tw(B.cam, { z: 1, fx: 0.5 }, 0.45, 'io'); });
     at(wind + 0.8, () => { if (!B) return; if (R.hp <= 0) { B.phase = 'end'; H.pose = 'down'; tw(B, { dim: 0.5 }, 0.5); snd('thud'); at(0.9, defeat); } else { H.pose = 'idle'; nextTurn(); } });
   }
-  function nextTurn() { if (!B || B.phase === 'end') return; pickIntent(); B.phase = 'player'; B.restUntil = Date.now() + 20000; renderBattleUi(); if (B.intent.dmg >= 8) snd('warn'); }
+  function nextTurn() { if (!B || B.phase === 'end') return; pickIntent(); B.phase = 'player'; B.restUntil = Date.now() + 20000; if (B.intent.charge) { B.say = `${shortName()} is charging ${B.intent.name}! Guard it, or hit hard enough to break it.`; snd('warn'); } renderBattleUi(); if (B.intent.dmg >= 8) snd('warn'); }
   function bossIntro() {
     B.phase = 'intro'; renderBattleUi();
     tw(B, { lb: 1 }, 0.4, 'out'); B.cam.z = 1.45; B.cam.fx = 0.72; B.cam.fy = 0.48; tw(B.cam, { z: 1.25 }, 1.8, 'lin'); snd('rumble'); shake(4); bfx('spellCharge', foeAt, { palette: ['#2a0808', '#5c0f12', '#a51d1d', '#ff2a2a', '#ff8a2a', '#ffd23f', '#ffffff'], life: 1.9 }, 0.5 * Math.min(1.6, B.def.sc || 1));
@@ -2074,6 +2146,7 @@
     if (!B) return;
     stopMusic();
     const ent = B.ent, def = B.def, s = ent.spawn;
+    if (def.lore) { const lk = lore(def); lk.k = (lk.k || 0) + 1; lk.n = def.name; lk.b = def.boss ? 1 : 0; }
     R.wins++; R.kills[s.id] = (R.kills[s.id] || 0) + 1; R.dead[Z.id] = R.dead[Z.id] || {}; R.dead[Z.id][s.id] = Date.now();
     const xp = stageWorkouts(def.name);
     const rewards = { coins: 0, gems: 0, items: [] }; const notes = [];
@@ -2193,6 +2266,7 @@
     const big = Math.max(3, Math.round(Math.min(w * 0.2, h * 0.42) / 16));
     const gy = h * GY;
     // ---- ally
+    if (B.pet && !OFF.pet) { const pb = Math.max(2, Math.round(big * 0.55)); const px = w * (0.2 + B.petA.ox), hop = Math.abs(Math.sin(t * 5)) * pb * 1.5; shadow(c, px, gy, pb); c.drawImage(petSprite(B.pet.icon), 0, 0, 16, 16, Math.round(px - 8 * pb), Math.round(gy - 15 * pb - hop), 16 * pb, 16 * pb); }
     if (B.ally && ready(B.ally.spr)) { const A = B.allyA; const ab = Math.round(big * 0.8); const ax = w * (0.12 + A.ox), ay = gy - h * 0.06; shadow(c, ax, ay, ab); const br = A.pose === 'idle' ? Math.sin(t * 2.6 + 1) * 0.02 : 0; c.drawImage(IMG[B.ally.spr], 3 * 16, (A.pose === 'strike' ? 4 : 0) * 16, 16, 16, Math.round(ax - ab * 8), Math.round(ay - ab * 16 * (1 + br)), ab * 16, Math.round(ab * 16 * (1 + br))); }
     // ---- hero
     const H = B.hero; const hx = w * (HX + H.ox), hy = gy + h * H.oy;
@@ -2334,7 +2408,7 @@
     talk(id) { const e = ents.find((x) => x.id === id); if (e) goTo(e); return !!e; },
     go(id, x, y) { enterZone(id, x, y, { arrive: x == null }); },
     useExit(i) { useExit(Z.exits[i]); }, exits: () => Z.exits.map((e) => ({ to: e.to, x: e.x, y: e.y, locked: e.locked ? e.locked() : null })),
-    menu: (k) => (k === 'bonds' ? openBonds() : k === 'travel' ? openTravel() : k === 'moves' ? openMoves() : k === 'sound' ? openSound() : k === 'party' ? openParty() : k === 'bounty' ? openBounties() : openMenu()),
+    menu: (k) => (k === 'bonds' ? openBonds() : k === 'travel' ? openTravel() : k === 'moves' ? openMoves() : k === 'sound' ? openSound() : k === 'party' ? openParty() : k === 'bounty' ? openBounties() : k === 'bestiary' ? openBestiary() : k === 'stance' ? openStance() : openMenu()),
     bond: (id, n) => (n != null ? addBond(id, n) : bondOf(id)), session: () => TS, tsSet(n) { if (TS) { if (TS.fav.timed) TS.acc = n; else TS.n = n; tsUpd(); } }, tsGo() { tsAct('go'); }, prosperity, reputation,
     prop(kind) { const p = Z.props.find((q) => q[kind] != null && q[kind] !== false); if (p) goToProp(p); return !!p; }
   };
