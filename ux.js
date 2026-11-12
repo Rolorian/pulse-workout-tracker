@@ -78,7 +78,7 @@
     return [
       { popover: { title: '👋 Welcome to Pulse', description: 'Train in real life, and your hero grows in the game. This takes about 30 seconds — you can skip it any time.' } },
       { element: '#fab', before: go('today'), popover: { title: '1 · Log a workout', description: 'Tap ＋ after a set. Search any move (“press ups”, typos are fine), enter reps and sets, save. The app suggests a target based on last time.' } },
-      { element: '#coachPlan', before: go('today'), popover: { title: '2 · Not sure what to do?', description: 'Today’s Plan picks a short session for you — choose 10, 20 or 30 minutes and tap Log on each move.' } },
+      { element: '#coachPlan', before: go('today'), popover: { title: '2 · Not sure what to do?', description: 'Today’s Plan builds a session for you. Pick the kind of day — Train, Light, Walk or Stretch — and how long, then tap Log. ⇄ swaps a move you don’t fancy.' } },
       { element: '#coachLadders', before: go('today'), popover: { title: '3 · Get stronger step by step', description: 'Skill Ladders take you from easy moves to hard ones. Do 3 sets at the target in one day to unlock the next move.' } },
       { element: '.navbtn[data-nav="adventure"]', popover: { title: '4 · The Realm', description: 'A pixel world to explore. In fights, your reps are your attacks — do the set, tap the number, deal the damage. The ☰ button has the map, stances and more.' } },
       { element: '.navbtn[data-nav="stats"]', popover: { title: '5 · See your progress', description: 'Charts, your training year, and Muscle Balance, which tells you what you’ve been skipping.' } },

@@ -25,7 +25,7 @@
   const STEP_OF = {}; LADDERS.forEach((L) => L.steps.forEach((s, i) => { STEP_OF[s[0]] = { L, i }; }));
   // ladder moves that aren't built-in buttons still get the right category
   const oldCat = window.getCategoryForExercise;
-  if (typeof oldCat === 'function') window.getCategoryForExercise = function (ex, cc) { const r = oldCat(ex, cc); if (r && r !== 'custom') return r; const s = STEP_OF[ex]; return s ? LCAT[s.L.id] : r; };
+  if (typeof oldCat === 'function') window.getCategoryForExercise = function (ex, cc) { const r = oldCat(ex, cc); if (r && r !== 'custom') return r; const s = STEP_OF[ex]; return s ? LCAT[s.L.id] : ex === 'Walking' ? 'cardio' : r; };
 
   function stepDone(step) {
     const [name, , target] = step; const per = {};
@@ -60,24 +60,25 @@
   const gcache = {};
   function groupOf(name) {
     if (name in gcache) return gcache[name];
-    let g = null; const s = STEP_OF[name];
+    let g = name === 'Walking' ? 'cardio' : name === 'Stretching' ? 'mobility' : null; const s = STEP_OF[name];
     if (s) g = s.L.group;
-    if (!g) { const cat = typeof oldCat === 'function' ? oldCat(name) : null; if (cat === 'arms') g = /curl|chin|row/i.test(name) ? 'pull' : 'push'; else if (CATG[cat]) g = CATG[cat]; else if (cat === 'cardio') g = 'cardio'; }
+    if (!g && name !== 'Stretching') { const cat = typeof oldCat === 'function' ? oldCat(name) : null; if (cat === 'arms') g = /curl|chin|row/i.test(name) ? 'pull' : 'push'; else if (CATG[cat]) g = CATG[cat]; else if (cat === 'cardio') g = 'cardio'; }
     if (!g && window.libFind) { const e = libFind(name); if (e && e.m && e.m[0]) g = MUS[e.m[0]] || null; }
     return (gcache[name] = g);
   }
   function balance() {
     const from = daysAgo(6); const sets = { push: 0, pull: 0, legs: 0, core: 0 }; const load = { push: 0, pull: 0, legs: 0, core: 0 };
-    const wts = { [daysAgo(0)]: 1, [daysAgo(1)]: 0.65, [daysAgo(2)]: 0.3 }; let tired = 0;
+    const wts = { [daysAgo(0)]: 1, [daysAgo(1)]: 0.65, [daysAgo(2)]: 0.3 }; let tired = 0, cardio = 0;
     W().forEach((w) => {
       if (w.date < from) return; const g = groupOf(w.exercise); const n = w.sets || 1;
       if (wts[w.date] && (w.feeling === '😴' || w.feeling === '🤕') && w.date >= daysAgo(1)) tired = 20;
+      if (g === 'cardio') cardio += n;
       if (!(g in sets)) return; sets[g] += n; if (wts[w.date]) load[g] += n * wts[w.date];
     });
     const total = sets.push + sets.pull + sets.legs + sets.core;
     const fresh = {}; Object.keys(load).forEach((g) => { fresh[g] = Math.max(0, Math.round(100 - load[g] * 9 - tired)); });
     const low = total >= 8 ? GROUPS.map((x) => x[0]).filter((g) => sets[g] / total < 0.12) : [];
-    return { sets, total, fresh, low, tired: tired > 0 };
+    return { sets, total, fresh, low, cardio, tired: tired > 0 };
   }
   const freshLabel = (f) => (f >= 70 ? ['Fresh', 'ok'] : f >= 40 ? ['Recovering', 'mid'] : ['Tired', 'low']);
   G.coachBalance = balance;
@@ -107,31 +108,71 @@
   if (typeof window.renderExercises === 'function') { const o = window.renderExercises; window.renderExercises = function () { const r = o.apply(this, arguments); try { renderNudge(); } catch (e) { /* */ } return r; }; }
 
   // ---------------- Today's plan ----------------
-  function planItems() {
-    const b = balance(); const n = C.mins <= 10 ? 3 : C.mins <= 20 ? 4 : 5; const setsEach = C.mins <= 10 ? 2 : 3;
+  // Four kinds of day. Train: current ladder steps. Light: easier moves at ~60%. Walk: a walk sized from your own walks.
+  // Stretch: a short mobility routine. The plan suggests one from how recovered you are, and you can always pick another.
+  const MODES = [['train', '💪 Train'], ['light', '🌤️ Light'], ['walk', '🚶 Walk'], ['stretch', '🧘 Stretch']];
+  function hardDaysInRow() { let n = 0; for (let k = 1; k <= 5; k++) { const d = daysAgo(k); let sets = 0; W().forEach((w) => { if (w.date === d && ['push', 'pull', 'legs', 'core'].includes(groupOf(w.exercise))) sets += w.sets || 1; }); if (sets >= 6) n++; else break; } return n; }
+  function suggestMode(b) { const tiredAll = b.total > 0 && ['push', 'pull', 'legs', 'core'].every((g) => b.fresh[g] < 35); return tiredAll ? 'walk' : b.tired || hardDaysInRow() >= 3 ? 'light' : 'train'; }
+  function modeToday(b) { const t = dk(new Date()); if (C.mode && C.mode.d === t && MODES.some((m) => m[0] === C.mode.m)) return C.mode.m; return suggestMode(b); }
+  function walkTarget() {
+    const mins = W().filter((w) => w.exercise === 'Walking' && w.unit === 'minutes').slice(-5).map((w) => w.amount).sort((a, b) => a - b);
+    const base = mins.length ? mins[Math.floor(mins.length / 2)] : C.mins; const recent = W().filter((w) => w.exercise === 'Walking' && w.date >= daysAgo(6)).length;
+    return { mins: Math.max(10, Math.round(base / 5) * 5), stretch: recent >= 3 };
+  }
+  const EXTRA = { push: ['Wide push-ups', 'Dips', 'Tricep dips'], pull: ['Superman', 'Rows'], legs: ['Glute bridges', 'Lunges', 'Calf raises'], core: ['Crunches', 'Sit-ups', 'Side plank', 'Flutter kicks'] };
+  function altsFor(L, cur) { // same body area, at or below your level
+    const out = []; for (let k = cur; k >= 0; k--) out.push(L.steps[k]);
+    const sib = L.id === 'push' ? 'shoulders' : L.id === 'shoulders' ? 'push' : null; if (sib) { const S2 = LADDERS.find((x) => x.id === sib); out.push(S2.steps[ladderState(S2).cur]); }
+    // plus a few everyday moves for the same area, so there is always something to swap to
+    (EXTRA[L.group] || []).forEach((n) => { const m = typeof exMeta === 'function' && exMeta(n); if (m && !out.some((o) => o[0] === n)) out.push([n, m.unit, m.unit === 'reps' ? 12 : m.unit === 'seconds' ? 30 : 1]); });
+    return out;
+  }
+  function planItems(mode) {
+    const b = balance(); mode = mode || modeToday(b); const light = mode === 'light';
+    const n = C.mins <= 10 ? 3 : C.mins <= 20 ? 4 : 5; const setsEach = light ? 2 : C.mins <= 10 ? 2 : 3;
     const share = (g) => (b.total ? b.sets[g] / b.total : 0);
     const order = GROUPS.map((x) => x[0]).sort((a, c) => (b.fresh[c] - share(c) * 60) - (b.fresh[a] - share(a) * 60));
     const picks = []; const usable = order.filter((g) => b.fresh[g] >= 35); const pool = usable.length ? usable : order.slice(0, 2);
     const ladFor = { push: ['push', 'shoulders'], pull: ['pull'], legs: ['legs'], core: ['core'] };
+    const t = dk(new Date()); const sw = (C.swap && C.swap.d === t && C.swap.s) || {};
     let i = 0;
     while (picks.length < n && i < 12) {
       const g = pool[i % pool.length]; const lids = ladFor[g]; const L = LADDERS.find((x) => x.id === lids[Math.floor(i / pool.length) % lids.length]);
-      const st = ladderState(L); let step = L.steps[st.cur];
-      if (picks.some((p) => p.name === step[0])) { const alt = L.steps[Math.max(0, st.cur - 1)]; if (picks.some((p) => p.name === alt[0])) { i++; continue; } step = alt; }
-      const nd = nudge(step[0]); const amt = nd ? nd.target : Math.max(1, step[1] === 'minutes' ? 0.5 : Math.round(step[2] * 0.6));
-      picks.push({ name: step[0], unit: step[1], sets: setsEach, amount: amt, why: b.low.includes(g) ? 'neglected this week' : b.fresh[g] >= 70 ? 'fresh' : 'recovering', L });
+      const st = ladderState(L); const top = light ? Math.max(0, st.cur - 1) : st.cur; const alts = altsFor(L, top);
+      let step = alts[(sw[picks.length] || 0) % alts.length];
+      if (picks.some((p) => p.name === step[0])) { const other = alts.find((a) => !picks.some((p) => p.name === a[0])); if (!other) { i++; continue; } step = other; }
+      const nd = nudge(step[0]); const full = nd ? nd.target : Math.max(1, step[1] === 'minutes' ? 0.5 : Math.round(step[2] * 0.6));
+      const amt = light ? Math.max(step[1] === 'minutes' ? 0.25 : 1, step[1] === 'minutes' ? Math.round((nd ? nd.last.best : step[2]) * 0.6 * 4) / 4 : Math.round((nd ? nd.last.best : step[2]) * 0.6)) : full;
+      picks.push({ name: step[0], unit: step[1], sets: setsEach, amount: amt, why: light ? 'easy pace, stop well short of your limit' : b.low.includes(g) ? 'neglected this week' : b.fresh[g] >= 70 ? 'fresh' : 'recovering', L, canSwap: alts.length > 1 });
       i++;
     }
-    return { picks, b, allTired: !usable.length && b.total > 0 };
+    return { picks, b, mode, allTired: !usable.length && b.total > 0 };
   }
-  function logPlanned(p) { if (typeof openAdd !== 'function') return; openAdd(); if (typeof selectEx === 'function') selectEx(p.name, p.unit); setTimeout(() => fill(p.amount, p.sets), 60); }
+  function logPlanned(p) { if (typeof openAdd !== 'function') return; openAdd(); if (typeof selectEx === 'function') selectEx(p.name, p.unit); if (typeof selected !== 'undefined' && selected !== p.name) { selected = p.name; const u = document.getElementById('unit'); if (u) u.value = p.unit; if (typeof renderExercises === 'function') renderExercises(); } setTimeout(() => fill(p.amount, p.sets), 60); }
+  function stretchPicks(today, n, salt) {
+    const lib = (window.EXLIB || []).filter((e) => e.k === 'stretching' && e.st && e.st.length); if (!lib.length) return [];
+    let h = salt || 0; for (const ch of today) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const picks = []; for (let k = 0; picks.length < n && k < 40; k++) { const e = lib[(h + k * 37) % lib.length]; if (!picks.includes(e)) picks.push(e); }
+    return picks;
+  }
+  function stretchRows(picks, done, attr) { return picks.map((e) => `<details class="coach-st ${done[e.n] ? 'done' : ''}"><summary><span>${done[e.n] ? '✅' : '🧘'} ${E(e.n)}</span>${done[e.n] ? '' : `<button type="button" class="coach-mini" ${attr}="${E(e.n)}">Done</button>`}</summary><ol>${e.st.slice(0, 4).map((s) => `<li>${E(s)}</li>`).join('')}</ol></details>`).join(''); }
   function restQuest(today) {
-    const lib = (window.EXLIB || []).filter((e) => e.k === 'stretching' && e.st && e.st.length); if (!lib.length) return '';
-    let h = 0; for (const ch of today) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    const picks = []; for (let k = 0; picks.length < 3 && k < 30; k++) { const e = lib[(h + k * 37) % lib.length]; if (!picks.includes(e)) picks.push(e); }
+    const picks = stretchPicks(today, 3, 0); if (!picks.length) return '';
     const done = C.rest[today] || {}; const all = picks.every((e) => done[e.n]);
-    return `<div class="coach-rest"><div class="coach-sub">🛌 Rest day quest — three easy stretches. ${all ? 'Done — enjoy the rest. ✅' : 'Finish all three for 30 🪙. Your streak is already safe.'}</div>
-      ${picks.map((e) => `<details class="coach-st ${done[e.n] ? 'done' : ''}"><summary><span>${done[e.n] ? '✅' : '🧘'} ${E(e.n)}</span>${done[e.n] ? '' : `<button type="button" class="coach-mini" data-st="${E(e.n)}">Done</button>`}</summary><ol>${e.st.slice(0, 4).map((s) => `<li>${E(s)}</li>`).join('')}</ol></details>`).join('')}</div>`;
+    return `<div class="coach-rest"><div class="coach-sub">🛌 Rest day quest — three easy stretches. ${all ? 'Done — enjoy the rest. ✅' : 'Finish all three for 30 🪙. Your streak is already safe.'}</div>${stretchRows(picks, done, 'data-st')}</div>`;
+  }
+  // ---- Apple Health hand-off (iPhone only): Pulse can't write to Health, but Apple's Shortcuts app can. ----
+  const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function healthSend(w) {
+    const minutes = w.unit === 'minutes' ? w.amount * (w.sets || 1) : w.unit === 'km' ? Math.round(w.amount * 12) : 20; const km = w.unit === 'km' ? w.amount : Math.round(minutes / 12 * 100) / 100;
+    const payload = JSON.stringify({ type: 'Walking', minutes, km, date: w.date, time: w.time || '' });
+    location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Pulse to Health') + '&input=text&text=' + encodeURIComponent(payload);
+  }
+  function healthHelp() {
+    if (!G.sheet) return;
+    G.sheet(`<div class="fr-sheet"><h2>🍎 Send walks to Apple Health</h2><div class="muted" style="line-height:1.5">Pulse is a web app, so it can't write to Health itself. Apple's Shortcuts app can. Set this up once:</div>
+      <ol class="coach-steps"><li>Open the <b>Shortcuts</b> app and tap <b>＋</b>.</li><li>Name it exactly <b>Pulse to Health</b>.</li><li>Add the action <b>Get Dictionary from Input</b> (input: Shortcut Input).</li><li>Add <b>Get Dictionary Value</b> for the key <b>minutes</b>.</li><li>Add <b>Log Workout</b>. Set the type to <b>Walking</b> and the duration to that value, in minutes. If it offers a distance field, repeat step 4 with the key <b>km</b> and use it.</li><li>Tap Done. The first time it runs, allow it to write to Health.</li></ol>
+      <div class="muted" style="line-height:1.5">After that, tap <b>Send to Apple Health</b> on a walk. Your phone hops to Shortcuts, saves it, and you come back. Nothing goes online.</div></div>`);
   }
   function host(id, beforeId) { let c = document.getElementById(id); if (c) return c; const a = document.getElementById(beforeId); if (!a) return null; c = document.createElement('div'); c.className = 'card'; c.id = id; a.parentNode.insertBefore(c, a); return c; }
   function renderPlan() {
@@ -139,13 +180,35 @@
     const isRest = typeof getRestDays === 'function' && getRestDays().includes(today);
     if (isRest) { c.innerHTML = `<div class="cardhead"><h2>🧭 Today's Plan</h2><span class="muted">rest day</span></div>${restQuest(today)}`; }
     else {
-      const { picks, b, allTired } = planItems(); const doneToday = new Set(W().filter((w) => w.date === today).map((w) => w.exercise));
-      const left = picks.filter((p) => !doneToday.has(p.name)).length;
-      c.innerHTML = `<div class="cardhead"><h2>🧭 Today's Plan</h2><span class="coach-mins">${[10, 20, 30].map((m) => `<button type="button" data-m="${m}" class="${C.mins === m ? 'on' : ''}">${m}m</button>`).join('')}</span></div>
-        ${allTired ? `<div class="coach-sub">Everything is still recovering${b.tired ? ' and you logged feeling worn out' : ''}. A rest day would do more than another session. <button type="button" class="coach-mini" id="coachRest">Take a rest day</button></div>` : `<div class="coach-sub">${left ? 'Built from what you\'ve trained least and what has recovered.' : 'Plan complete — nice work. ✅'}</div>`}
-        ${picks.map((p, i) => `<div class="coach-row ${doneToday.has(p.name) ? 'done' : ''}"><div><b>${doneToday.has(p.name) ? '✅ ' : ''}${E(p.name)}</b><small>${p.sets} × ${p.amount} ${E(p.unit)} · ${E(p.why)}</small></div><button type="button" class="coach-mini" data-p="${i}">${doneToday.has(p.name) ? 'Again' : 'Log'}</button></div>`).join('')}`;
+      const b0 = balance(); const mode = modeToday(b0); const sug = suggestMode(b0); const todays = W().filter((w) => w.date === today); const doneToday = new Set(todays.map((w) => w.exercise));
+      const head = `<div class="cardhead"><h2>🧭 Today's Plan</h2><span class="coach-mins">${[10, 20, 30].map((m) => `<button type="button" data-m="${m}" class="${C.mins === m ? 'on' : ''}">${m}m</button>`).join('')}</span></div>
+        <div class="coach-modes">${MODES.map(([m, n]) => `<button type="button" data-mode="${m}" class="${mode === m ? 'on' : ''}">${n}${sug === m && mode !== m ? ' •' : ''}</button>`).join('')}</div>`;
+      let body = '', picks = [];
+      if (mode === 'train' || mode === 'light') {
+        const r = planItems(mode); picks = r.picks; const left = picks.filter((p) => !doneToday.has(p.name)).length;
+        body = `<div class="coach-sub">${mode === 'light' ? 'An easy session: simpler moves, two sets, about 60% of your usual. It still counts.' : r.allTired ? 'Everything is still recovering. Light, Walk or a rest day would do more than a hard session today.' : left ? 'Built from what you\'ve trained least and what has recovered.' : 'Plan complete — nice work. ✅'}${sug !== mode ? '' : mode === 'light' ? ' Suggested because you\'ve had a few hard days or logged feeling worn out.' : ''}</div>
+          ${picks.map((p, i) => `<div class="coach-row ${doneToday.has(p.name) ? 'done' : ''}"><div><b>${doneToday.has(p.name) ? '✅ ' : ''}${E(p.name)}</b><small>${p.sets} × ${p.amount} ${E(p.unit)} · ${E(p.why)}</small></div><span class="coach-acts">${p.canSwap && !doneToday.has(p.name) ? `<button type="button" class="coach-mini ghost" data-sw="${i}" aria-label="Swap for another move">⇄</button>` : ''}<button type="button" class="coach-mini" data-p="${i}">${doneToday.has(p.name) ? 'Again' : 'Log'}</button></span></div>`).join('')}
+          ${r.allTired && mode === 'train' ? '<button type="button" class="coach-mini" id="coachRest" style="margin-top:8px">Take a rest day</button>' : ''}`;
+      } else if (mode === 'walk') {
+        const wt = walkTarget(); const walk = todays.filter((w) => w.exercise === 'Walking').slice(-1)[0]; const st = stretchPicks(today, 1, 7)[0];
+        picks = [{ name: 'Walking', unit: 'minutes', sets: 1, amount: wt.mins }];
+        body = `<div class="coach-sub">${walk ? 'Walk logged — that counts for today. ✅' : `A ${wt.mins}-minute walk at a pace where you could still chat.${wt.stretch ? ` You've walked a lot this week, so add 5 minutes if it feels good.` : ''}`}${sug === 'walk' && !walk ? ' Suggested because everything is still recovering.' : ''}</div>
+          <div class="coach-row ${walk ? 'done' : ''}"><div><b>${walk ? '✅ ' : ''}Walking</b><small>${wt.mins} minutes · easy pace</small></div><button type="button" class="coach-mini" data-p="0">${walk ? 'Again' : 'Log'}</button></div>
+          ${st ? `<details class="coach-st"><summary><span>🧘 Optional after: ${E(st.n)}</span></summary><ol>${st.st.slice(0, 4).map((x) => `<li>${E(x)}</li>`).join('')}</ol></details>` : ''}
+          ${walk && IOS ? '<div class="fr-btns"><button type="button" class="coach-mini" id="hkSend">🍎 Send to Apple Health</button><button type="button" class="coach-mini ghost" id="hkHelp">Set up</button></div>' : ''}`;
+        setTimeout(() => { const s = c.querySelector('#hkSend'); if (s) s.onclick = () => healthSend(walk); const h = c.querySelector('#hkHelp'); if (h) h.onclick = healthHelp; }, 0);
+      } else {
+        const n = C.mins <= 10 ? 3 : C.mins <= 20 ? 4 : 5; const sp = stretchPicks(today, n, 3); const done = (C.stretch && C.stretch.d === today && C.stretch.s) || {}; const all = sp.length && sp.every((e) => done[e.n]); const logged = doneToday.has('Stretching');
+        picks = [{ name: 'Stretching', unit: 'minutes', sets: 1, amount: C.mins <= 10 ? 5 : C.mins <= 20 ? 10 : 15 }];
+        body = `<div class="coach-sub">${logged ? 'Stretching logged — that counts for today. ✅' : 'A short mobility routine. Hold each stretch gently for 30 seconds a side; nothing should hurt.'}</div>${stretchRows(sp, done, 'data-sd')}
+          ${all || logged ? `<div class="coach-row"><div><b>${logged ? '✅ ' : ''}Stretching</b><small>${picks[0].amount} minutes · log it so today counts</small></div><button type="button" class="coach-mini" data-p="0">${logged ? 'Again' : 'Log'}</button></div>` : ''}`;
+      }
+      c.innerHTML = head + body;
       c.querySelectorAll('[data-p]').forEach((bn) => (bn.onclick = () => logPlanned(picks[Number(bn.dataset.p)])));
       c.querySelectorAll('[data-m]').forEach((bn) => (bn.onclick = () => { C.mins = Number(bn.dataset.m); save(); renderPlan(); }));
+      c.querySelectorAll('[data-mode]').forEach((bn) => (bn.onclick = () => { C.mode = { d: today, m: bn.dataset.mode }; save(); if (typeof haptic === 'function') haptic('selection'); renderPlan(); }));
+      c.querySelectorAll('[data-sw]').forEach((bn) => (bn.onclick = () => { if (!C.swap || C.swap.d !== today) C.swap = { d: today, s: {} }; const k = bn.dataset.sw; C.swap.s[k] = (C.swap.s[k] || 0) + 1; save(); renderPlan(); }));
+      c.querySelectorAll('[data-sd]').forEach((bn) => (bn.onclick = (ev) => { ev.preventDefault(); if (!C.stretch || C.stretch.d !== today) C.stretch = { d: today, s: {} }; C.stretch.s[bn.dataset.sd] = 1; save(); renderPlan(); }));
       const r = c.querySelector('#coachRest'); if (r) r.onclick = () => typeof toggleRestDay === 'function' && toggleRestDay();
     }
     c.querySelectorAll('[data-st]').forEach((bn) => (bn.onclick = (ev) => {
@@ -174,6 +237,7 @@
     const tip = { push: 'Press-ups or Pike push-ups', pull: 'Door frame rows or Superman', legs: 'Squats or Lunges', core: 'Plank or Leg raises' };
     c.innerHTML = `<div class="cardhead"><h2>⚖️ Muscle Balance</h2><span class="muted">last 7 days · sets</span></div>
       ${GROUPS.map(([g, n, ic]) => { const [lab, cls] = freshLabel(b.fresh[g]); return `<div class="bal-row"><span class="bal-n">${ic} ${n}</span><div class="bal-bar"><div style="width:${b.sets[g] / max * 100}%"></div></div><b>${b.sets[g]}</b><span class="bal-f ${cls}">${lab}</span></div>`; }).join('')}
+      <div class="bal-row"><span class="bal-n">🚶 Cardio</span><div class="bal-bar"><div style="width:${Math.min(100, b.cardio / Math.max(1, max) * 100)}%;background:#71b7ff"></div></div><b>${b.cardio}</b><span class="bal-f ${b.cardio ? 'ok' : 'mid'}">${b.cardio ? 'Moving' : 'None yet'}</span></div>
       <div class="coach-sub" style="margin-top:8px">${!b.total ? 'Log a few sessions and this will show what you\'re training and what you\'re skipping.' : b.low.length ? `⚠️ Light on <b>${b.low.map((g) => GROUPS.find((x) => x[0] === g)[1].toLowerCase()).join(' and ')}</b> this week. Try ${E(tip[b.low[0]])}.` : 'Nicely balanced this week. ✅'}</div>
       <div class="coach-sub">Fresh / Recovering / Tired is an estimate from your last three days of training.</div>`;
   }

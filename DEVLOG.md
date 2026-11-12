@@ -273,3 +273,11 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - **Screen stays awake** while the rest timer runs, using the browser's own wake lock (no library).
 - No new libraries: the candidates looked at (a second tour library, a keep-awake library) duplicate what Driver.js and the browser already do.
 - SW cache `pulse-v28`.
+
+## 2026-11-12 · Flexible Today's Plan
+- **Four kinds of day:** Train (as before), Light (the ladder step below yours, two sets, about 60% of your last numbers), Walk (a walk sized from the median of your last five walks, at least 10 minutes; the 10/20/30 choice if you have none) and Stretch (three to five library stretches, then a 5/10/15 minute "Stretching" log).
+- **Suggested, never forced:** the plan opens on Walk when every muscle group is tired, on Light after three hard days in a row or a "worn out" feeling, otherwise on Train. A dot marks the suggestion when you pick something else. Your choice is remembered for the day.
+- **Swap:** the ⇄ button on a move cycles through alternatives for the same body area (lower ladder steps, the sibling ladder, and everyday moves such as Superman or Glute bridges).
+- **Cardio row** in Muscle Balance counts walking and other cardio sets for the week. "Walking" is categorised as cardio.
+- **Apple Health hand-off (iPhone only):** after logging a walk, "Send to Apple Health" opens the Shortcuts app with the walk's minutes, estimated distance and date; "Set up" shows the one-time steps for a "Pulse to Health" shortcut. Written from Apple's documented URL scheme and not yet tried on a real iPhone.
+- Tutorial step 2 mentions the modes and swap. SW cache `pulse-v29`.

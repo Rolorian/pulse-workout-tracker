@@ -760,3 +760,7 @@ body.realm-on #fab{display:none}
 .bal-row{display:grid;grid-template-columns:74px 1fr 26px 84px;align-items:center;gap:8px;padding:6px 0;font-size:13px}.bal-bar{height:8px;background:#1b2330;border-radius:4px;overflow:hidden}.bal-bar div{height:100%;background:var(--gold,#fbbf24)}
 .bal-f{font-size:10px;font-weight:700;text-align:center;border-radius:6px;padding:2px 0}.bal-f.ok{background:#12301f;color:#7dff9a}.bal-f.mid{background:#33290f;color:#fbbf24}.bal-f.low{background:#3a1616;color:#ff8a8a}
 .nudge{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0 0;background:var(--panel2);border:1px solid var(--line);color:inherit;border-radius:12px;padding:9px 12px;font-size:12px;cursor:pointer}.nudge-go{color:var(--gold,#fbbf24);font-weight:800;white-space:nowrap}.nudge-ladder{font-size:11px;color:var(--muted);margin-top:6px}
+
+.coach-modes{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:0 0 8px}.coach-modes button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:7px 0;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}.coach-modes button.on{background:var(--gold,#fbbf24);border-color:var(--gold,#fbbf24);color:#1a1020}
+.coach-acts{display:flex;gap:6px;align-items:center}.coach-mini.ghost{background:none;color:var(--muted);padding:6px 9px}
+.coach-steps{margin:10px 0;padding-left:20px;line-height:1.5;font-size:13px}.coach-steps li{margin:5px 0}
