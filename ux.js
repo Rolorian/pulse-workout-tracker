@@ -70,22 +70,29 @@
     window.renderProgressChart = function () { const r = orig.apply(this, arguments); try { renderHeatmap(); } catch (e) { console.warn('heatmap', e); } return r; };
   }
 
-  // ---------------- "what's new" tour ----------------
-  const TOUR_KEY = 'pulse-tour-v1';
+  // ---------------- tutorial ----------------
+  // A short, skippable walkthrough for new players (and once for existing ones). Replay it any time from Settings.
+  const TOUR_KEY = 'pulse-tour-v2';
+  const go = (tab, sub) => () => { try { window.G && G.nav && G.nav(tab, sub); } catch (e) { /* */ } };
   function tourSteps() {
     return [
-      { element: '#fab', popover: { title: '🔍 Smarter logging', description: 'Tap ＋, then search 180+ bodyweight exercises. Try “press ups” — typos like “pusups” work too. Each move has a How-to card.' } },
-      { element: '.navbtn[data-nav="stats"]', popover: { title: '📈 New Stats', description: 'A zoomable progress chart for every exercise and a GitHub-style calendar of your whole training year.' } },
-      { element: '.navbtn[data-nav="adventure"]', popover: { title: '⚔️ Realm upgrades', description: 'New combat effects, weather, chiptune music, and dungeons that are freshly carved every run — explore by torchlight.' } },
-      { popover: { title: '🔒 Still 100% private', description: 'Everything new runs on your phone. No accounts, no tracking, nothing leaves the device. Replay this tour any time from ⚙️ Settings.' } }
+      { popover: { title: '👋 Welcome to Pulse', description: 'Train in real life, and your hero grows in the game. This takes about 30 seconds — you can skip it any time.' } },
+      { element: '#fab', before: go('today'), popover: { title: '1 · Log a workout', description: 'Tap ＋ after a set. Search any move (“press ups”, typos are fine), enter reps and sets, save. The app suggests a target based on last time.' } },
+      { element: '#coachPlan', before: go('today'), popover: { title: '2 · Not sure what to do?', description: 'Today’s Plan picks a short session for you — choose 10, 20 or 30 minutes and tap Log on each move.' } },
+      { element: '#coachLadders', before: go('today'), popover: { title: '3 · Get stronger step by step', description: 'Skill Ladders take you from easy moves to hard ones. Do 3 sets at the target in one day to unlock the next move.' } },
+      { element: '.navbtn[data-nav="adventure"]', popover: { title: '4 · The Realm', description: 'A pixel world to explore. In fights, your reps are your attacks — do the set, tap the number, deal the damage. The ☰ button has the map, stances and more.' } },
+      { element: '.navbtn[data-nav="stats"]', popover: { title: '5 · See your progress', description: 'Charts, your training year, and Muscle Balance, which tells you what you’ve been skipping.' } },
+      { element: '.navbtn[data-nav="adventure"]', popover: { title: '6 · Train with friends', description: 'Adventure → League → Share my code. Swap codes with a friend to race each week, set challenges or fight a raid boss together. No accounts needed.' } },
+      { popover: { title: '🔒 Your data stays on your phone', description: 'Nothing is uploaded. Back it up now and then: ⚙️ Settings → Export full backup. Extra cards live in folds — tap a fold to open it. That’s it — go log your first set!' } }
     ];
   }
   function startTour(force) {
     if (!window.driverjs) return false;
     if (!force) { try { if (localStorage.getItem(TOUR_KEY)) return false; } catch (e) { return false; } }
     try {
-      const d = driverjs.driver({ showProgress: true, allowClose: true, overlayOpacity: 0.72, stagePadding: 6, stageRadius: 14, popoverClass: 'pulse-tour', nextBtnText: 'Next ›', prevBtnText: '‹', doneBtnText: 'Let’s go', steps: tourSteps().filter((s) => !s.element || document.querySelector(s.element)), onDestroyed: () => { try { localStorage.setItem(TOUR_KEY, '1'); } catch (e) { /* */ } } });
-      d.drive(); return true;
+      const steps = tourSteps().filter((s) => !s.element || document.querySelector(s.element)).map((s) => ({ element: s.element, popover: s.popover, onHighlightStarted: s.before }));
+      const d = driverjs.driver({ showProgress: true, allowClose: true, overlayOpacity: 0.72, stagePadding: 6, stageRadius: 14, popoverClass: 'pulse-tour', nextBtnText: 'Next ›', prevBtnText: '‹', doneBtnText: 'Start training', steps, onDestroyed: () => { try { localStorage.setItem(TOUR_KEY, '1'); } catch (e) { /* */ } go('today')(); } });
+      go('today')(); d.drive(); return true;
     } catch (e) { console.warn('tour', e); return false; }
   }
   // wait until nothing else (onboarding, popups, the Realm) is covering the screen
@@ -93,15 +100,15 @@
     if (window.__PULSE_TEST && !window.__PULSE_TOUR) return;
     try { if (localStorage.getItem(TOUR_KEY)) return; } catch (e) { return; }
     const busy = document.body.classList.contains('realm-on') || [...document.querySelectorAll('body > div, .modal.open')].some((d) => { const s = getComputedStyle(d); return (d.classList.contains('open') || (s.position === 'fixed' && parseInt(s.zIndex) >= 60)) && s.display !== 'none' && d.offsetHeight > 200 && d.id !== 'toast'; });
-    if (busy || !(typeof workouts !== 'undefined' && workouts.length)) { if (tries < 40) setTimeout(() => tourWhenClear(tries + 1), 3000); return; }
+    if (busy) { if (tries < 40) setTimeout(() => tourWhenClear(tries + 1), 3000); return; }
     startTour(false);
   }
   setTimeout(tourWhenClear, 2500);
-  // "Replay tour" row in Settings
+  // "How Pulse works" row in Settings
   const hapRow = document.getElementById('toggleHaptics'); const row = hapRow && hapRow.closest('.set-row');
   if (row && !document.getElementById('replayTour')) {
     const r = document.createElement('div'); r.className = 'set-row'; r.id = 'replayTour';
-    r.innerHTML = '<div><div class="set-name">🧭 What’s new tour</div><div class="set-sub">A quick walkthrough of the latest features</div></div><button class="set-btn" type="button">Replay</button>';
+    r.innerHTML = '<div><div class="set-name">🧭 How Pulse works</div><div class="set-sub">A 30-second tutorial of the basics</div></div><button class="set-btn" type="button">Show me</button>';
     r.querySelector('button').onclick = () => { if (typeof closeSettings === 'function') closeSettings(); if (window.G && G.nav) G.nav('today'); setTimeout(() => startTour(true), 350); };
     row.parentNode.insertBefore(r, row.nextSibling);
   }

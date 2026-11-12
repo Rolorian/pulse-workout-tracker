@@ -265,3 +265,11 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - **Weekly Depths** (Realm menu): an endless dungeon seeded by the week, so every player gets the same floors. Monsters grow two levels per depth, each new depth offers a boon (damage, healing or a potion), and your deepest floor shows in friend comparisons.
 - SW cache `pulse-v27`.
 - Tested: rpg, rpg3, rpg4, game, friends and the four round suites report 0 errors and 0 non-local requests; dungeons hold 60 fps. `nav_test` still expects the retired Battle sub-tab.
+
+## 2026-11-12 · Declutter and tutorial
+- **Simple layout (`declutter.js`):** nothing deleted. Home now leads with Today's Plan, Today's Activity, Daily Quests and Skill Ladders; Routines, Circuit, Supersets and Today's Workout sit in a "Routines & circuits" fold, and Habit Tower and the Plank Challenge in "Long-term challenges". Stats leads with Exercise Progress, Training Year, Muscle Balance, Personal Records and Weekly Wrap; 14 other cards sit in three folds. League folds the two pre-Realm battle cards into "Classic battle", and its tab is now labelled League. Folds remember whether they are open. Settings → Simple layout turns it off.
+- Page heights on a phone with test data: Home 3,519 → 2,416 px, Stats 5,990 → 2,173 px, League 1,858 → 1,477 px.
+- **Tutorial:** an 8-step skippable walkthrough (logging, Today's Plan, Skill Ladders, the Realm, Stats, friends, backups) replaces the "what's new" tour. It runs once for everyone, including brand-new players, and replays from Settings → How Pulse works.
+- **Screen stays awake** while the rest timer runs, using the browser's own wake lock (no library).
+- No new libraries: the candidates looked at (a second tour library, a keep-awake library) duplicate what Driver.js and the browser already do.
+- SW cache `pulse-v28`.
