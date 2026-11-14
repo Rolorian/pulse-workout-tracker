@@ -764,3 +764,24 @@ body.realm-on #fab{display:none}
 .coach-modes{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:0 0 8px}.coach-modes button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:7px 0;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}.coach-modes button.on{background:var(--gold,#fbbf24);border-color:var(--gold,#fbbf24);color:#1a1020}
 .coach-acts{display:flex;gap:6px;align-items:center}.coach-mini.ghost{background:none;color:var(--muted);padding:6px 9px}
 .coach-steps{margin:10px 0;padding-left:20px;line-height:1.5;font-size:13px}.coach-steps li{margin:5px 0}
+
+/* ---------- Goals tab ---------- */
+.gl-bar{height:6px;background:#1b2330;border-radius:3px;overflow:hidden;margin:0 0 8px}.gl-bar div{height:100%;background:var(--gold,#fbbf24);transition:width .25s}
+.gl-empty{line-height:1.45;margin:2px 0 10px;font-size:13px}
+.gl-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}.gl-list .gl-row:first-child{border-top:0}
+.gl-tick{flex:0 0 34px;width:34px;height:34px;border-radius:10px;border:2px solid #4a5568;background:none;color:#1a1020;font-size:19px;font-weight:900;cursor:pointer;line-height:1}
+.gl-row.done .gl-tick{background:var(--gold,#fbbf24);border-color:var(--gold,#fbbf24)}
+.gl-main{flex:1;min-width:0;cursor:pointer}.gl-text{font-size:15px;font-weight:600;overflow-wrap:anywhere}.gl-row.done .gl-text{color:var(--muted);text-decoration:line-through}
+.gl-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.gl-more{background:none;border:0;color:var(--muted);font-size:18px;padding:6px 8px;cursor:pointer}
+.gl-add{display:flex;gap:8px;margin-top:10px}.gl-add input,.gl-in{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);color:var(--text,#fff);border-radius:12px;padding:11px 12px;font-size:15px;font-family:inherit}.gl-in{width:100%;box-sizing:border-box;margin:8px 0 4px}
+.gl-go{background:var(--accent);color:#07130d;border:0;border-radius:12px;padding:0 16px;font-weight:800;font-size:14px;cursor:pointer}
+.gl-opts{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}.gl-sel{background:var(--panel2);border:1px solid var(--line);color:var(--text,#fff);border-radius:10px;padding:7px 8px;font-size:12px;font-family:inherit}
+.gl-seg{display:inline-flex;gap:4px}.gl-seg button,.gl-days button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:6px 9px;font-size:11.5px;font-weight:700;cursor:pointer}.gl-seg button.on,.gl-days button.on{background:var(--gold,#fbbf24);border-color:var(--gold,#fbbf24);color:#1a1020}
+.gl-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}.gl-days button{padding:7px 0}
+.gl-date{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}.gl-date input{background:var(--panel2);border:1px solid var(--line);color:var(--text,#fff);border-radius:10px;padding:6px 8px;font-size:12px;font-family:inherit;color-scheme:dark}
+.gl-lab{display:block;font-size:11px;margin:10px 0 4px}
+.gl-fin{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.gl-fin summary{cursor:pointer;font-weight:700;font-size:13px;list-style:none}.gl-fin summary::-webkit-details-marker{display:none}
+.gl-week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:4px 0 8px}.gl-day{text-align:center;font-size:10px;color:var(--muted)}
+.gl-pip{height:34px;border-radius:8px;background:#1b2330;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--muted);margin-bottom:3px}.gl-pip.part{background:#5a3d10;color:#fbbf24}.gl-pip.full{background:var(--gold,#fbbf24);color:#1a1020}.gl-pip.none{opacity:.4}
+.gl-private{text-align:center;font-size:11px;color:var(--muted);margin:4px 0 90px}

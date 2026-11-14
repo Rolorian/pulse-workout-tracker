@@ -1,4 +1,4 @@
-/* Pulse — 5-tab bottom navigation. Reorganises the existing screens without rewriting them:
+/* Pulse — bottom navigation (5 original tabs plus Goals). Reorganises the existing screens without rewriting them:
    Home · Hero · Adventure · Loot · Stats, each with at most 5 sub-tabs. */
 (function () {
   const G = (window.G = window.G || {});
@@ -9,6 +9,7 @@
 
   const TABS = [
     { id: 'today', icon: '🏠', name: 'Home' },
+    { id: 'goals', icon: '🎯', name: 'Goals' },
     { id: 'hero', icon: '🧬', name: 'Hero', subs: [['hero', '🧬 Hero'], ['bag', '🎒 Bag'], ['talents', '🌳 Talents'], ['pets', '🐾 Pets']] },
     { id: 'adventure', icon: '⚔️', name: 'Adventure', subs: [['realm', '🌲 Realm'], ['map', '🗺️ Map'], ['dungeons', '🏰 Dungeons'], ['village', '🏘️ Village'], ['league', '🏆 Battle']] },
     { id: 'loot', icon: '💰', name: 'Loot', subs: [['crates', '📦 Crates'], ['casino', '🎰 Casino'], ['shop', '🛒 Shop'], ['forge', '⚒️ Forge']] },

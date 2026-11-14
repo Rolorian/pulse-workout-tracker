@@ -281,3 +281,11 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - **Cardio row** in Muscle Balance counts walking and other cardio sets for the week. "Walking" is categorised as cardio.
 - **Apple Health hand-off (iPhone only):** after logging a walk, "Send to Apple Health" opens the Shortcuts app with the walk's minutes, estimated distance and date; "Set up" shows the one-time steps for a "Pulse to Health" shortcut. Written from Apple's documented URL scheme and not yet tried on a real iPhone.
 - Tutorial step 2 mentions the modes and swap. SW cache `pulse-v29`.
+
+## 2026-11-14 · Goals tab
+- **New bottom tab "Goals"** (`goals.js`), between Home and Hero, with a pixel tick-box icon drawn for Pulse.
+- **Daily Things:** type anything, pick how it repeats (every day, weekdays, weekends, certain days, or just today) and optionally tag it Body or Mind. One tap on the box or the text ticks it; ticks clear at midnight. Repeating items show a streak from 2 days. A "just today" item carries over until it is ticked. The ⋯ button edits the text, repeat and tag, or deletes it.
+- **Goals:** free text with an optional target date and tag. Ticking one moves it to an Achieved list (it can be moved back).
+- **Last 7 Days:** how many daily things were ticked each day; gold when all were.
+- **Private:** saved only in `pulse-goals-v1` on the device. Not part of friend codes, challenges or raids (tested: none of the text appears in a friend code). Included in the user's own full backup. No XP or coins are attached to this tab.
+- The ＋ workout button hides on this tab. SW cache `pulse-v30`.
