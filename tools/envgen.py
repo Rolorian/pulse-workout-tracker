@@ -20,12 +20,16 @@ def tile(fn):
     return im
 def grass(base,light,dark,seed):
     b,l,d=C(base),C(light),C(dark)
+    m=sh(b,1.05)
     def f(x,y):
+        # soft 4x4 patches of a slightly lighter base, then sparse blades: highlight with a shadow under it
+        patch=hh(x//4,y//4,seed+40)<0.35
+        c=m if patch else b
         r=hh(x,y,seed)
-        if r<0.10: return l
-        if r<0.2: return d
-        if hh(x,(y+1)%16,seed)<0.1 and r<0.35: return d  # blade shadow under highlights
-        return b
+        if r<0.055: return l
+        if hh(x,(y+15)%16,seed)<0.055: return d  # the shadow under a blade
+        if r>0.97: return sh(d,1.08)
+        return c
     return tile(f)
 def dirt(base,light,dark,seed,flecks=None):
     b,l,d=C(base),C(light),C(dark)
@@ -49,9 +53,9 @@ def flags(base,mortar,seed,size=8):
         if hh(x,y,seed)<0.05: c=sh(c,0.85)
         return c
     return tile(f)
-def cobble(base,gap,seed):
+def cobble(base,gap,seed,cells=None):
     b,g=C(base),C(gap)
-    cs=[(3,3),(11,2),(7,8),(14,9),(2,12),(10,14),(6,0)]
+    cs=list(cells) if cells else [(3,3),(11,2),(7,8),(14,9),(2,12),(10,14),(6,0)]
     def f(x,y):
         best=9e9;sec=9e9;bi=0
         for i,(cx,cy) in enumerate(cs):
@@ -94,8 +98,8 @@ GROUND={
  'ts,24,11':dirt('#9a7a4c','#b0905e','#7c6038',3,flecks='#6a8a36'),
  'ts,25,11':dirt('#7c6040','#927452','#5e4830',4,flecks='#557a2e'),
  'ts,20,11':dirt('#c4a670','#d8bc86','#a88c5a',5),
- 'ts,19,11':flags('#a8987e','#6e6252',6),
- 'ts,18,11':cobble('#8e8476','#4a4238',7),
+ 'ts,19,11':cobble('#a89a80','#6a5e4c',6,cells=((4,4),(12,3),(8,10),(15,12),(2,13),(10,0),(6,6.5),(13,8))),
+ 'ts,18,11':cobble('#948a78','#564c3e',7),
  'ts,26,11':bricks('#a86e4c','#5e3a26',8),
  'ts,15,19':snow(9),'ts,13,19':snow(10,True),'ts,19,19':ice(11),
  'ts,23,6':water(12),
@@ -225,19 +229,35 @@ def arch():  # village gateway (replaces the pack's shrine arch)
     return outline(im)
 def small(fn,w=16,h=16):
     im=canvas(w,h); d=ImageDraw.Draw(im); fn(d); return outline(im)
+def soft_outline(im,col):
+    px=im.load(); w,h=im.size; out=im.copy(); o=out.load()
+    for y in range(h):
+        for x in range(w):
+            if px[x,y][3]<10 and any(0<=x+dx<w and 0<=y+dy<h and px[x+dx,y+dy][3]>200 for dx,dy in ((1,0),(-1,0),(0,1))): o[x,y]=C(col)
+    return out
+def scatter(fn,col='#2c3e16'):
+    im=canvas(16,16); d=ImageDraw.Draw(im); fn(d); return soft_outline(im,col)
 def fence(d): d.rectangle((2,4,4,15),fill=C('#6e4626')); d.rectangle((11,4,13,15),fill=C('#6e4626')); d.rectangle((0,6,15,7),fill=C('#8a5a2c')); d.rectangle((0,11,15,12),fill=C('#8a5a2c')); d.point((3,4),fill=C('#a8743c')); d.point((12,4),fill=C('#a8743c'))
 def flowers(d):
     for i,(x,y) in enumerate(((3,6),(9,4),(12,10),(5,11),(10,13))):
         d.line((x,y+1,x,y+3),fill=C('#4e6e28')); col=('#e8e0d0','#d4aa30','#c84a6a','#9a7ad0','#e8e0d0')[i]; d.point((x,y),fill=C(col)); d.point((x-1,y),fill=sh(C(col),0.8)); d.point((x+1,y),fill=sh(C(col),0.8)); d.point((x,y-1),fill=sh(C(col),1.1))
 def dots(d):
     for i in range(7): d.point((int(2+12*hh(i,1)),int(3+11*hh(i,2))),fill=C(('#e8e0d0','#d4aa30')[i%2]))
-def tuft(d):
-    for x in (5,7,9,11): d.line((x,13,x+(1 if x>8 else -1),8+(x%3)),fill=C('#4e6e28')); d.point((x+(1 if x>8 else -1),8+(x%3)),fill=C('#86a446'))
-def tuft2(d):
-    for x in (4,6,8,10,12): d.line((x,14,x,6+(x%4)),fill=C('#5e7a32')); d.point((x,6+(x%4)),fill=C('#a8b86a'))
-def clover(d):
-    for cx,cy in ((6,8),(10,8),(8,11)): d.ellipse((cx-2,cy-2,cx+2,cy+2),fill=C('#6a8a36')); d.point((cx-1,cy-1),fill=C('#86a446'))
-def twigs(d): d.line((3,11,12,8),fill=C('#5e3c1c')); d.line((7,10,9,13),fill=C('#5e3c1c')); d.line((5,6,10,5),fill=C('#6e4626'))
+def tuft(d):  # a clump of grass: dark roots, lit tips
+    for i,x in enumerate((4,6,7,9,10,12)):
+        top=7+int(4*hh(i,31)); lean=(-1 if x<8 else 1)
+        d.line((x,14,x+lean,top),fill=C('#3e5a20')); d.line((x,14,x,top+2),fill=C('#567a2a')); d.point((x+lean,top),fill=C('#a6c25a'))
+def tuft2(d):  # reeds: tall stems with brown heads
+    for i,x in enumerate((4,7,9,12)):
+        top=3+int(3*hh(i,32)); d.line((x,15,x,top+3),fill=C('#567a2a')); d.line((x+1,15,x+1,top+5),fill=C('#3e5a20'))
+        d.rectangle((x,top,x+1,top+2),fill=C('#7a5228')); d.point((x,top),fill=C('#a0743c'))
+def clover(d):  # leafy shrub: three-tone, lit from the top left
+    for cx,cy,r in ((6,9,3),(10,8,3),(8,11,3)): d.ellipse((cx-r,cy-r,cx+r,cy+r),fill=C('#4a6e26'))
+    for cx,cy in ((5,8),(9,7),(7,10)): d.ellipse((cx-1,cy-1,cx+1,cy+1),fill=C('#6e9636'))
+    for x,y in ((5,7),(9,6),(7,9),(11,9)): d.point((x,y),fill=C('#a6c25a'))
+def twigs(d):  # fallen branch with a leaf or two
+    d.line((2,12,13,9),fill=C('#6e4626')); d.line((2,13,13,10),fill=C('#4a2e18')); d.line((8,11,10,7),fill=C('#6e4626'))
+    d.point((10,6),fill=C('#6e9636')); d.point((11,7),fill=C('#4a6e26')); d.point((4,11),fill=C('#8a5a30'))
 def pot(d): d.ellipse((3,5,12,15),fill=C('#a8603a')); d.rectangle((5,3,10,6),fill=C('#8a4a2a')); d.rectangle((4,7,6,12),fill=C('#c47a4a')); d.line((3,10,12,10),fill=C('#7a4024'))
 def crate(d): d.rectangle((2,4,13,15),fill=C('#8a5a2c')); d.rectangle((2,4,13,5),fill=C('#a8743c')); d.line((2,4,13,15),fill=C('#5e3c1c')); d.line((13,4,2,15),fill=C('#5e3c1c')); d.rectangle((2,4,13,15),outline=C('#5e3c1c'))
 def stone(d): d.ellipse((3,8,12,15),fill=C('#958c7e')); d.ellipse((4,8,9,12),fill=C('#b8b0a2'))
@@ -315,8 +335,8 @@ PROPS={
  'pine': lambda: pine(), 'snowtree': lambda: pine(snowy=True), 'snowpine': lambda: pine(32,48,True),
  'rock': lambda: rockshape(32,32,(2,8,30,30),STONE), 'boulder': lambda: rockshape(32,32,(2,6,30,30),DSTONE),
  'stump': lambda: small(lambda d:(d.ellipse((5,14,27,29),fill=C('#5e3c1c')),d.ellipse((5,10,27,24),fill=C('#b08a5a')),d.ellipse((9,13,23,21),outline=C('#8a6a3a')),d.ellipse((13,15,19,19),outline=C('#8a6a3a'))),32,32),
- 'fence':lambda: small(fence),'flowers':lambda: small(flowers),'dots':lambda: small(dots),'tuft':lambda: small(tuft),'tuft2':lambda: small(tuft2),'clover':lambda: small(clover),
- 'twigs':lambda: small(twigs),'pot':lambda: small(pot),'crate':lambda: small(crate),'stone':lambda: small(stone),'lantern':lambda: small(lantern),'post':lambda: small(post),
+ 'fence':lambda: small(fence),'flowers':lambda: scatter(flowers),'dots':lambda: small(dots),'tuft':lambda: scatter(tuft),'tuft2':lambda: scatter(tuft2),'clover':lambda: scatter(clover),
+ 'twigs':lambda: scatter(twigs,'#2a1a10'),'pot':lambda: small(pot),'crate':lambda: small(crate),'stone':lambda: small(stone),'lantern':lambda: small(lantern),'post':lambda: small(post),
  'lily':lambda: small(lily),'stump1':lambda: small(stump1),'snowball':lambda: small(snowball),'ladder':lambda: small(ladder,16,32),
 }
 def build_atlas(out_png, out_json):

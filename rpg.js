@@ -277,6 +277,7 @@
     for (let x = 2; x <= W - 3; x++) if (x !== 19 && x !== 20) zplace(z, 'fence', x, 30);
     // outskirts field
     [['rock', 6, 33], ['rock', 30, 36], ['stump', 10, 39], ['treeB', 27, 32], ['treeA', 7, 38], ['stone', 25, 40], ['stone', 13, 35], ['crate', 17, 36], ['pot', 22, 36]].forEach(([n, x, y]) => zplace(z, n, x, y));
+    z.noDecoOn = (g) => g === PAVE || g === COB || g === DIRT; // keep the roads clear
     scatter(z, 80, ['flowers', 'dots', 'tuft', 'tuft2', 'clover', 'twigs'], 7);
     z.exits.push({ x: 19, y: H - 1, w: 2, h: 1, to: 'r0', tx: 18, ty: 2, label: () => `${REG()[0].name}`, locked: () => (R.q < 4 ? 'The road south isn\'t safe yet.' : null) });
     const built = (id) => !!(G._village && G._village.done(id));

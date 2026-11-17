@@ -321,3 +321,11 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - Dungeons: about half of floors get a modifier, named on arrival — Swarming (more monsters, richer chests), Champions (all elites, double XP), Hoard (extra chests), Lightless (short torchlight, richer chests). Around 40% of floors hide a cracked wall: tap it to open a secret room with a better chest. Opened walls are remembered. Separate seed, so floor layouts are unchanged. Not in the Vault or Weekly Depths.
 - Friends: new challenge type "Best single set" (personal-record contest, single-set cap so nobody logs 9,999). Older copies of Pulse can't join one; they say the code isn't valid.
 - Checked and skipped: equipment set bonuses already existed (full armour set of one material).
+
+## Village art pass — cache pulse-v35
+- tools/envgen.py regenerated env2.png (same atlas layout, so nothing else moves):
+  - Main roads are irregular warm flagstones instead of a square tile grid; the cross street is a warmer cobble that matches.
+  - Grass is calmer: soft 4×4 patches and sparse blades instead of per-pixel static.
+  - Ground scatter (grass clumps, reeds, shrubs, twigs, flowers) uses a dark outline in its own colour, not black, with three-tone shading. Before, the shrub and reeds blended into the grass and only their black outlines showed.
+- Village decoration no longer lands on roads.
+- Not changed: buildings, trees, rocks, the hero and NPC sprites. They already share the same chunky style.
