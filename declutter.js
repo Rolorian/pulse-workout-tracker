@@ -32,8 +32,8 @@
     const today = document.getElementById('today');
     if (today) {
       const tower = document.getElementById('towerCard'); if (tower && tower.parentElement && tower.parentElement.id === 'homeTop') today.appendChild(tower); // out of the header block so it can be grouped
-      arrange(today, ['#coachPlan', "Today's Activity", 'Daily Quests', '#coachLadders'], [
-        { name: '🧰 Routines & circuits', key: 'tools', match: ['Routines', '#circuitCard', 'Supersets', "Today's Workout"] },
+      arrange(today, ["Today's Activity", "Today's Workout", '#coachPlan', 'Daily Quests', '#coachLadders'], [
+        { name: '🧰 Routines & circuits', key: 'tools', match: ['Routines', '#circuitCard', 'Supersets'] },
         { name: '🗼 Long-term challenges', key: 'long', match: ['#towerCard', '#plankCard'] }
       ]);
       // the two older folds (Daily Minimum, Warm-up) go last

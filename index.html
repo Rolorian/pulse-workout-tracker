@@ -762,6 +762,7 @@ button,input,select{font:inherit;-webkit-appearance:none;appearance:none}
 </div>
 </div>
 
+<script src="safestore.js"></script>
 <script>
 // ============================================
 // DATA & CONFIG
@@ -4157,14 +4158,23 @@ function clearData() {
 // Register service worker for real offline support
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    // Updates never land mid-session: a new version waits, and is applied when the app is next opened
+    // (nothing in progress then) or when you tap Update.
+    let applying = false;
+    const apply = (reg) => { if (reg.waiting) { applying = true; reg.waiting.postMessage('PULSE_SKIP_WAITING'); } };
+    const busy = () => { try { return !!restInterval || !!(window.G && G.rpgBusy && G.rpgBusy()) || !!document.querySelector('.modal.active, .modal.open'); } catch (e) { return true; } };
     navigator.serviceWorker.register('sw.js').then((reg) => {
+      if (reg.waiting && navigator.serviceWorker.controller) apply(reg); // fresh launch: safe to switch now
+      reg.addEventListener('updatefound', () => { const w = reg.installing; if (!w) return; w.addEventListener('statechange', () => {
+        if (w.state === 'installed' && navigator.serviceWorker.controller) showToast('✨ New version ready', 'Update', () => apply(reg), 15000);
+      }); });
       // Check for a new version whenever the app comes back to the foreground
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
     }).catch(() => {});
     let hadController = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (!hadController) { hadController = true; return; }
-      showToast('✨ Pulse just updated', 'Reload', () => location.reload(), 15000);
+      if (applying && !busy()) location.reload(); else showToast('✨ Pulse just updated', 'Reload', () => location.reload(), 15000);
     });
   });
 }

@@ -289,3 +289,10 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - **Last 7 Days:** how many daily things were ticked each day; gold when all were.
 - **Private:** saved only in `pulse-goals-v1` on the device. Not part of friend codes, challenges or raids (tested: none of the text appears in a friend code). Included in the user's own full backup. No XP or coins are attached to this tab.
 - The ＋ workout button hides on this tab. SW cache `pulse-v30`.
+
+## Overhaul · Phase 1 (foundation), part 1 — cache pulse-v31
+- Home: the "Today's Workout" log had been tucked into the Routines fold by the simple layout. It is back on the main page, second card, right under Today's Activity.
+- safestore.js (loaded first): storage-full writes are caught and reported; damaged saves are set aside and repaired from a safety copy; two daily safety copies kept on the device (Settings → Safety copies); schema number + migration list for future save changes. Safety copies are never exported or shared.
+- Updates no longer take over mid-session: a new version waits and applies on next launch or when you tap Update; never reloads during a fight or rest timer.
+- Reworks (approved): weather is visual only (no +10% damage); the hero's build is growth-only (no thin legs).
+- tests/ added to the repo (foundation.test.js).

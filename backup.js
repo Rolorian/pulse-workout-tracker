@@ -5,10 +5,10 @@
 (function () {
   const G = (window.G = window.G || {});
   const MAX = 25 * 1024 * 1024, KEY_OK = /^pulse-[a-z0-9-]{1,40}$/;
-  const SKIP = new Set(['pulse-boot-last', 'pulse-install-dismissed']);
+  const SKIP = new Set(['pulse-boot-last', 'pulse-install-dismissed', 'pulse-snap-v1', 'pulse-schema-v1']); // safety copies are per-device, never exported
   function snapshot() {
     const keys = {};
-    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (KEY_OK.test(k) && !SKIP.has(k)) keys[k] = localStorage.getItem(k); }
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (KEY_OK.test(k) && !SKIP.has(k) && k.indexOf('pulse-corrupt-') !== 0) keys[k] = localStorage.getItem(k); }
     return { pulse: 1, kind: 'full-backup', v: 1, at: new Date().toISOString(), keys };
   }
   function fileOf() { const d = typeof todayKey === 'function' ? todayKey() : new Date().toISOString().slice(0, 10); return new File([JSON.stringify(snapshot())], 'pulse-full-backup-' + d + '.json', { type: 'application/json' }); }

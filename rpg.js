@@ -833,11 +833,11 @@
   // ---------- your equipment on your hero: the tabard takes your body armour's colour, a helm replaces the hair ----------
   let heroSig = '', heroCv = null;
   function gearOf(slot) { try { const S0 = G.state(); const inst = S0.items.find((i) => i.uid === S0.equip[slot]); return inst ? G.item(inst.id) : null; } catch (e) { return null; } }
-  // the hero's build follows your training: skip legs and they thin out; a big push/pull week broadens the shoulders
+  // the hero's build follows your training: growth only — a big push/pull week broadens the shoulders; nothing ever shrinks
   let mirAt = 0, mirVal = '';
   function mirrorState() {
     const now = Date.now(); if (now - mirAt < 30000) return mirVal; mirAt = now; mirVal = '';
-    try { if (R.mirror === false || !G.coachBalance) return mirVal; const b = G.coachBalance(); if (b.total >= 8 && b.sets.legs / b.total < 0.12) mirVal += 'T'; if (b.sets.push + b.sets.pull >= 18) mirVal += 'B'; } catch (e) { /* */ }
+    try { if (R.mirror === false || !G.coachBalance) return mirVal; const b = G.coachBalance(); if (b.sets.push + b.sets.pull >= 18) mirVal += 'B'; } catch (e) { /* */ }
     return mirVal;
   }
   function mirrorPixels(x, c, mir) {
@@ -1365,7 +1365,7 @@
     if (R.zone === 'vault' && !(restUntil > Date.now())) leaveVault(true);
     const ev = worldEvent(); const day = dk();
     if (ev && R.evSeen !== day + ev) { R.evSeen = day + ev; if (ev === 'festival' && R.evGift !== day) { R.evGift = day; R.potions++; } save(); setTimeout(() => hint(`${EVENT_INFO[ev][0]} this weekend · details in ☰`), 1400); }
-    else if (realWx() && R.wxSeen !== day) { R.wxSeen = day; save(); setTimeout(() => hint(`Real ${realWx()} today · Storm-forged +10% damage`), 1400); }
+    else if (realWx() && R.wxSeen !== day) { R.wxSeen = day; save(); setTimeout(() => hint(`Real ${realWx()} today · the Realm mirrors your sky`), 1400); }
   }
   function merchant() {
     const S0 = G.state ? G.state() : { coins: 0 };
@@ -1843,7 +1843,7 @@
     B = { ent, def, ehp: hp, emax: hp, shown: hp, phase: 'intro', intent: null, shield: 0, enrage: 0, logged: {}, turns: 0, fx: [], pfx: [], nums: [], parts: [], tw: [], q: [], clock: 0, stopUntil: 0, slowUntil: 0, slowScale: 1, shake: 0,
       hero: { ox: 0, oy: 0, sx: 1, sy: 1, pose: 'idle', ang: 0.55, trail: [], flash: 0, alpha: 1 }, foe: { ox: 0, oy: 0, sx: 1, sy: 1, flash: 0, alpha: 1, red: 0 },
       allyA: { ox: 0, oy: 0, pose: 'idle' }, cam: { z: 1, fx: 0.5, fy: 0.55 }, dim: 0, flashW: 0, lb: 0, shieldVis: 0,
-      pet: petInfo(), petA: { ox: 0, hop: 0 }, ally: party, music: def.world != null ? 'worldboss' : def.boss ? 'boss' : def.elite ? 'elite' : 'battle', sharp: (R.sharp ? (R.sharp > 1 ? R.sharp : 1.25) : 1) * (R.wellFed ? 1.2 : 1) * (realWx() ? 1.1 : 1) };
+      pet: petInfo(), petA: { ox: 0, hop: 0 }, ally: party, music: def.world != null ? 'worldboss' : def.boss ? 'boss' : def.elite ? 'elite' : 'battle', sharp: (R.sharp ? (R.sharp > 1 ? R.sharp : 1.25) : 1) * (R.wellFed ? 1.2 : 1) };
     R.sharp = 0; R.wellFed = 0; R.fights++; R.hp = Math.max(R.hp, 4); save();
     pickIntent();
     battleTransition(() => { buildBattle(); music(B.music); if (def.boss && !TEST()) bossIntro(); else { B.phase = 'player'; renderBattleUi(); } });
@@ -2274,7 +2274,6 @@
     }
     if (B.ally) { const st = R.buddy[B.ally.id]; if (st) { st.xp += 15 + (ent.lvl || 1) * 3; const before = B.ally.lvl; const now = buddyInfo(B.ally.id); if (now && now.lvl > before) { st.lvl = now.lvl; notes.push(`${now.short} levelled up to Lv ${now.lvl}!`); } } }
     if (worldEvent() === 'bloodmoon' && rewards.coins) { rewards.coins = Math.round(rewards.coins * 1.5); notes.push('Blood Moon: coins +50%'); }
-    if (realWx()) notes.push('Storm-forged: +10% damage for training through bad weather');
     if (rewards.coins || rewards.gems || rewards.items.length) G.reward && G.reward(rewards, { quiet: true, noPopup: true });
     const gained = (G.state ? G.state().coins : 0) - coins0;
     save(true);
@@ -2506,6 +2505,7 @@
   G.on && G.on('render', () => { if (open) renderHud(); });
   setTimeout(() => { if (!B) flushWorkouts(); }, 1500);
   G._rpg = { get R() { return R; }, reset() { localStorage.removeItem(KEY); load(); Object.keys(ZCACHE).forEach((k) => delete ZCACHE[k]); Z = null; } };
+  G.rpgBusy = () => !!B; // a fight is in progress: updates and reloads wait
   G._rpgDebug = {
     off: OFF, ents: () => ents, hero: () => hero, battle: () => B, zone: () => Z,
     startFight(id) { const e = ents.find((x) => x.id === id || x.id === 's:' + id); if (e) startEncounter(e); },

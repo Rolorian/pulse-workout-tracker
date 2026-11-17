@@ -1,7 +1,7 @@
 /* Pulse Workout Tracker — service worker
    Cache-first for the app shell so it loads instantly and fully offline.
    Bump CACHE on every release so clients pick up the new files. */
-const CACHE = 'pulse-v30';
+const CACHE = 'pulse-v31';
 const SHELL = [
   './',
   './index.html',
@@ -51,6 +51,7 @@ const SHELL = [
   './restrun.js',
   './declutter.js',
   './goals.js',
+  './safestore.js',
   './rpg.js',
   './nav.js',
   './assets/rpg/chars/c1.png',
@@ -254,9 +255,11 @@ const SHELL = [
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())
+    caches.open(CACHE).then((c) => c.addAll(SHELL)) // no skipWaiting: the page decides when it is safe to switch
   );
 });
+
+self.addEventListener('message', (e) => { if (e.data === 'PULSE_SKIP_WAITING') self.skipWaiting(); });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
