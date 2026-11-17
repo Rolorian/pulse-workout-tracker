@@ -71,7 +71,7 @@
     if (window.__PULSE_TEST_NOPOPUP) return;
     const el = document.createElement('div'); el.className = 'pet-drop'; el.id = 'petDrop';
     el.innerHTML = `<div class="pd-msg">${dupe ? 'You have a funny feeling like you <i>would</i> have been followed…' : 'You have a funny feeling like you\'re being followed…'}</div>
-      <div class="pd-pet ${golden ? 'golden' : ''}">${pet.icon}</div>
+      <div class="pd-pet ${golden ? 'golden' : ''}">${(G.petImg && G.petImg(pet.id, golden, 96)) || pet.icon}</div>
       <div class="pd-name">${golden ? '✨ GOLDEN ' : ''}${esc(pet.name)}</div>
       <div class="pd-sub">${dupe ? `You already own ${esc(pet.name)} — the duplicate leaves you 500 coins.` : `${esc(pet.lore)}<br>Dropped after ${rec.logs} log${rec.logs === 1 ? '' : 's'} · buff: ${buffText(pet.buff)}`}</div>
       <button class="gbtn" id="pdOk">${dupe ? 'Nice' : 'Welcome aboard'}</button>`;
@@ -97,14 +97,14 @@
     const act = G.activePet();
     root.innerHTML = `
       <div class="card pet-card"><div class="cardhead"><h2>🐾 Following you</h2><span class="muted">${owned}/${PETS.length} pets · ${Object.values(P.owned).filter((x) => x.golden).length} golden</span></div>
-        ${act ? `<div class="pet-active"><div class="pa-ic ${act.golden ? 'golden' : ''}">${act.icon}</div><div><button class="hero-name" id="petName">${esc(act.nick || act.name)} ✎</button><div class="muted">${esc(act.name)}${act.golden ? ' · ✨ Golden (double buff)' : ''}</div><div class="hero-perk">${buffText(G.petBonus())}</div><div class="muted" style="font-style:italic;margin-top:4px">"${esc(act.lore)}"</div></div></div>`
+        ${act ? `<div class="pet-active"><div class="pa-ic ${act.golden ? 'golden' : ''}">${(G.petImg && G.petImg(act.id, act.golden, 56)) || act.icon}</div><div><button class="hero-name" id="petName">${esc(act.nick || act.name)} ✎</button><div class="muted">${esc(act.name)}${act.golden ? ' · ✨ Golden (double buff)' : ''}</div><div class="hero-perk">${buffText(G.petBonus())}</div><div class="muted" style="font-style:italic;margin-top:4px">"${esc(act.lore)}"</div></div></div>`
           : `<div class="muted">No pets yet. Every workout you log has a small chance to drop the pet for that exercise — bigger sets and higher skill levels improve your odds.</div>`}
         <div class="pet-stats"><span>🎲 <b>${P.rolls.toLocaleString()}</b> rolls</span><span>⏳ <b>${P.sinceLast}</b> logs since last pet</span><span>🔁 <b>${P.dupes}</b> duplicates</span></div></div>
       <div class="card"><div class="cardhead"><h2>📖 Pet collection</h2><span class="muted">tap one you own to make it follow you</span></div>
         <div class="pet-grid">${PETS.map((p) => { const o = P.owned[p.id];
           const how = p.match.ex ? p.match.ex.slice(0, 3).join(', ') + (p.match.ex.length > 3 ? '…' : '') : `any ${p.match.cat} exercise`;
           return `<button class="pet-slot ${o ? 'own' : ''} ${o && o.golden ? 'golden' : ''} ${P.active === p.id ? 'active' : ''}" data-pet="${p.id}">
-            <div class="ps-ic">${o ? p.icon : '❔'}</div><div class="ps-name">${o ? esc(P.names[p.id] || p.name) : '???'}</div>
+            <div class="ps-ic">${o ? ((G.petImg && G.petImg(p.id, o.golden, 40)) || p.icon) : '❔'}</div><div class="ps-name">${o ? esc(P.names[p.id] || p.name) : '???'}</div>
             <div class="ps-how">${o ? `got ${o.got}${o.count > 1 ? ` · ×${o.count}` : ''}` : esc(how)}</div></button>`; }).join('')}</div>
         <div class="muted" style="margin-top:10px">Drop chance per log is roughly 1 in ${Math.round(1 / chance({ exercise: 'Squats', amount: 20, sets: 3, unit: 'reps' }))} for 3×20 squats right now. Golden variants are 1 in 25 drops and double the buff.</div></div>`;
     root.querySelectorAll('[data-pet]').forEach((b) => (b.onclick = () => {

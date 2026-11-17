@@ -49,6 +49,31 @@
     }
     return true;
   }
+
+  // ---- password-protected backups (AES-GCM 256, key from PBKDF2-SHA256; all in the browser's own Web Crypto, nothing leaves the phone) ----
+  const ITER = 310000;
+  const b64 = (buf) => { const u = new Uint8Array(buf); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+  const unb64 = (str) => { const s = atob(str); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
+  const canCrypt = () => !!(window.crypto && crypto.subtle && window.TextEncoder);
+  async function keyFrom(pass, salt, iter) { const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']); return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']); }
+  async function encrypt(obj, pass) {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await keyFrom(pass, salt, ITER), new TextEncoder().encode(JSON.stringify(obj)));
+    return { pulse: 1, kind: 'encrypted-backup', v: 1, at: obj.at, kdf: 'PBKDF2-SHA256', iter: ITER, salt: b64(salt), iv: b64(iv), data: b64(data) };
+  }
+  async function decrypt(box, pass) {
+    if (!box || box.kind !== 'encrypted-backup' || box.v !== 1 || typeof box.data !== 'string') throw new Error('format');
+    const iter = Math.min(2000000, Math.max(1000, Number(box.iter) || ITER));
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(box.iv) }, await keyFrom(pass, unb64(box.salt), iter), unb64(box.data));
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+  async function exportLocked() {
+    if (!canCrypt()) { alert('This browser can\'t encrypt here. Use the normal export.'); return; }
+    const p1 = prompt('Choose a password for this backup (8+ characters).\n\nThere is no reset: without it the file cannot be opened.'); if (p1 == null) return;
+    if (p1.length < 8) { alert('Use at least 8 characters.'); return; }
+    if (prompt('Type the password again') !== p1) { alert('Those didn\'t match. Nothing was exported.'); return; }
+    try { const d = typeof todayKey === 'function' ? todayKey() : new Date().toISOString().slice(0, 10); download(new File([JSON.stringify(await encrypt(snapshot(), p1))], 'pulse-full-backup-' + d + '-locked.json', { type: 'application/json' })); done('🔒 Locked backup saved'); } catch (e) { alert('Could not encrypt the backup. Nothing was exported.'); }
+  }
   const oldImport = window.importData;
   window.importData = function (event) {
     const file = event.target.files[0]; if (!file) return;
@@ -60,23 +85,34 @@
         const fake = { target: { files: [file], set value(v) { event.target.value = v; } } };
         return oldImport ? oldImport(fake) : alert('Workout-only backups can\'t be imported here.');
       }
-      const r = check(obj); event.target.value = '';
-      if (r.err) { alert(r.err); return; }
-      const n = JSON.parse(r.keys['pulse-workouts-v2']).length; const when = String(obj.at || '').slice(0, 10);
-      if (!confirm(`Restore full backup from ${when}?\n\n${n} workouts plus hero, Realm, loot and friends.\nThis replaces everything on this phone.`)) return;
-      if (!restore(r.keys)) { alert('Restore failed — your current data was put back.'); return; }
-      alert('✅ Restored. Pulse will now reload.'); location.reload();
+      event.target.value = '';
+      const finish = (full) => {
+        const r = check(full);
+        if (r.err) { alert(r.err); return; }
+        const n = JSON.parse(r.keys['pulse-workouts-v2']).length; const when = String(full.at || '').slice(0, 10);
+        if (!confirm(`Restore full backup from ${when}?\n\n${n} workouts plus hero, Realm, loot and friends.\nThis replaces everything on this phone.`)) return;
+        if (!restore(r.keys)) { alert('Restore failed — your current data was put back.'); return; }
+        alert('✅ Restored. Pulse will now reload.'); location.reload();
+      };
+      if (obj && obj.kind === 'encrypted-backup') {
+        if (!canCrypt()) { alert('This browser can\'t open locked backups here.'); return; }
+        const pass = prompt('This backup is locked. Enter its password'); if (pass == null) return;
+        decrypt(obj, pass).then(finish, () => alert('Wrong password, or the file is damaged. Nothing was changed.'));
+        return;
+      }
+      finish(obj);
     };
     reader.readAsText(file);
   };
   window.exportData = exportFull;
-  G.backup = { snapshot, check, restore, exportFull, sendToPhone };
+  G.backup = { snapshot, check, restore, exportFull, sendToPhone, exportLocked, encrypt, decrypt };
   // settings buttons
   function wire() {
     const exp = document.querySelector('button[onclick="exportData()"]'); if (!exp || document.getElementById('sendPhoneBtn')) return;
     exp.textContent = '📤 Export full backup';
     const b = document.createElement('button'); b.className = 'save secondary'; b.id = 'sendPhoneBtn'; b.style.marginTop = '8px'; b.textContent = '📲 Move to a new phone'; b.onclick = sendToPhone;
     exp.parentNode.insertBefore(b, exp.nextSibling);
+    const lk = document.createElement('button'); lk.className = 'save secondary'; lk.id = 'lockedExportBtn'; lk.style.marginTop = '8px'; lk.textContent = '🔒 Export with a password'; lk.onclick = exportLocked; exp.parentNode.insertBefore(lk, b);
     const st = document.getElementById('backupStatus'); if (st && !st.dataset.full) { st.dataset.full = '1'; st.insertAdjacentHTML('afterend', '<p class="note" style="margin-top:4px">Backups now include everything: workouts, hero, Realm, loot, village and friends.</p>'); }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();

@@ -82,6 +82,12 @@
     let c = document.getElementById('socialCard'); if (!c) { c = document.createElement('div'); c.className = 'card'; c.id = 'socialCard'; }
     if (anchor.nextElementSibling !== c) anchor.parentNode.insertBefore(c, anchor.nextSibling);
     S.list.forEach(settle); const t = today();
+    // finished more than two days ago: move to History (kept on this phone, newest first, 20 most recent)
+    const cut = new Date(); cut.setDate(cut.getDate() - 2); const cutKey = typeof dateKey === 'function' ? dateKey(cut) : cut.toISOString().slice(0, 10);
+    S.hist = Array.isArray(S.hist) ? S.hist : []; const old = S.list.filter((ch) => ch.to < cutKey);
+    if (old.length) { old.forEach((ch) => { const rows = standings(ch); const tot = rows.reduce((a, r) => a + r.v, 0); const won = ch.kind === 'raid' ? tot >= ch.hp : rows.length > 1 && rows[0].me && rows[0].v > 0; S.hist.unshift({ cid: ch.cid, kind: ch.kind, ex: String(ch.ex || ''), to: ch.to, solo: rows.length < 2, won: !!won, rows: rows.slice(0, 4).map((r) => ({ n: String(r.n).slice(0, 24), v: Number(r.v) || 0, me: !!r.me })) }); }); S.hist = S.hist.slice(0, 20); S.list = S.list.filter((ch) => ch.to >= cutKey); save(); }
+    const H = S.hist; const wins = H.filter((h) => h.won).length, played = H.filter((h) => !h.solo || h.kind === 'raid').length;
+    const histHtml = H.length ? `<details class="soc-hist"><summary>📜 History · ${wins} won of ${played || H.length}</summary>${H.map((h) => `<div class="soc-s muted">${h.won ? '🏆' : h.solo && h.kind !== 'raid' ? '➖' : '·'} ${h.kind === 'raid' ? 'Raid' : 'Most ' + E(h.ex)} · ended ${E(h.to)} · ${h.rows.map((r) => `${E(r.n)} ${fmt(r.v)}`).join(' · ')}</div>`).join('')}</details>` : '';
     c.innerHTML = `<div class="cardhead"><h2>🏁 Challenges & Raids</h2><span class="muted">${S.list.length ? S.list.length + ' active' : ''}</span></div>
       ${S.list.length ? S.list.slice().reverse().map((ch) => {
         const rows = standings(ch); const ended = ch.to < t; const left = ended ? 'ended' : ch.to === t ? 'last day' : `${Math.round((new Date(ch.to) - new Date(t)) / 864e5) + 1}d left`;
@@ -93,13 +99,14 @@
           ${rows.map((r, i) => `<div class="soc-row"><span>${i === 0 && r.v > 0 ? '👑' : i + 1} ${E(r.n)}</span><div class="soc-bar"><div style="width:${r.v / max * 100}%;background:${r.me ? 'var(--accent)' : 'var(--gold,#fbbf24)'}"></div></div><b>${fmt(r.v)}</b></div>`).join('')}
           ${rows.length < 2 ? '<div class="muted soc-s">Waiting for a friend\'s code that includes this challenge.</div>' : ''}<div class="soc-b"><button class="coach-mini" data-inv="${ch.cid}">Invite</button><button class="coach-mini" data-rm="${ch.cid}">Remove</button></div></div>`;
       }).join('') : '<div class="muted" style="line-height:1.45;margin-bottom:10px">Set a seven-day contest on one exercise, or team up against a raid boss. Friends\' totals arrive with their friend codes.</div>'}
+      ${histHtml}
       <div class="fr-btns"><button class="gbtn" id="scNew">🏁 New challenge</button><button class="gbtn ghost" id="scRaid">⚔️ New raid</button></div>
       <div class="muted fr-note">Got an invite? Paste it under Add friend.</div>`;
     c.querySelector('#scNew').onclick = () => openCreate('most'); c.querySelector('#scRaid').onclick = () => openCreate('raid');
     c.querySelectorAll('[data-inv]').forEach((b) => (b.onclick = () => { const ch = S.list.find((x) => x.cid === b.dataset.inv); if (ch) invite(ch); }));
     c.querySelectorAll('[data-rm]').forEach((b) => (b.onclick = () => { if (confirm('Remove this from your list?')) { S.list = S.list.filter((x) => x.cid !== b.dataset.rm); save(); render(); } }));
   }
-  G.social = { accept, create, encode, standings, list: () => S.list.slice(), render };
+  G.social = { accept, create, encode, standings, list: () => S.list.slice(), history: () => (S.hist || []).slice(), state: () => S, render };
   G.on && G.on('render', () => { try { render(); } catch (e) { console.warn('social', e); } });
   setTimeout(() => { try { render(); } catch (e) { /* */ } }, 0);
 })();

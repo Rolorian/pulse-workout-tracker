@@ -491,7 +491,8 @@
   const WB_FAM = { 0: 'soft', 7: 'fighter', 9: 'slither' };
   function enemyDef(s, z) { const d = enemyDef0(s, z); const f = s.mob ? MOB_FAM[s.mob] : s.world != null ? WB_FAM[s.world] : BOSS_FAM[s.boss != null ? s.boss : s.dboss != null ? s.dboss : 0]; if (f) { d.weak = FAM[f][0]; d.resist = FAM[f][1]; d.famNote = FAM[f][2]; d.lore = s.mob || (s.world != null ? 'w' + s.world : s.boss != null ? 'b' + s.boss : 'd' + s.dboss); } return d; }
   function enemyDef0(s, z) {
-    if (s.boss != null) { const b = RBOSS[s.boss]; return { name: REG()[s.boss].boss[0], spr: b[0], sc: b[1], tint: b[2], hp: b[3], intents: b[4], boss: true, region: s.boss }; }
+    if (s.boss != null) { const b = RBOSS[s.boss]; const tier = R.conq[s.boss] ? Math.min(5, (R.rm || {})[s.boss] || 0) : 0; // rematches: each win after the first makes the boss tougher, up to ★5
+      return { name: REG()[s.boss].boss[0] + (tier ? ' ' + '★'.repeat(tier) : ''), spr: b[0], sc: b[1], tint: b[2], hp: Math.round(b[3] * (1 + 0.15 * tier)), intents: tier ? b[4].map((it) => [it[0], it[1] ? it[1] + tier : 0]) : b[4], boss: true, region: s.boss, tier }; }
     if (s.world != null) { const w = WBOSS[s.world]; return { name: w.name, spr: w.spr, sc: w.sc, tint: w.tint, hp: w.hp, intents: w.intents, boss: true, world: s.world, crown: w.crown }; }
     if (s.dboss != null) { const dg = DUN()[s.dboss] || { boss: ['Guardian'] }; const b = RBOSS[s.dboss]; return { name: dg.boss[0], spr: b[0], sc: 1.8, tint: '#4a148c', hp: Math.round(b[3] * 0.9), intents: b[4], boss: true, dungeonBoss: s.dboss }; }
     const m = MOB[s.mob] || MOB.slime; const ri = z.ri || 0;
@@ -1877,7 +1878,8 @@
     } catch (e) { return null; }
   }
   const PETSPR = {};
-  function petSprite(icon) {
+  function petSprite(icon, p) {
+    if (p && G.petSprite) { const hand = G.petSprite(p.id, p.golden); if (hand) return hand; } // hand-drawn sprite; the emoji is only a fallback for unknown pets
     if (PETSPR[icon]) return PETSPR[icon];
     const c = document.createElement('canvas'); c.width = 16; c.height = 16; const x = c.getContext('2d');
     x.font = '13px serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(icon, 8, 9);
@@ -1894,7 +1896,7 @@
     petPos.x += (tx - petPos.x) * k; petPos.y += (ty - petPos.y) * k;
     const hop = moving ? Math.abs(Math.sin(t * 9)) * 2 : Math.sin(t * 2.4) * 0.6;
     c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(Math.round(petPos.x + 8), Math.round(petPos.y + 14), 4, 1.6, 0, 0, 7); c.fill();
-    c.drawImage(petSprite(p.icon), 0, 0, 16, 16, Math.round(petPos.x + 2), Math.round(petPos.y + 3 - hop), 12, 12);
+    c.drawImage(petSprite(p.icon, p), 0, 0, 16, 16, Math.round(petPos.x), Math.round(petPos.y - hop), 16, 16);
   }
   function buildBattle() {
     battleEl = document.createElement('div'); battleEl.className = 'rb'; battleEl.id = 'rlBattle';
@@ -2263,7 +2265,9 @@
     else if (def.region != null) {
       const first = !R.conq[def.region]; R.conq[def.region] = true;
       if (G.realmConquer) G.realmConquer(def.region);
-      rewards.coins += 120 * (def.region + 1) * (first ? 3 : 1); rewards.gems += first ? (def.region + 1) * 2 : 1;
+      const tier = def.tier || 0;
+      rewards.coins += Math.round(120 * (def.region + 1) * (first ? 3 : 1) * (1 + 0.5 * tier)); rewards.gems += first ? (def.region + 1) * 2 : 1 + tier;
+      if (!first) { R.rm = R.rm || {}; R.rm[def.region] = Math.min(5, tier + 1); notes.push(tier >= 5 ? 'Rematch ★5 beaten again — the hardest it gets' : `Rematch won · next time it returns at ${'★'.repeat(tier + 1)}`); }
       if (first && G.rollItemOfTier) rewards.items.push(G.rollItemOfTier([1, 1, 2, 2, 3, 3, 4, 5, 6, 7][def.region]).id);
       if (first) { notes.push(`${REG()[def.region].name} conquered · dungeon unsealed`); if (def.region < 9) notes.push(`The road to ${REG()[def.region + 1].name} is open`); if (def.region === 0 && R.q === 4) R.q = 5; }
     } else if (def.dungeonBoss != null) {
@@ -2374,7 +2378,7 @@
     const big = Math.max(3, Math.round(Math.min(w * 0.2, h * 0.42) / 16));
     const gy = h * GY;
     // ---- ally
-    if (B.pet && !OFF.pet) { const pb = Math.max(2, Math.round(big * 0.55)); const px = w * (0.2 + B.petA.ox), hop = Math.abs(Math.sin(t * 5)) * pb * 1.5; shadow(c, px, gy, pb); c.drawImage(petSprite(B.pet.icon), 0, 0, 16, 16, Math.round(px - 8 * pb), Math.round(gy - 15 * pb - hop), 16 * pb, 16 * pb); }
+    if (B.pet && !OFF.pet) { const pb = Math.max(2, Math.round(big * 0.55)); const px = w * (0.2 + B.petA.ox), hop = Math.abs(Math.sin(t * 5)) * pb * 1.5; shadow(c, px, gy, pb); c.drawImage(petSprite(B.pet.icon, B.pet), 0, 0, 16, 16, Math.round(px - 8 * pb), Math.round(gy - 15 * pb - hop), 16 * pb, 16 * pb); }
     if (B.ally && ready(B.ally.spr)) { const A = B.allyA; const ab = Math.round(big * 0.8); const ax = w * (0.12 + A.ox), ay = gy - h * 0.06; shadow(c, ax, ay, ab); const br = A.pose === 'idle' ? Math.sin(t * 2.6 + 1) * 0.02 : 0; c.drawImage(IMG[B.ally.spr], 3 * 16, (A.pose === 'strike' ? 4 : 0) * 16, 16, 16, Math.round(ax - ab * 8), Math.round(ay - ab * 16 * (1 + br)), ab * 16, Math.round(ab * 16 * (1 + br))); }
     // ---- hero
     const H = B.hero; const hx = w * (HX + H.ox), hy = gy + h * H.oy;

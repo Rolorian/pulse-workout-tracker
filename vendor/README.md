@@ -36,3 +36,8 @@ Sources and commits:
 - qrcode-generator — kazuhikoarase/qrcode-generator @ 83b7e8f
 
 The libraries written in TypeScript or ES modules were bundled once into plain browser scripts with `bun build --format=iife`. None of their install or build scripts were run.
+
+
+## Not libraries
+
+Pet sprites (`petsprites.js`), the muscle map (`coach2.js`), locked backups (`backup.js`, Web Crypto) and the accessibility pass (`a11y.js`) are written for Pulse and use only what the browser provides. Nothing was added to `/vendor` for them.

@@ -305,3 +305,13 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
   - Bulwark was dominant (full block from a 20 s hold, counters +60%). Now 25 s and +30%.
   - Tempest was a straight downgrade. Flurry bonus 25% → 40%.
 - Known: the simulator mirrors the formulas; it is not a person playing. Potions, pets and weaknesses are left out of it.
+
+## Overhaul · Phases 2–5, first pass — cache pulse-v33
+- Pets: 13 hand-drawn 16px sprites (petsprites.js, original pixel grids, dark outline and three-tone shading) replace the emoji in the Realm, in battle and on the Pets screen. Golden pets are recoloured.
+- Village: reviewed day and night at phone size; left as is this pass (see report). Pets were the weak point.
+- Fitness (coach2.js): blocky muscle map (front and back, coloured by freshness, with a text description); coach notes for an easy week after three rising weeks, a plateau on one exercise, and push far ahead of pull. All optional.
+- Data: password-locked backup (AES-GCM 256, PBKDF2-SHA256 310k rounds, Web Crypto, no library). Import detects locked files.
+- Accessibility (a11y.js): labels and roles for nav, sub-tabs, dialogs, toast; switches work from the keyboard; visible focus; reduced motion honoured app-wide.
+- Realm: boss rematches. A beaten region boss returns after 20 h one star tougher each win (+15% health, +1 damage per star, up to ★5) with better rewards.
+- Friends: finished challenges and raids move to a History list with a win count.
+- tests/overhaul.test.js added.
