@@ -47,7 +47,6 @@
     ]);
     const league = document.querySelector('#adventure .pane[data-pane="league"]');
     if (league) arrange(league, [], [{ name: '⚔️ Classic battle', key: 'classic', match: ['Live Battle', 'Boss Fights'], note: 'The original battle screens. The Realm is the full version of these.' }]);
-    const lt = document.querySelector('.navsub[data-tab="adventure"] [data-sub="league"]'); if (lt && /Battle/.test(lt.textContent)) lt.firstChild.textContent = '🏆 League';
   }
   // Settings switch (reload applies it — moving cards back by hand would be fragile)
   function wire() {

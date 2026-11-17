@@ -11,10 +11,12 @@
     { id: 'today', icon: '🏠', name: 'Home' },
     { id: 'goals', icon: '🎯', name: 'Goals' },
     { id: 'hero', icon: '🧬', name: 'Hero', subs: [['hero', '🧬 Hero'], ['bag', '🎒 Bag'], ['talents', '🌳 Talents'], ['pets', '🐾 Pets']] },
-    { id: 'adventure', icon: '⚔️', name: 'Adventure', subs: [['realm', '🌲 Realm'], ['map', '🗺️ Map'], ['dungeons', '🏰 Dungeons'], ['village', '🏘️ Village'], ['league', '🏆 Battle']] },
+    { id: 'adventure', icon: '⚔️', name: 'Adventure', subs: [['realm', '🌲 Realm'], ['map', '🗺️ Map'], ['dungeons', '🏰 Dungeons'], ['village', '🏘️ Village'], ['league', '🏆 League']] },
     { id: 'loot', icon: '💰', name: 'Loot', subs: [['crates', '📦 Crates'], ['casino', '🎰 Casino'], ['shop', '🛒 Shop'], ['forge', '⚒️ Forge']] },
     { id: 'stats', icon: '📊', name: 'Stats', subs: [['progress', '📈 Progress'], ['history', '📅 History'], ['galaxy', '🌌 Galaxy'], ['future', '🔮 Future']] }
   ];
+  // merged into the Realm: these screens are opened from the Realm's own menu, not from the tab bar
+  const INSIDE = { adventure: ['map', 'dungeons', 'village'] };
   const byId = Object.fromEntries(TABS.map((t) => [t.id, t]));
   G.navSub = (tab) => { const t = byId[tab]; if (!t || !t.subs) return null; const s = N.sub[tab]; return t.subs.some((x) => x[0] === s) ? s : t.subs[0][0]; };
   G.navTab = () => N.tab;
@@ -26,7 +28,7 @@
   function subnav(tab) {
     const t = byId[tab];
     const bar = el('div', 'subtabs navsub'); bar.dataset.tab = tab;
-    bar.innerHTML = t.subs.map(([id, label]) => `<button class="stab" data-sub="${id}">${label}<span class="sbadge" data-badge="${tab}:${id}"></span></button>`).join('');
+    bar.innerHTML = t.subs.filter(([id]) => !(INSIDE[tab] || []).includes(id)).map(([id, label]) => `<button class="stab" data-sub="${id}">${label}<span class="sbadge" data-badge="${tab}:${id}"></span></button>`).join('');
     bar.querySelectorAll('[data-sub]').forEach((b) => (b.onclick = () => { G.nav(tab, b.dataset.sub); G.sfx && G.sfx('tick'); }));
     return bar;
   }
@@ -68,6 +70,7 @@
     const pWorld = el('div', 'pane'); pWorld.dataset.pane = 'world';
     const rival = $('rivalCard'); if (rival) pLeague.appendChild(rival);
     const battle = $('battle'); [...battle.children].forEach((c) => pLeague.appendChild(c));
+    const back = el('button', 'realm-back', '← Back to the Realm'); back.type = 'button'; back.onclick = () => G.nav('adventure', 'realm'); pWorld.appendChild(back);
     const wr = $('worldRoot'); if (wr) pWorld.appendChild(wr);
     adv.append(pRealm, pWorld, pLeague);
     hero.after(adv);

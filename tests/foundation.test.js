@@ -47,6 +47,15 @@ const URL = process.env.PULSE_URL || 'http://localhost:8782';
   ok('updates wait for the app', await page.evaluate(async () => { const t = await (await fetch('sw.js')).text(); return /PULSE_SKIP_WAITING/.test(t) && !/addAll\(SHELL\)\)\.then\(\(\) => self\.skipWaiting/.test(t); }));
   ok('every precached file exists', await page.evaluate(async () => { const t = await (await fetch('sw.js')).text(); const files = [...t.matchAll(/'(\.\/[^']+)'/g)].map((m) => m[1]); const bad = []; for (const f of files) { const r = await fetch(f, { method: 'HEAD' }); if (!r.ok) bad.push(f); } window.__bad = bad; return bad.length === 0; }), await page.evaluate(() => window.__bad));
 
+  // Adventure: the Realm is the hub; old screens open from it and lead back
+  await page.evaluate(() => G.nav('adventure', 'realm')); await page.waitForTimeout(500);
+  ok('Adventure shows two sub-tabs', await page.evaluate(() => [...document.querySelectorAll('.navsub[data-tab="adventure"] [data-sub]')].map((b) => b.dataset.sub).join(',') === 'realm,league'));
+  await page.evaluate(() => G.nav('adventure', 'village')); await page.waitForTimeout(400);
+  ok('old Village screen still opens, with a way back', await page.evaluate(() => { const p = document.querySelector('#adventure .pane[data-pane="world"]'); return p.style.display !== 'none' && !!p.querySelector('.realm-back') && !!document.getElementById('villageRoot'); }));
+  await page.evaluate(() => document.querySelector('.realm-back').click()); await page.waitForTimeout(400);
+  ok('Back returns to the Realm', await page.evaluate(() => G.navSub('adventure') === 'realm'));
+  await page.evaluate(() => G.nav('today'));
+
   ok('no console errors', errs.length === 0, errs.slice(0, 5)); ok('no outside requests', net.length === 0, net.slice(0, 5));
   await b.close(); console.log(fails.length ? '\n' + fails.length + ' FAILED' : '\nALL PASSED'); process.exit(fails.length ? 1 : 0);
 })();

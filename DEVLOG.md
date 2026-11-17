@@ -296,3 +296,12 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - Updates no longer take over mid-session: a new version waits and applies on next launch or when you tap Update; never reloads during a fight or rest timer.
 - Reworks (approved): weather is visual only (no +10% damage); the hero's build is growth-only (no thin legs).
 - tests/ added to the repo (foundation.test.js).
+
+## Overhaul · Phase 1, part 2 — cache pulse-v32
+- Adventure is now Realm · League. The older Map log, Dungeon runs and Village bundles are opened from the Realm's menu and each has "Back to the Realm". Nothing removed; saves untouched.
+- Combat balance, from tests/balance.sim.js (4,000 simulated fights per case, three player levels, four stances, bosses 1/5/10):
+  - Boss charges were broken by almost any hit (needed 12% of boss HP). Now 30% (min 12): Guard it, or play Breaker and Smash through it.
+  - Region bosses gain 4% HP per region (cap 200) so charges and Phase 2 are actually reached. Mid-game boss: about 4 turns before, 5–7 now.
+  - Bulwark was dominant (full block from a 20 s hold, counters +60%). Now 25 s and +30%.
+  - Tempest was a straight downgrade. Flurry bonus 25% → 40%.
+- Known: the simulator mirrors the formulas; it is not a person playing. Potions, pets and weaknesses are left out of it.

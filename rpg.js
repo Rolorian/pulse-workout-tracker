@@ -1836,7 +1836,8 @@
     const def = ent.def;
     const lv = Math.round(moves().filter((m) => !m.timed).reduce((a, m) => a + skillLevel(m.ex), 0) / 3);
     const pw = G.stats ? Math.max(0, G.stats().power) : 0;
-    const reps = Math.min(def.boss ? 160 : 60, def.hp + Math.floor(lv / 4));
+    const bhp = def.boss && def.region != null && def.world == null ? Math.round(def.hp * (1 + BOSS_HP_STEP * def.region)) : def.hp; // later region bosses last long enough for charges and Phase 2 to matter
+    const reps = Math.min(def.boss ? BOSS_HP_CAP : 60, bhp + Math.floor(lv / 4));
     const hp = Math.round(reps * Math.pow(1 + pw / 100, 0.75));
     const party = R.party ? buddyInfo(R.party) : null;
     if (def.lore) { const lk = lore(def); lk.n = def.name; lk.b = def.boss ? 1 : 0; lk.seen = 1; }
@@ -1857,13 +1858,15 @@
     B.chargeDmg = 0;
     if (B.def.boss && B.turns > 0 && B.turns % 3 === 2 && !OFF.charge) {
       const top = it.slice().sort((a, b) => b[1] - a[1])[0];
-      B.intent = { name: top[0], dmg: Math.round((top[1] + (raging ? 3 : 0)) * 1.7), charge: true, brk: Math.max(6, Math.round(B.emax * 0.12)) };
+      B.intent = { name: top[0], dmg: Math.round((top[1] + (raging ? RAGE_ADD : 0)) * CHARGE_MULT), charge: true, brk: Math.max(BRK_MIN, Math.round(B.emax * BRK_PCT)) };
     }
   }
   // builds: a stance changes how you fight, not just your numbers
-  const STANCES = { balanced: ['Balanced', 'No bonuses, no drawbacks.'], bulwark: ['Bulwark', 'Guard fills faster and counters hit 60% harder. Take 1 less damage. Attacks deal 10% less.'], tempest: ['Tempest', 'Flurry deals 25% more. Smash deals 15% less. Take 1 more damage.'], breaker: ['Breaker', 'Smash deals 30% more and breaks boss charges easier. Flurry deals 15% less.'] };
+  // balance numbers (tests/balance.sim.js reads these and replays thousands of fights)
+  const CHARGE_MULT = 1.7, BRK_PCT = 0.3, BRK_MIN = 12, RAGE_ADD = 3, BOSS_HP_STEP = 0.04, BOSS_HP_CAP = 200, BULWARK_FULL = 25, BULWARK_COUNTER = 1.3, TEMPEST_FLURRY = 1.4, BREAKER_SMASH = 1.3;
+  const STANCES = { balanced: ['Balanced', 'No bonuses, no drawbacks.'], bulwark: ['Bulwark', 'Guard fills faster and counters hit 30% harder. Take 1 less damage. Attacks deal 10% less.'], tempest: ['Tempest', 'Flurry deals 40% more. Smash deals 15% less. Take 1 more damage.'], breaker: ['Breaker', 'Smash deals 30% more and breaks boss charges easier. Flurry deals 15% less.'] };
   const stance = () => (STANCES[R.stance] ? R.stance : 'balanced');
-  function stanceMult(mv) { const st = stance(); return st === 'bulwark' ? 0.9 : st === 'tempest' ? (mv.id === 'quick' ? 1.25 : mv.id === 'smash' ? 0.85 : 1) : st === 'breaker' ? (mv.id === 'smash' ? 1.3 : mv.id === 'quick' ? 0.85 : 1) : 1; }
+  function stanceMult(mv) { const st = stance(); return st === 'bulwark' ? 0.9 : st === 'tempest' ? (mv.id === 'quick' ? TEMPEST_FLURRY : mv.id === 'smash' ? 0.85 : 1) : st === 'breaker' ? (mv.id === 'smash' ? BREAKER_SMASH : mv.id === 'quick' ? 0.85 : 1) : 1; }
   // companion: your active pet fights beside you; it grows with the skill it came from
   function petInfo() {
     try {
@@ -2035,7 +2038,7 @@
     const H = B.hero; const pw = 1 + Math.max(0, G.stats ? G.stats().power : 0) / 100;
     if (mv.timed) {
       const bul = stance() === 'bulwark';
-      B.shield = Math.min(1, amt / (bul ? 20 : 30)); const counter = Math.round(amt * 0.25 * (bul ? 1.6 : 1) * pw * B.sharp * B.momNow);
+      B.shield = Math.min(1, amt / (bul ? BULWARK_FULL : 30)); const counter = Math.round(amt * 0.25 * (bul ? BULWARK_COUNTER : 1) * pw * B.sharp * B.momNow);
       if (B.intent && B.intent.charge && B.shield >= 0.5) { B.shield = 1; B.stag = 1; B.nums.push({ x: HX, y: 0.22, txt: 'PERFECT GUARD', c: '#8fd3ff', t: 0, kind: 'status' }); }
       H.pose = 'guard'; tw(H, { sy: 0.88, sx: 1.1 }, 0.12); at(0.12, () => tw(H, { sy: 1, sx: 1 }, 0.3, 'back'));
       tw(B, { shieldVis: B.shield }, 0.4, 'back'); snd('guard'); buzz('medium');
