@@ -315,3 +315,9 @@ Every library is a local, audited copy (see `vendor/README.md`). The app still m
 - Realm: boss rematches. A beaten region boss returns after 20 h one star tougher each win (+15% health, +1 damage per star, up to ★5) with better rewards.
 - Friends: finished challenges and raids move to a History list with a win count.
 - tests/overhaul.test.js added.
+
+## Overhaul · second pass — cache pulse-v34
+- Hero tab: hero card and Stats stay on top; "Growing up, bond & letters" and "Weekly report & traits" are folds. Re-applied after every Hero redraw. Page about 40% shorter. Simple layout switch still turns it off.
+- Dungeons: about half of floors get a modifier, named on arrival — Swarming (more monsters, richer chests), Champions (all elites, double XP), Hoard (extra chests), Lightless (short torchlight, richer chests). Around 40% of floors hide a cracked wall: tap it to open a secret room with a better chest. Opened walls are remembered. Separate seed, so floor layouts are unchanged. Not in the Vault or Weekly Depths.
+- Friends: new challenge type "Best single set" (personal-record contest, single-set cap so nobody logs 9,999). Older copies of Pulse can't join one; they say the code isn't valid.
+- Checked and skipped: equipment set bonuses already existed (full armour set of one material).

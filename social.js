@@ -20,7 +20,11 @@
     const cap = CAP[unit] || 250; return Math.round(Object.values(per).reduce((a, v) => a + Math.min(v, cap), 0) * 10) / 10;
   }
   function myDamage(ch) { const per = {}; W().forEach((w) => { if (w.date < ch.from || w.date > ch.to) return; per[w.date] = (per[w.date] || 0) + (typeof xpForWorkout === 'function' ? xpForWorkout(w) : w.amount); }); return Math.round(Object.values(per).reduce((a, v) => a + Math.min(v, 1500), 0)); }
-  const mine = (ch) => (ch.kind === 'raid' ? myDamage(ch) : myTotal(ch));
+  const BEST_CAP = { reps: 200, seconds: 600, minutes: 30, km: 50 };
+  function myBest(ch) { // personal-record contest: your best single set in the week
+    let best = 0; W().forEach((w) => { if (w.exercise !== ch.ex || w.date < ch.from || w.date > ch.to) return; best = Math.max(best, Math.min(Number(w.amount) || 0, BEST_CAP[w.unit] || 200)); }); return best; }
+  const mine = (ch) => (ch.kind === 'raid' ? myDamage(ch) : ch.kind === 'best' ? myBest(ch) : myTotal(ch));
+  const title = (ch) => (ch.kind === 'best' ? `Best ${ch.ex} set` : `Most ${ch.ex}`);
   G.socialExtras = function () {
     const c = {}, r = {}; const keep = plus(today(), -7);
     S.list.forEach((ch) => { if (ch.to < keep) return; (ch.kind === 'raid' ? r : c)[ch.cid] = mine(ch); });
@@ -32,12 +36,12 @@
     if (FR.sum('c|' + m[1]) !== m[2]) return { err: 'That challenge code is damaged or was edited' };
     let a; try { a = JSON.parse(FR.b64d(m[1])); } catch (e) { return { err: 'That challenge code couldn\'t be read' }; }
     if (!Array.isArray(a) || a[0] !== 1) return { err: 'That challenge is from a newer version of Pulse' };
-    const cid = typeof a[1] === 'string' && /^[a-z0-9]{8}$/.test(a[1]) ? a[1] : null; const kind = a[2] === 'raid' ? 'raid' : a[2] === 'most' ? 'most' : null;
+    const cid = typeof a[1] === 'string' && /^[a-z0-9]{8}$/.test(a[1]) ? a[1] : null; const kind = a[2] === 'raid' ? 'raid' : a[2] === 'most' ? 'most' : a[2] === 'best' ? 'best' : null;
     if (!cid || !kind || !DATE.test(a[4]) || !DATE.test(a[5]) || a[5] < a[4] || a[5] > plus(a[4], 31)) return { err: 'That challenge code isn\'t valid' };
     const ch = { cid, kind, ex: FR.str(a[3], 30) || 'Press-ups', from: a[4], to: a[5], by: FR.str(a[6], 10), byName: FR.str(a[7], 20) || 'A friend', hp: Math.max(500, FR.num(a[8], 200000)) };
     if (S.list.some((x) => x.cid === cid)) return { ok: 'You\'re already in that one' };
     if (S.list.length >= MAX) return { err: `You can be in up to ${MAX} challenges — remove an old one first` };
-    S.list.push(ch); save(); render(); return { ok: ch.kind === 'raid' ? `Joined ${ch.byName}'s raid ⚔️` : `Joined: most ${ch.ex} by ${ch.to.slice(5)}` };
+    S.list.push(ch); save(); render(); return { ok: ch.kind === 'raid' ? `Joined ${ch.byName}'s raid ⚔️` : `Joined: ${title(ch).toLowerCase()} by ${ch.to.slice(5)}` };
   }
   function create(kind, ex, hp) {
     const a = new Uint8Array(8); crypto.getRandomValues(a); const cid = [...a].map((b) => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
@@ -53,17 +57,17 @@
   function settle(ch) { // pay once: a won challenge, or a raid boss brought down
     if (ch.paid) return; const rows = standings(ch);
     if (ch.kind === 'raid') { if (rows.reduce((a, r) => a + r.v, 0) >= ch.hp) { ch.paid = 1; save(); try { G.reward && G.reward({ gems: 3, coins: 200 }, { silent: true }); } catch (e) { /* */ } if (typeof showToast === 'function') showToast('⚔️ Raid boss defeated together! +3 💎 +200 🪙', null, null, 4500); if (window.pulseFx) pulseFx('questComplete', { x: .5, y: .2, w: .85 }); } }
-    else if (ch.to < today() && rows.length > 1) { ch.paid = 1; save(); if (rows[0].me && rows[0].v > 0) { try { G.reward && G.reward({ coins: 100 }, { silent: true }); } catch (e) { /* */ } if (typeof showToast === 'function') showToast(`🏆 You won the ${ch.ex} challenge! +100 🪙`, null, null, 4500); } }
+    else if (ch.to < today() && rows.length > 1) { ch.paid = 1; save(); if (rows[0].me && rows[0].v > 0) { try { G.reward && G.reward({ coins: 100 }, { silent: true }); } catch (e) { /* */ } if (typeof showToast === 'function') showToast(`🏆 You won ${title(ch)}! +100 🪙`, null, null, 4500); } }
   }
   const fmt = (n) => Number(n || 0).toLocaleString();
   function invite(ch) {
     const code = encode(ch); const sh = FR.sheet(`<h2>${ch.kind === 'raid' ? '⚔️ Raid invite' : '🏁 Challenge invite'}</h2>
-      <div class="muted" style="margin-bottom:10px">${ch.kind === 'raid' ? `Bring down a boss with ${fmt(ch.hp)} health together by ${E(ch.to.slice(5))}. All training counts as damage.` : `Most ${E(ch.ex)} from ${E(ch.from.slice(5))} to ${E(ch.to.slice(5))}.`} Send this code; friends paste it under Add friend. Then swap friend codes during the week to see each other's totals.</div>
+      <div class="muted" style="margin-bottom:10px">${ch.kind === 'raid' ? `Bring down a boss with ${fmt(ch.hp)} health together by ${E(ch.to.slice(5))}. All training counts as damage.` : `${E(title(ch))} from ${E(ch.from.slice(5))} to ${E(ch.to.slice(5))}.`} Send this code; friends paste it under Add friend. Then swap friend codes during the week to see each other's totals.</div>
       <textarea class="fr-code" readonly rows="3">${E(code)}</textarea>
       <div class="fr-btns"><button class="gbtn" id="scSend">Send…</button><button class="gbtn ghost" id="scCopy">Copy code</button></div>`);
     if (!sh) return; const done = (m) => typeof showToast === 'function' && showToast(m, null, null, 2500);
     sh.querySelector('#scCopy').onclick = () => (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).then(() => done('📋 Invite copied'), () => { sh.querySelector('.fr-code').select(); done('Select and copy the code'); });
-    sh.querySelector('#scSend').onclick = () => { const text = `${ch.kind === 'raid' ? 'Join my Pulse raid ⚔️' : `Pulse challenge: most ${ch.ex} this week 💪`} Adventure → League → Add friend, paste:\n${code}`; if (navigator.share) navigator.share({ text }).catch(() => {}); else sh.querySelector('#scCopy').click(); };
+    sh.querySelector('#scSend').onclick = () => { const text = `${ch.kind === 'raid' ? 'Join my Pulse raid ⚔️' : `Pulse challenge: ${title(ch).toLowerCase()} this week 💪`} Adventure → League → Add friend, paste:\n${code}`; if (navigator.share) navigator.share({ text }).catch(() => {}); else sh.querySelector('#scCopy').click(); };
   }
   function openCreate(kind) {
     const count = {}; W().forEach((w) => { if (w.exercise) count[w.exercise] = (count[w.exercise] || 0) + 1; });
@@ -72,10 +76,11 @@
         <label class="muted">Boss health</label><select id="scHp" class="ex-select"><option value="3000">3,000 · two friends, steady week</option><option value="6000">6,000 · three or four friends</option><option value="12000">12,000 · a big group</option></select>
         <button class="gbtn" id="scGo" style="margin-top:12px;width:100%">Create raid</button>`
       : `<h2>🏁 New challenge</h2><div class="muted" style="margin-bottom:10px">Who does the most in seven days? A daily cap keeps it about showing up, not overdoing it.</div>
+        <label class="muted">Type</label><select id="scKind" class="ex-select"><option value="most">Most in seven days (daily cap)</option><option value="best">Best single set (personal record)</option></select>
         <label class="muted">Exercise</label><select id="scEx" class="ex-select">${exs.map((e) => `<option>${E(e)}</option>`).join('')}</select>
         <button class="gbtn" id="scGo" style="margin-top:12px;width:100%">Create challenge</button>`);
     if (!sh) return;
-    sh.querySelector('#scGo').onclick = () => { const ex = kind === 'raid' ? 'All training' : sh.querySelector('#scEx').value; const hp = kind === 'raid' ? Number(sh.querySelector('#scHp').value) : 0; G.closeSheet && G.closeSheet(true); create(kind, ex, hp); };
+    sh.querySelector('#scGo').onclick = () => { if (kind !== 'raid') kind = sh.querySelector('#scKind').value === 'best' ? 'best' : 'most'; const ex = kind === 'raid' ? 'All training' : sh.querySelector('#scEx').value; const hp = kind === 'raid' ? Number(sh.querySelector('#scHp').value) : 0; G.closeSheet && G.closeSheet(true); create(kind, ex, hp); };
   }
   function render() {
     const anchor = document.getElementById('friendCard'); if (!anchor) return;
@@ -87,7 +92,7 @@
     S.hist = Array.isArray(S.hist) ? S.hist : []; const old = S.list.filter((ch) => ch.to < cutKey);
     if (old.length) { old.forEach((ch) => { const rows = standings(ch); const tot = rows.reduce((a, r) => a + r.v, 0); const won = ch.kind === 'raid' ? tot >= ch.hp : rows.length > 1 && rows[0].me && rows[0].v > 0; S.hist.unshift({ cid: ch.cid, kind: ch.kind, ex: String(ch.ex || ''), to: ch.to, solo: rows.length < 2, won: !!won, rows: rows.slice(0, 4).map((r) => ({ n: String(r.n).slice(0, 24), v: Number(r.v) || 0, me: !!r.me })) }); }); S.hist = S.hist.slice(0, 20); S.list = S.list.filter((ch) => ch.to >= cutKey); save(); }
     const H = S.hist; const wins = H.filter((h) => h.won).length, played = H.filter((h) => !h.solo || h.kind === 'raid').length;
-    const histHtml = H.length ? `<details class="soc-hist"><summary>📜 History · ${wins} won of ${played || H.length}</summary>${H.map((h) => `<div class="soc-s muted">${h.won ? '🏆' : h.solo && h.kind !== 'raid' ? '➖' : '·'} ${h.kind === 'raid' ? 'Raid' : 'Most ' + E(h.ex)} · ended ${E(h.to)} · ${h.rows.map((r) => `${E(r.n)} ${fmt(r.v)}`).join(' · ')}</div>`).join('')}</details>` : '';
+    const histHtml = H.length ? `<details class="soc-hist"><summary>📜 History · ${wins} won of ${played || H.length}</summary>${H.map((h) => `<div class="soc-s muted">${h.won ? '🏆' : h.solo && h.kind !== 'raid' ? '➖' : '·'} ${h.kind === 'raid' ? 'Raid' : E(title(h))} · ended ${E(h.to)} · ${h.rows.map((r) => `${E(r.n)} ${fmt(r.v)}`).join(' · ')}</div>`).join('')}</details>` : '';
     c.innerHTML = `<div class="cardhead"><h2>🏁 Challenges & Raids</h2><span class="muted">${S.list.length ? S.list.length + ' active' : ''}</span></div>
       ${S.list.length ? S.list.slice().reverse().map((ch) => {
         const rows = standings(ch); const ended = ch.to < t; const left = ended ? 'ended' : ch.to === t ? 'last day' : `${Math.round((new Date(ch.to) - new Date(t)) / 864e5) + 1}d left`;
@@ -95,7 +100,7 @@
           return `<div class="soc"><div class="soc-h"><b>⚔️ Raid by ${E(ch.by === FR.me() ? 'you' : ch.byName)}</b><span class="muted">${tot >= ch.hp ? 'defeated ✅' : left}</span></div><div class="soc-bar"><div style="width:${100 - pct}%;background:var(--red,#ff6b6b)"></div></div>
             <div class="muted soc-s">${fmt(Math.max(0, ch.hp - tot))} / ${fmt(ch.hp)} health left · ${rows.map((r) => `${E(r.n)} ${fmt(r.v)}`).join(' · ')}</div><div class="soc-b"><button class="coach-mini" data-inv="${ch.cid}">Invite</button><button class="coach-mini" data-rm="${ch.cid}">Remove</button></div></div>`; }
         const max = Math.max(1, rows[0].v);
-        return `<div class="soc"><div class="soc-h"><b>🏁 Most ${E(ch.ex)}</b><span class="muted">${left}</span></div>
+        return `<div class="soc"><div class="soc-h"><b>${ch.kind === 'best' ? '🎯' : '🏁'} ${E(title(ch))}</b><span class="muted">${left}</span></div>
           ${rows.map((r, i) => `<div class="soc-row"><span>${i === 0 && r.v > 0 ? '👑' : i + 1} ${E(r.n)}</span><div class="soc-bar"><div style="width:${r.v / max * 100}%;background:${r.me ? 'var(--accent)' : 'var(--gold,#fbbf24)'}"></div></div><b>${fmt(r.v)}</b></div>`).join('')}
           ${rows.length < 2 ? '<div class="muted soc-s">Waiting for a friend\'s code that includes this challenge.</div>' : ''}<div class="soc-b"><button class="coach-mini" data-inv="${ch.cid}">Invite</button><button class="coach-mini" data-rm="${ch.cid}">Remove</button></div></div>`;
       }).join('') : '<div class="muted" style="line-height:1.45;margin-bottom:10px">Set a seven-day contest on one exercise, or team up against a raid boss. Friends\' totals arrive with their friend codes.</div>'}

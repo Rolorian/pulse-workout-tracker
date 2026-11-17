@@ -446,10 +446,54 @@
     });
     z.entry = [start.x + 2, start.y + 2]; z.exitDown = [end.x + end.w - 2, end.y + end.h - 2 < end.y + end.h - 1 ? end.y + 1 : end.y + 1];
     z.dungeonRooms = rooms;
+    if (!o.vault && !o.weekly) dungeonExtras(z, rooms, FLOOR, mobs, lvl, ri, floor, LAST);
     if (o.vault) { // no monsters, no doors: just rooms of treasure, and the clock
       z.spawns = []; z.exits = []; z.chests = rooms.slice(1).map((rm, i) => ({ id: `v${o.vault}-${i}`, x: rm.x + (rm.w >> 1), y: rm.y + (rm.h >> 1), vault: 1 }));
     }
     return z;
+  }
+
+  // Dungeon floors: about half get a modifier (named on arrival), and some hide a secret room behind a cracked wall.
+  // Both use their own seed, so the layout of a floor is the same as before.
+  const DMODS = {
+    swarm: ['Swarming', 'More monsters · richer chests'],
+    elite: ['Champions', 'All elites · double XP'],
+    hoard: ['Hoard', 'Extra chests'],
+    dark: ['Lightless', 'Short torchlight · richer chests']
+  };
+  function dungeonExtras(z, rooms, FLOOR, mobs, lvl, ri, floor, LAST) {
+    const r = rng('dmod' + ri + '-' + floor + '-' + (R.dg[ri] || 0));
+    const ids = Object.keys(DMODS); const roll = r(); z.mod = roll < 0.5 ? ids[Math.floor(r() * ids.length)] : null;
+    const mid = rooms.slice(1).map((rm, i) => ({ rm, i })).filter(({ i }) => i !== LAST);
+    if (z.mod === 'swarm') mid.forEach(({ rm, i }) => { if (!z.spawns.some((s) => s.id === 'g' + i)) z.spawns.push({ id: 'g' + i, mob: mobs[Math.floor(r() * mobs.length)], x: rm.x + (rm.w >> 1), y: rm.y + (rm.h >> 1), r: 2, lvl }); z.spawns.push({ id: 'x' + i, mob: mobs[Math.floor(r() * mobs.length)], x: rm.x + 1, y: rm.y + 1, r: 1, lvl }); });
+    if (z.mod === 'elite') z.spawns.forEach((s) => { if (s.mob && !s.guard) s.elite = true; });
+    if (z.mod === 'hoard') mid.forEach(({ rm, i }) => { if (!(z.chests || []).some((c) => c.id === `c${floor}-${i}`)) z.chests = (z.chests || []).concat([{ id: `h${floor}-${i}`, x: rm.x + rm.w - 2, y: rm.y + 1 }]); });
+    if (z.mod === 'swarm' || z.mod === 'dark') (z.chests || []).forEach((c) => (c.bonus = 1.5));
+    if (z.mod === 'dark') z.fovR = 4;
+    // secret room: a 3×2 pocket behind a room wall, joined by one cracked tile
+    if (r() < 0.55) {
+      const solidAt = (x, y) => !zin(z, x, y) || z.block[zat(z, x, y)];
+      const opts = [];
+      mid.forEach(({ rm }) => {
+        for (let x = rm.x + 1; x < rm.x + rm.w - 3; x++) { opts.push({ cx: x + 1, cy: rm.y - 1, ax: x, ay: rm.y - 3, aw: 3, ah: 2 }); opts.push({ cx: x + 1, cy: rm.y + rm.h, ax: x, ay: rm.y + rm.h + 1, aw: 3, ah: 2 }); }
+        for (let y = rm.y + 1; y < rm.y + rm.h - 2; y++) { opts.push({ cx: rm.x - 1, cy: y, ax: rm.x - 3, ay: y - 1, aw: 2, ah: 3 }); opts.push({ cx: rm.x + rm.w, cy: y, ax: rm.x + rm.w + 1, ay: y - 1, aw: 2, ah: 3 }); }
+      });
+      const fits = (o) => { if (o.ax < 1 || o.ay < 1 || o.ax + o.aw >= z.w - 1 || o.ay + o.ah >= z.h - 1 || !solidAt(o.cx, o.cy)) return false;
+        for (let y = o.ay - 1; y <= o.ay + o.ah; y++) for (let x = o.ax - 1; x <= o.ax + o.aw; x++) { if (x === o.cx && y === o.cy) continue; if (!solidAt(x, y)) return false; } return true; };
+      const good = opts.filter(fits);
+      if (good.length) {
+        const o = good[Math.floor(r() * good.length)];
+        z.secret = Object.assign({ floor: FLOOR }, o, { chest: { id: `sec${floor}`, x: o.ax + (o.aw >> 1), y: o.ay + (o.ah >> 1), secret: 1, bonus: 2.5 } });
+        const key = z.id + (R.dg[ri] || 0); if ((R.chests[key] || {}).crack) openSecret(z, true);
+      }
+    }
+  }
+  function openSecret(z, quiet) {
+    const o = z.secret; if (!o || o.open) return; o.open = true;
+    const dig = (x, y) => { z.ground[zat(z, x, y)] = o.floor; z.block[zat(z, x, y)] = 0; };
+    dig(o.cx, o.cy); for (let y = o.ay; y < o.ay + o.ah; y++) for (let x = o.ax; x < o.ax + o.aw; x++) dig(x, y);
+    z.chests = (z.chests || []).concat([o.chest]);
+    if (!quiet) { z.canvas = null; buildGround(z); z.fovAt = -1; }
   }
 
   // ================================================================== ENTITIES
@@ -504,6 +548,7 @@
     Z.npcs.forEach(([id, im, name, x, y, wr, talk, work]) => { if (id === 'bo') { x = R.q >= 2 ? 18 : 19; y = R.q >= 2 ? 29 : 30; } mk(id, im, x, y, { name, wanderR: wr, talk, work, dir: work === 'smith' ? 2 : work === 'farm' ? 3 : 0, speed: id === 'dog' ? 3.5 : 2.4 }); });
     Z.spawns.forEach((s) => { if (!alive(Z, s)) return; const d = enemyDef(s, Z); mk('s:' + s.id, d.spr, s.x, s.y, { name: d.name, spawn: s, def: d, enemy: true, wanderR: s.r, speed: d.boss ? 1.2 : 2, home: [s.x, s.y], scale: d.sc, tint: d.tint, crown: d.crown, lvl: s.lvl }); });
     (Z.chests || []).forEach((c) => { const key = c.pip ? 'village-pip' : Z.id + (R.dg[Z.ri] || 0); if (c.vault || !(R.chests[key] || {})[c.id]) mk('chest:' + c.id, 'chest', c.x, c.y, { chest: c, name: 'Chest' }); });
+    if (Z.secret && !Z.secret.open) mk('crack', 'chest', Z.secret.cx, Z.secret.cy, { crack: true, name: 'Cracked wall' });
     buddiesInZone().forEach((b, i) => { const sp = buddySpot(i); if (sp) mk('buddy:' + b.id, b.spr, sp[0], sp[1], { name: `${b.name}`, buddy: b, wanderR: 3, talk: talkBuddy, speed: 2.6 }); });
     if (R.party) { const b = buddyInfo(R.party); if (b && !ents.some((e) => e.buddy && e.buddy.id === b.id)) { const sp = freeNear(hero.tx, hero.ty); mk('buddy:' + b.id, b.spr, sp[0], sp[1], { name: b.name, buddy: b, follow: true, talk: talkBuddy, speed: 5 }); } }
     ents.forEach((e) => { if (e.buddy && R.party === e.buddy.id) { e.follow = true; e.wanderR = 0; } });
@@ -962,7 +1007,7 @@
     spawnZone(); snapCam(); renderHud();
     weeklyArrive(id, opts);
     music(zoneMusic());
-    if (!opts.quiet) zoneBanner(Z.name, Z.dungeon ? 'Dungeon' : Z.ri != null ? `Region ${Z.ri + 1}${conquered(Z.ri) ? ' · conquered' : ''}` : 'Your village');
+    if (!opts.quiet) zoneBanner(Z.name, Z.dungeon ? (Z.mod ? DMODS[Z.mod][0] + ' · ' + DMODS[Z.mod][1] : 'Dungeon') : Z.ri != null ? `Region ${Z.ri + 1}${conquered(Z.ri) ? ' · conquered' : ''}` : 'Your village');
   }
   function travel(id, tx, ty, opts) { if (busy) return; busy = true; hero.path = []; fade(false, () => { enterZone(id, tx, ty, opts); busy = false; }); sfx('menu3', 0.35); }
   G.rpgOpen = function () {
@@ -1106,7 +1151,7 @@
     if (!Z.seenT) { Z.seenT = new Uint8Array(Z.w * Z.h); Z.fogA = new Float32Array(Z.w * Z.h).fill(1); }
     const fov = Z.fovObj || (Z.fovObj = new ROT.FOV.PreciseShadowcasting((x, y) => zin(Z, x, y) && !Z.block[zat(Z, x, y)]));
     const vis = new Set();
-    fov.compute(hero.tx, hero.ty, 6, (x, y) => { if (!zin(Z, x, y)) return; const i = zat(Z, x, y); vis.add(i); Z.seenT[i] = 1; });
+    fov.compute(hero.tx, hero.ty, Z.fovR || 6, (x, y) => { if (!zin(Z, x, y)) return; const i = zat(Z, x, y); vis.add(i); Z.seenT[i] = 1; });
     Z.vis = vis;
   }
   function drawFog(c, dt, vw, vh) {
@@ -1159,6 +1204,9 @@
   // ================================================================== DRAW
   function drawSprite(c, e, t) {
     const sc = e.scale || 1; const sz = 16 * sc; const sx = Math.round(e.x + 8 - sz / 2), sy = Math.round(e.y + 16 - sz);
+    if (e.crack) { // hairline cracks and a faint draught of light: easy to miss, fair to find
+      c.strokeStyle = 'rgba(8,4,12,.9)'; c.lineWidth = 1; c.beginPath(); c.moveTo(e.x + 4.5, e.y + 1); c.lineTo(e.x + 7.5, e.y + 6); c.lineTo(e.x + 5.5, e.y + 10); c.lineTo(e.x + 9.5, e.y + 15); c.moveTo(e.x + 7.5, e.y + 6); c.lineTo(e.x + 12.5, e.y + 8); c.stroke();
+      c.fillStyle = `rgba(255,214,120,${(0.12 + 0.1 * Math.sin(t * 2.2)).toFixed(2)})`; c.fillRect(e.x + 7, e.y + 6, 1, 4); return; }
     c.fillStyle = 'rgba(10,6,20,.32)'; c.beginPath(); c.ellipse(e.x + 8, e.y + 15, 5.5 * sc, 2.2 * sc, 0, 0, 7); c.fill();
     if (e.chest) { if (ready('chest')) c.drawImage(IMG.chest, 0, 0, 16, 14, e.x, e.y + 2 + Math.round(Math.sin(t * 3) * 0.6), 16, 14); return; }
     const k = e.img; if (!ready(k)) return;
@@ -1532,7 +1580,10 @@
   G._rpgDlg = () => dlgQ; G._rpgAdvance = advanceDlg;
 
   // ================================================================== NPCs, BUILDINGS, BOUNTIES, SHOP
-  function interact(e) { if (e.enemy) { startEncounter(e); return; } if (e.chest) { openChestEnt(e); return; } e.talk && e.talk(e); }
+  function interact(e) { if (e.enemy) { startEncounter(e); return; } if (e.chest) { openChestEnt(e); return; }
+    if (e.crack) { const key = Z.id + (R.dg[Z.ri] || 0); R.chests[key] = R.chests[key] || {}; R.chests[key].crack = 1; save();
+      const i = ents.indexOf(e); if (i >= 0) ents.splice(i, 1); openSecret(Z, false); const c = Z.secret.chest; mk('chest:' + c.id, 'chest', c.x, c.y, { chest: c, name: 'Hidden chest' });
+      sfx('hit9', 0.4); buzz('success'); wfx('collectBurst', e.x + 8, e.y + 8, { palette: PAL.gold }); hint('The wall gives way — a hidden room!'); R.secrets = (R.secrets || 0) + 1; return; } e.talk && e.talk(e); }
   const heroName = () => (G.heroState ? G.heroState().name : 'Hero');
   function useProp(p) {
     if (p.building) {
@@ -1812,8 +1863,8 @@
     const key = e.chest.pip ? 'village-pip' : Z.id + (R.dg[Z.ri] || 0); R.chests[key] = R.chests[key] || {}; R.chests[key][e.chest.id] = 1; save();
     const i = ents.indexOf(e); if (i >= 0) ents.splice(i, 1);
     sfx('gold', 0.5); buzz('success');
-    const coins = 40 + (Z.ri || 0) * 30 + Math.floor(Math.random() * 40);
-    const items = Math.random() < 0.4 && G.rollDrop ? [G.rollDrop([40, 32, 18, 7, 2.5, 0.4, 0.08, 0.02]).id] : [];
+    const coins = Math.round((40 + (Z.ri || 0) * 30 + Math.floor(Math.random() * 40)) * (e.chest.bonus || 1));
+    const items = (e.chest.secret || Math.random() < 0.4) && G.rollDrop ? [G.rollDrop([40, 32, 18, 7, 2.5, 0.4, 0.08, 0.02]).id] : [];
     if (Math.random() < 0.3) R.potions++;
     G.reward && G.reward({ coins, items }, { label: 'Chest:' });
     wfx('collectBurst', e.x + 8, e.y + 14, { palette: PAL.gold });
@@ -2519,7 +2570,7 @@
     tp(x, y) { hero.tx = x; hero.ty = y; hero.x = x * T; hero.y = y * T; hero.path = []; snapCam(); },
     walk(x, y) { const p = findPath(hero.tx, hero.ty, x, y, hero); if (p) hero.path = p; return !!p; },
     talk(id) { const e = ents.find((x) => x.id === id); if (e) goTo(e); return !!e; },
-    go(id, x, y) { enterZone(id, x, y, { arrive: x == null }); }, R: () => R, vtalk: villagerTalk, closeMenu: () => closeMenu(), event: worldEvent, wx: realWx, heroImg: () => { heroSig = ''; mirAt = 0; return heroImg(); }, merchant,
+    go(id, x, y) { enterZone(id, x, y, { arrive: x == null }); }, R: () => R, zoneObj: () => Z, interact: (e) => interact(e), vtalk: villagerTalk, closeMenu: () => closeMenu(), event: worldEvent, wx: realWx, heroImg: () => { heroSig = ''; mirAt = 0; return heroImg(); }, merchant,
     useExit(i) { useExit(Z.exits[i]); }, exits: () => Z.exits.map((e) => ({ to: e.to, x: e.x, y: e.y, locked: e.locked ? e.locked() : null })),
     menu: (k) => (k === 'bonds' ? openBonds() : k === 'travel' ? openTravel() : k === 'moves' ? openMoves() : k === 'sound' ? openSound() : k === 'party' ? openParty() : k === 'bounty' ? openBounties() : k === 'bestiary' ? openBestiary() : k === 'stance' ? openStance() : openMenu()),
     bond: (id, n) => (n != null ? addBond(id, n) : bondOf(id)), session: () => TS, tsSet(n) { if (TS) { if (TS.fav.timed) TS.acc = n; else TS.n = n; tsUpd(); } }, tsGo() { tsAct('go'); }, prosperity, reputation,

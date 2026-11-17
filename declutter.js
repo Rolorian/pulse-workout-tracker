@@ -6,7 +6,7 @@
   if (!L || typeof L !== 'object') L = {}; L.open = L.open || {};
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch (e) { /* */ } };
   const title = (c) => ((c.querySelector('h2') || c.querySelector('.fold-h span') || {}).textContent || '').trim();
-  const find = (box, m) => [...box.children].find((c) => (m[0] === '#' ? c.id === m.slice(1) || c.querySelector(':scope > ' + m) : title(c).includes(m)));
+  const find = (box, m) => [...box.children].find((c) => (m[0] === '#' ? c.id === m.slice(1) || c.querySelector(':scope > ' + m) : m[0] === '.' ? c.matches(m) : title(c).includes(m)));
   function fold(name, key, nodes, note) {
     const c = document.createElement('div'); c.className = 'card fold' + (L.open[key] ? ' open' : ''); c.dataset.dfold = key;
     const h = document.createElement('button'); h.className = 'fold-h'; h.type = 'button'; h.innerHTML = `<span>${name} <small class="fold-n">${nodes.length}</small></span><span class="fold-arrow">▾</span>`;
@@ -48,6 +48,22 @@
     const league = document.querySelector('#adventure .pane[data-pane="league"]');
     if (league) arrange(league, [], [{ name: '⚔️ Classic battle', key: 'classic', match: ['Live Battle', 'Boss Fights'], note: 'The original battle screens. The Realm is the full version of these.' }]);
   }
+  // Hero is re-drawn as a whole, so it is re-arranged after every redraw (an observer notices the new cards)
+  function heroArrange() {
+    const box = document.getElementById('heroRoot'); if (!box || L.off) return;
+    if ([...box.children].some((c) => c.dataset && c.dataset.dfold)) return; // already arranged
+    delete box.dataset.decluttered;
+    arrange(box, ['.hero-card', 'Stats'], [
+      { name: '🌱 Growing up, bond & letters', key: 'herolife', match: ['#heroLifeRoot'] },
+      { name: '📜 Weekly report & traits', key: 'herotraits', match: ['Weekly Report', 'Traits'] }
+    ]);
+  }
+  function heroWatch() {
+    const box = document.getElementById('heroRoot'); if (!box || box.dataset.watched) return; box.dataset.watched = '1';
+    let t = null; new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => { try { heroArrange(); } catch (e) { /* */ } }, 30); }).observe(box, { childList: true });
+    heroArrange();
+  }
+
   // Settings switch (reload applies it — moving cards back by hand would be fragile)
   function wire() {
     const hap = document.getElementById('toggleHaptics'); const row = hap && hap.closest('.set-row'); if (!row || document.getElementById('layoutRow')) return;
@@ -56,7 +72,7 @@
     r.querySelector('button').onclick = () => { L.off = !L.off; save(); location.reload(); };
     row.parentNode.insertBefore(r, row.nextSibling);
   }
-  function start() { setTimeout(() => { try { run(); wire(); } catch (e) { console.warn('declutter', e); } }, 250); }
+  function start() { setTimeout(() => { try { run(); heroWatch(); wire(); } catch (e) { console.warn('declutter', e); } }, 250); }
   if (document.readyState === 'complete') start(); else window.addEventListener('load', start);
   G.declutter = { run, state: () => L };
 

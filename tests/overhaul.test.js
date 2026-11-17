@@ -52,6 +52,29 @@ const URL = process.env.PULSE_URL || 'http://localhost:8782';
   const hist = await page.evaluate(() => { const S = G.social.state(); const d = (n) => { const x = new Date(); x.setDate(x.getDate() - n); return dateKey(x); }; S.list.push({ cid: 'oldone01', kind: 'most', ex: 'Press-ups', from: d(12), to: d(6), by: 'x', byName: 'Me', hp: 0 }); S.list.push({ cid: 'live0001', kind: 'most', ex: 'Squats', from: d(1), to: d(-5), by: 'x', byName: 'Me', hp: 0 }); G.social.render(); return { list: G.social.list().map((c) => c.cid), hist: G.social.history().map((h) => h.cid + ':' + h.rows.length), ui: !!document.querySelector('#socialCard .soc-hist') }; });
   ok('finished challenges move to History; live ones stay', hist.list.join() === 'live0001' && hist.hist[0].startsWith('oldone01') && hist.ui, hist);
 
+  // personal-record contests
+  const best = await page.evaluate(() => { const S = G.social.state(); const d = (n) => { const x = new Date(); x.setDate(x.getDate() - n); return dateKey(x); };
+    S.list.push({ cid: 'bestone1', kind: 'best', ex: 'Squats', from: d(6), to: d(0), by: 'x', byName: 'Me', hp: 0 }); G.social.render();
+    const row = G.social.standings(S.list.find((c) => c.cid === 'bestone1'))[0]; const code = G.social.encode(S.list.find((c) => c.cid === 'bestone1'));
+    S.list = S.list.filter((c) => c.cid !== 'bestone1'); const back = G.social.accept(code); const again = S.list.find((c) => c.cid === 'bestone1');
+    return { v: row.v, ui: /Best Squats set/.test(document.getElementById('socialCard').textContent), round: !!again && again.kind === 'best', msg: back.ok || back.err }; });
+  ok('best-set challenge scores the top single set and survives a code round-trip', best.v === 23 && best.ui && best.round, best);
+
+  // Hero page: daily cards on top, the rest folded, and it stays that way after a redraw
+  await page.evaluate(() => G.nav('hero', 'hero')); await page.waitForTimeout(500);
+  const hero = async () => page.evaluate(() => { const b = document.getElementById('heroRoot'); return { folds: [...b.children].filter((c) => c.dataset && c.dataset.dfold).length, first: b.firstElementChild && b.firstElementChild.classList.contains('hero-card'), h: b.scrollHeight }; });
+  const h1 = await hero(); await page.evaluate(() => { G.emit && G.emit('render'); typeof render === 'function' && render(); G.nav('today'); G.nav('hero', 'hero'); }); await page.waitForTimeout(500); const h2 = await hero();
+  ok('Hero page is folded, and stays folded after a redraw', h1.folds === 2 && h1.first && h2.folds === 2 && h2.first, { h1, h2 });
+
+  // dungeons: modifiers and secret rooms, same layout as before
+  await page.evaluate(() => G.nav('adventure', 'realm')); await page.waitForTimeout(800);
+  const dg = await page.evaluate(() => { const D = G._rpgDebug, R = D.R(); let mods = 0, secrets = 0, n = 0, hit = null;
+    for (let ri = 0; ri < 10; ri++) for (let f = 1; f <= 3; f++) { D.go('village'); D.go(`d${ri}-${f}`); const z = D.zoneObj(); n++; if (z.mod) mods++; if (z.secret) { secrets++; if (!hit) hit = `d${ri}-${f}`; } }
+    D.go('village'); D.go(hit); const z = D.zoneObj(); z.spawns.length = 0; D.go('village'); D.go(hit); const crack = D.ents().find((e) => e.crack); const wall = z.block[z.secret.cy * z.w + z.secret.cx];
+    D.interact(crack); const open = z.block[z.secret.cy * z.w + z.secret.cx] === 0 && D.ents().some((e) => e.chest && e.chest.secret);
+    D.go('village'); return { n, mods, secrets, wall, open, saved: !!(R.chests[hit + '0'] || {}).crack }; });
+  ok('dungeon floors get modifiers and secret rooms that open and stay open', dg.mods > 5 && dg.secrets > 5 && dg.wall === 1 && dg.open && dg.saved, dg);
+
   ok('no console errors', errs.length === 0, errs.slice(0, 5)); ok('no outside requests', net.length === 0, net.slice(0, 5));
   await b.close(); console.log(fails.length ? '\n' + fails.length + ' FAILED' : '\nALL PASSED'); process.exit(fails.length ? 1 : 0);
 })();
